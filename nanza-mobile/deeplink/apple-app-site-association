@@ -1,0 +1,12 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["Y9X5CD9HAV.com.oakplatforms.nanza"],
+        "components": [
+          { "/": "/??????", "comment": "6-char reference codes only" }
+        ]
+      }
+    ]
+  }
+}
