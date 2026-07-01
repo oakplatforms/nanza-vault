@@ -569,7 +569,7 @@ const insets = useSafeAreaInsets()
 
 - Variables via `@env` (react-native-dotenv)
 - API base URL: `API_BASE_URL` from `@env`
-- See `documentation/environment-switching.md` for details
+- Environment values live in the repo `.env` files (not committed); switch by pointing `@env` at the target environment.
 
 ---
 
