@@ -15,6 +15,10 @@ Source lives entirely under `src/` (CRA convention). Entry is `src/index.tsx` �
 - **Types** — `src/types/index.ts` re-exports DTOs from `@oakplatforms/types` and adds admin-only `*Payload` shapes and a few extended DTOs. No hand-rolled domain types.
 - **Styling** — Tailwind CSS 3 (`tailwind.config.js` scans `src/components` and `src/app`), with Plus Jakarta Sans / Figtree fonts, PostCSS + autoprefixer, and Prettier's Tailwind class-sorter. Utility-first classes inline in JSX; no theme-token abstraction like the mobile app.
 
+## Solution designs
+
+- [[solution-designs/sources-and-insights|Sources & Insights (admin surface)]] — the operator UI for configuring Sources (type + weight) and reviewing product Insights. Canonical cross-repo design lives in [[../nanza-api/solution-designs/sources-and-insights|nanza-api]].
+
 ## Plans
 
 No plans yet. New plans land in `plans/`.
