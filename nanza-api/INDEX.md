@@ -53,7 +53,7 @@ resolved by a single reference-code resolver shared by the JSON, OG, and meta pa
 Living overviews of how each backend area works and why. One per theme in `solution-designs/`.
 
 - [[solution-designs/og-sharing|OG / sharing]] — the og/meta/ogEdge Lambdas, reference-code resolution, the three letter→type maps, and share-card style parity.
-- [[solution-designs/payments|Payments]] — the 3% + $0.50 + tax application fee and the removed 1% moderator rev-share.
+- [[solution-designs/payments|Payments]] — the 3% + $0.50 + tax application fee, the removed 1% moderator rev-share, and the delivery-mode × payment-type model (in-person cash/card).
 - [[solution-designs/data-sync|Data sync]] — best-effort collection sync on listing creation and order completion, reusing the trade move primitive.
 - [[solution-designs/infra-push|Infra & push]] — push notifications were REMOVED; the APNs / Firebase-WIF setup history kept for a rebuild.
 - [[solution-designs/projects|Projects / AI builder]] — the Storefront → Project refactor end state, web builder re-enable, and caps/credits (not subscriptions).

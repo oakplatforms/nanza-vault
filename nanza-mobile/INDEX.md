@@ -56,6 +56,8 @@ tag, a `solution-design` tag, and its theme tag.
   the 20-item cap.
 - [[solution-designs/profile|Profile]] — read-only user-profile parity: count+share headers and the
   read-only collection grid + detail.
+- [[solution-designs/payments|Payments & checkout]] — the 3-way delivery selector (Untracked/Tracked/
+  In Person), Pay With + Cash placement, the no-jump zeroed summary, and the in-person order status.
 - [[solution-designs/ui-fixes|UI / UX fixes]] — consistent "more" ellipsis sizing/color and the on-load
   "Update Available" bottom sheet.
 - [[solution-designs/docs-infra|Documentation vault]] — the shared `nanza-vault`: relative symlinks,
