@@ -56,6 +56,8 @@ tag, a `solution-design` tag, and its theme tag.
   the 20-item cap.
 - [[solution-designs/profile|Profile]] — read-only user-profile parity: count+share headers and the
   read-only collection grid + detail.
+- [[solution-designs/payments|Payments & checkout]] — the 3-way delivery selector (Untracked/Tracked/
+  In Person), Pay With + Cash placement, the no-jump zeroed summary, and the in-person order status.
 - [[solution-designs/design-system|Design System]] — the two-layer colour token model (base scales →
   semantic aliases), the resolver/provider path, the image→`ink` / surface / border conventions,
   `well`→`surface` deprecation, the enforced typographic scale (slot spreads from

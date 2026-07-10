@@ -18,6 +18,7 @@ Source lives entirely under `src/` (CRA convention). Entry is `src/index.tsx` �
 ## Solution designs
 
 - [[solution-designs/sources-and-insights|Sources & Insights (admin surface)]] — the operator UI for configuring Sources (type + weight) and reviewing product Insights. Canonical cross-repo design lives in [[../nanza-api/solution-designs/sources-and-insights|nanza-api]].
+- [[solution-designs/payments|Payments visibility (admin surface)]] — Delivery/Payment badges on the Orders list + detail for in-person/cash orders. Canonical model lives in [[../nanza-api/solution-designs/payments|nanza-api]].
 
 ## Plans
 
