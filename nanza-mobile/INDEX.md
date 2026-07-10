@@ -56,6 +56,10 @@ tag, a `solution-design` tag, and its theme tag.
   the 20-item cap.
 - [[solution-designs/profile|Profile]] — read-only user-profile parity: count+share headers and the
   read-only collection grid + detail.
+- [[solution-designs/design-system|Design System]] — the two-layer colour token model (base scales →
+  semantic aliases), the resolver/provider path, the image→`ink` / surface / border conventions,
+  `well`→`surface` deprecation, the enforced typographic scale (slot spreads from
+  `typography.ts`, ESLint-banned font props), and the pending light/dark switch.
 - [[solution-designs/ui-fixes|UI / UX fixes]] — consistent "more" ellipsis sizing/color and the on-load
   "Update Available" bottom sheet.
 - [[solution-designs/docs-infra|Documentation vault]] — the shared `nanza-vault`: relative symlinks,

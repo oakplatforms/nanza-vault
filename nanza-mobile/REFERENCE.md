@@ -202,14 +202,11 @@ theme.fonts.size.xl   // 24
 
 ### Font Families
 ```typescript
-theme.fonts.family.primary       // 'EuclidCircularB'
-theme.fonts.family.secondary     // 'Geist'
-theme.fonts.family.price         // 'Figtree' (dollar sign at +1 weight from light/300)
-theme.fonts.family.priceMedium   // 'Figtree-Medium' (dollar sign at +1 weight from normal/400)
-theme.fonts.family.priceSemiBold // 'Figtree-SemiBold' (dollar sign at +1 weight from medium/500)
-theme.fonts.family.priceBold     // 'Figtree-Bold' (dollar sign at +1 weight from semiBold/600)
-theme.fonts.family.priceExtraBold // 'Figtree-ExtraBold' (dollar sign at +1 weight from bold/700)
-theme.fonts.family.priceBlack    // 'Figtree-Black' (dollar sign at +1 weight from extraBold+/800-900)
+theme.fonts.family.primary       // 'Roobert' (single app font; weight via fontWeight)
+theme.fonts.family.secondary     // 'Roobert'
+// Roobert ships 400/500/600/700 only. Its "$" glyph renders correctly at every
+// weight, so prices use the primary font like everything else (no separate price
+// font, no PriceText requirement).
 ```
 
 ### Font Weights

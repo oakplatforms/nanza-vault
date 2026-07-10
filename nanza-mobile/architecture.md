@@ -149,6 +149,11 @@ Each exports a `getXStyles(theme: ThemeTokens)` that returns a typed map of name
 built from theme tokens (never hardcoded values). `src/styles/components/index.ts` composes a
 few of these into `getThemeStyles(theme)` for convenience.
 
+Text styles are special-cased: `typography.ts` defines the app's typographic scale (~11 slots:
+`jumbo`…`body`), and every other bucket composes text classes as `...typography.<slot>` +
+overrides — ESLint forbids raw font props anywhere else. See
+[[solution-designs/design-system|Design System]] for the model.
+
 ### How a component consumes styles
 
 ```typescript
