@@ -52,6 +52,8 @@ tag, a `solution-design` tag, and its theme tag.
   dedup, and the shared `ImageViewer`.
 - [[solution-designs/sharing|Sharing]] — the reference-code letter scheme (S/B/C/P/K/G/U), the
   buy/sell/join action matrix, group + profile share cards, and tap-to-expand/cropped images.
+- [[solution-designs/share-card-restyle|Share Card Restyle]] — bring the new detail-screen look
+  (dark hero, jumbo title, "Sold by" row, priced CTA) to the share cards without re-pointing links.
 - [[solution-designs/bulk|Bulk / Lots]] — items-first Lot builder, the DRAFT model, entry rewiring, and
   the 20-item cap.
 - [[solution-designs/profile|Profile]] — read-only user-profile parity: count+share headers and the

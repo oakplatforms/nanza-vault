@@ -57,7 +57,8 @@ Living overviews of how each backend area works and why. One per theme in `solut
 - [[solution-designs/data-sync|Data sync]] — best-effort collection sync on listing creation and order completion, reusing the trade move primitive.
 - [[solution-designs/infra-push|Infra & push]] — push notifications were REMOVED; the APNs / Firebase-WIF setup history kept for a rebuild.
 - [[solution-designs/projects|Projects / AI builder]] — the Storefront → Project refactor end state, web builder re-enable, and caps/credits (not subscriptions).
-- [[solution-designs/sources-and-insights|Sources & Insights]] — admin-configurable Source + Insight models (typed enum, default PRICING; scales to EVENT/ARTICLE/SOCIAL_POST), the current price-rollup algorithm, the local-Claude per-product loop, and the Opus-lead/Haiku-worker orchestration that picks the best insight.
+- [[solution-designs/sources-and-insights|Sources & Insights]] — the orchestration judgment rules and legacy price algorithm; the models/runtime moved to [[../oak-cortex/solution-designs/insight-engine|oak-cortex]] (2026-07-05 pivot) — nanza-api keeps only a read-only spec endpoint and receives reviewed price migrations.
+- [[solution-designs/oak-api-platform-rescope|oak-api Platform Re-scope]] — nanza-api is really Oak's API: Oak is the platform, tenants are `Client`s (nanza = default row), `clientId` on client roots, non-breaking phasing, and the risky serverless stack rename. Design only.
 
 ## Related
 

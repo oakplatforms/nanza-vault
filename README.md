@@ -28,6 +28,7 @@ Each links to a project map (`INDEX`) with a structural overview, an `architectu
 - [[nanza-web-app/INDEX|nanza-web-app]] — public web app (CRA); share-link surface + marketing site.
 - [[nanza-admin/INDEX|nanza-admin]] — internal admin console (CRA + Tailwind) for catalog & back office.
 - [[nanza-email/INDEX|nanza-email]] — transactional email service: EventBridge-triggered Lambda + SES + react-email.
+- [[oak-cortex/INDEX|oak-cortex]] — Oak's intelligence engine: separate Postgres+Prisma DB, local-Claude loops enriching the canonical catalog (pricing first); prod is read-only to it.
 - [[nanza-auth/INDEX|nanza-auth]] — auth glue: Cognito user-pool trigger Lambdas, token & password flows.
 - [[_shared/INDEX|_shared]] — cross-project architecture, decisions & the capabilities catalog.
 
