@@ -60,12 +60,17 @@ tag, a `solution-design` tag, and its theme tag.
   read-only collection grid + detail.
 - [[solution-designs/payments|Payments & checkout]] — the 3-way delivery selector (Untracked/Tracked/
   In Person), Pay With + Cash placement, the no-jump zeroed summary, and the in-person order status.
+- [[solution-designs/social-auth|Social Sign-In]] — native Apple/Google sign-in (no browser bounce)
+  feeding the consumer Cognito pool via token federation; the `services/auth` seam and UI surface.
 - [[solution-designs/design-system|Design System]] — the two-layer colour token model (base scales →
   semantic aliases), the resolver/provider path, the image→`ink` / surface / border conventions,
   `well`→`surface` deprecation, the enforced typographic scale (slot spreads from
   `typography.ts`, ESLint-banned font props), and the pending light/dark switch.
 - [[solution-designs/ui-fixes|UI / UX fixes]] — consistent "more" ellipsis sizing/color and the on-load
   "Update Available" bottom sheet.
+- [[solution-designs/data-freshness|Data Freshness]] — lazy-invalidate + refetch-on-page-visit: the
+  `AppQueryClient` `refetchType:'none'` default, the navigator `onStateChange` stale-refetch, the
+  `staleTime` tiers, and the price-values-active vs discovery-surfaces-lazy split.
 - [[solution-designs/docs-infra|Documentation vault]] — the shared `nanza-vault`: relative symlinks,
   INDEX hierarchy, and how designs land here.
 

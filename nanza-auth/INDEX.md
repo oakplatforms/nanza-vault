@@ -27,6 +27,10 @@ Serverless Framework v3, `nodejs20.x`, `us-east-1`, staged via `${opt:stage, 'de
 - **`deploy-dev.yml`** — on push to `dev`, assumes an AWS role via **OIDC** (no static keys) and runs `serverless deploy --stage dev`, injecting pool/client IDs and `API_BASE_URL` from GitHub Actions `vars`.
 - **`deploy-prod.yml`** — same, on push to `prod`.
 
+## Solution designs
+- [[solution-designs/social-identity-providers|Social Identity Providers]] — registering Apple/Google
+  on the consumer pool and creating the app user row for federated first-logins (mobile-native flow).
+
 ## Plans
 None yet. New plans land in `plans/`.
 

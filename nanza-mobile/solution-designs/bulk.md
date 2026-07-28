@@ -63,10 +63,41 @@ maximum. The cap is server-enforced (surfaces as an alert); disabling the add bu
 builder is optional polish, not required for correctness. This 20 is **independent of the scan
 pool cap** — lots are groupings of listings, not scans (see [[scan|Scan & Camera]]).
 
-### Buyer view untouched
+### Buyer flow — buy-all semantics, line-total pricing, straight to cart
 
-`BulkDetail` (the buyer's view of a lot) is not part of this — the items-first restructure is
-entirely the **owner/seller** flow.
+The buyer's view of a lot is the **full-screen lot detail** (`ListingScreen`, registered as the
+`ListingDetail` route — it renders both single listings and lots via `bulkListingId`), plus the
+compact `FeedBulkCard` in feeds and `ShareBulkCard` on share landings. All three share one swipe
+model: a **cover** slide (the whole lot) followed by one slide per child listing.
+
+Three rules govern buying a lot, and every surface obeys them identically:
+
+- **Lot children are buy-all.** A child listing in a lot always has
+  `multiTransactionsEnabled = false` (forced off at create — bulk children can't be partially
+  purchased). So a child with `quantity = 2` is added to the cart as **`quantityInOrder = 2`**, and
+  its buy label reads **"Buy 2 for …"**. The add-to-cart quantity is taken straight from
+  `listing.quantity` (never collapsed to 1, and the old `multiTransactionsEnabled ? 1 : quantity`
+  branch is gone — for a lot child the flag is invariantly false, so keying off it was fragile
+  against mis-set data).
+- **Prices are line totals.** `Listing.price` is the **per-unit** price. Every lot buy label shows
+  **unit price × quantity** (a qty-2 card at $0.50 reads "Buy 2 for **$1.00**", not $0.50). Lot
+  totals come from `getBulkTotalPrice` (`utils/bulkTotals.ts`), which sums `price × quantity`
+  across children; per-child labels multiply inline.
+- **Every buy goes straight to the cart.** Tapping buy on the **cover** batches every available
+  child into one same-seller order (`useShareActions.onBuyBulk`) and navigates to `ReviewCart`.
+  Tapping buy on a **single child** adds that card (its full quantity) and also navigates to
+  `ReviewCart`. There is no "review then confirm on the feed" — the feed card used to stay put; it
+  now routes to the cart like the detail and share surfaces.
+
+**"N items" counts total quantity, not listing count.** The lot's item metric is
+`Σ child.quantity` (3 cards of qty 2 → "6 items"), falling back to a summed count when the server
+doesn't send `totalQuantity` — never the raw `listings.length`.
+
+**The old select-which-ones "Buy Now" screen (`BulkDetailScreen` / the `BulkDetail` route) was
+deleted.** With buy-all semantics the cover simply buys the whole lot, so a per-card selection step
+was redundant. Its shared data hook (`BulkDetailScreen/data/fetchBulkListing` → `useBulkListing`)
+stays — it's imported by `ListingScreen`, `BulkItemsScreen`, `BulkTab`, and `CreateListingScreen`;
+only the screen component and its route were removed.
 
 ## Key decisions & rationale
 

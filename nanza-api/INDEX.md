@@ -53,8 +53,10 @@ resolved by a single reference-code resolver shared by the JSON, OG, and meta pa
 Living overviews of how each backend area works and why. One per theme in `solution-designs/`.
 
 - [[solution-designs/og-sharing|OG / sharing]] — the og/meta/ogEdge Lambdas, reference-code resolution, the three letter→type maps, and share-card style parity.
+- [[solution-designs/image-cdn|Image CDN / resizing]] — on-demand `?width=` WebP resizing via CloudFront + a single-origin resizer Lambda over `nanza-static`; no stored thumbnails; client `getImage(id,{width})`/`px()` sizing by tile; the four Function-URL/OAC/ListBucket deploy gotchas.
 - [[solution-designs/payments|Payments]] — the 3% + $0.50 + tax application fee, the removed 1% moderator rev-share, and the delivery-mode × payment-type model (in-person cash/card).
 - [[solution-designs/data-sync|Data sync]] — best-effort collection sync on listing creation and order completion, reusing the trade move primitive.
+- [[solution-designs/query-lists|Query Lists]] — admin-configured *dynamic* collections: multi-select source types (listing/bid/bulk/entity/set) + `QueryCriterion` rows joined by one `AND`/`OR` combinator, resolved live (no stored membership). Design only; first consumer is the homepage.
 - [[solution-designs/infra-push|Infra & push]] — push notifications were REMOVED; the APNs / Firebase-WIF setup history kept for a rebuild.
 - [[solution-designs/projects|Projects / AI builder]] — the Storefront → Project refactor end state, web builder re-enable, and caps/credits (not subscriptions).
 - [[solution-designs/sources-and-insights|Sources & Insights]] — the orchestration judgment rules and legacy price algorithm; the models/runtime moved to [[../oak-cortex/solution-designs/insight-engine|oak-cortex]] (2026-07-05 pivot) — nanza-api keeps only a read-only spec endpoint and receives reviewed price migrations.
