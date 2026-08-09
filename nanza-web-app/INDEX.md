@@ -42,7 +42,7 @@ Top-level dirs under `src/`:
 
 **Routing:** flat route table in `AppLayout.tsx`. Static marketing paths out-rank the dynamic
 `/:referenceCode` share route; anything unmatched `Navigate`s to `/`. 6-char reference codes
-(`S/B/C/P/K/G/U` + five digits 2–9) are the core dynamic surface.
+(`S/B/C/P/K/G/U/T/V/Y` + five digits 2–9) are the core dynamic surface.
 
 **Data/services → nanza-api:** all reads/writes go through `fetchData`, which attaches a Cognito JWT
 when signed in and otherwise a cached guest token. Base URL from `REACT_APP_API_BASE_URL`
@@ -61,6 +61,12 @@ Universal Links / App Links assets ship under `public/.well-known/`.
 - [[architecture|Architecture]] — entry, routing, services, auth flow, styling, build/deploy
 - [[fe_spec|Frontend Spec]] — engineering standards, non-negotiables, escalation process
 - [[../_shared/INDEX|Shared brain]] — cross-project architecture & decisions
+
+## Strategy
+
+- [[nanza-founder-skylar|Founder Strategy Questionnaire — Skylar]] — 136-question strategy capture
+  (origin, customer, product vision, moat, licensors, model, growth, risk, philosophy) in a consistent
+  first-person voice; all questions answered, session follow-ups folded in.
 
 ## Solution designs
 

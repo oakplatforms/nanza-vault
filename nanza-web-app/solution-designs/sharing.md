@@ -25,7 +25,9 @@ for the same URLs.
 paths out-rank it; anything unmatched `Navigate`s to `/`). A **6-character reference
 code** is exactly five digits (2–9) plus one type letter, validated by
 `isReferenceCode()`, which mirrors the backend contract (duplicated in
-`ShareDetail/index.tsx` and `SmartRouter.tsx`). Type letters and their cards:
+`ShareDetail/index.tsx`, `SmartRouter.tsx`, **and** `ShareDetail/data/fetchByCode.ts`'s
+`extractTypeIdentifier` — all three letter lists must move together). Type letters and
+their cards:
 
 | Letter | Meaning | Card |
 |--------|---------|------|
@@ -36,6 +38,17 @@ code** is exactly five digits (2–9) plus one type letter, validated by
 | `K` | Bulk listing | `BulkDetailCard` |
 | `G` | Group | `GroupDetailCard` |
 | `U` | Profile (`?type=sell\|bid`) | `ProfileDetailCard` |
+| `T` | Post (root only) | `PostDetailCard` |
+| `V` | Supported tag value | `TagDetailCard` |
+| `Y` | Secondary tag value | `TagDetailCard` |
+
+The post/tag cards (post-tag-sharing design, 2026-08-03) are deliberately **thin** — the
+web landing is a fallback pushing visitors to the app. `PostDetailCard`: author header
+(avatar/@username/date), body text (falling back to the first `RICH_TEXT` content item),
+attachments as a simple image row + bare link rows, and a likes/replies meta line.
+`TagDetailCard`: one card for both tag types — banner hero (thumbnail fallback), name,
+description. `T`/`V`/`Y` send **no** client includes: the resolver hydrates posts
+server-side and tag values render from their own columns.
 
 `ShareDetail/index.tsx` validates the code, fetches it via `data/fetchByCode.ts`
 (→ `universalService.getByCode` → `GET /reference/{code}{params}`), maps the record into

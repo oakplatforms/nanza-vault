@@ -14,7 +14,12 @@ per-type share card, and splice Open Graph tags into the static web app's HTML s
 correctly. Crawlers send no auth token, so these paths are all public and unauthenticated.
 
 The share cards themselves are rendered server-side with **Satori → sharp** from React-like template
-functions in `src/services/og/templates/*`, cached as PNGs in S3, and served via redirect.
+functions in `src/services/og/templates/*`, cached as WebP in S3, and served via redirect.
+(Revised 2026-08-04: the cached objects were PNG — 1.5MB+ per photographic card, the largest
+files in the bucket — and are now `share/<CODE>-<updatedAtMs>.webp` at quality 80, matching the
+bucket-wide WebP convention. The route path stays `/og.png`; crawlers follow the 302 regardless.
+Old `.png` share objects are orphaned, not overwritten — purge `share/*.png` manually if bucket
+size matters.)
 
 ## How it works
 
@@ -22,8 +27,8 @@ functions in `src/services/og/templates/*`, cached as PNGs in S3, and served via
 
 - **og** — `GET /reference/{referenceCode}/og.png` (`lambdas/ogHandler.ts`). Resolves the code via
   `src/services/referenceResolver.ts`, renders the matching card template with Satori → sharp,
-  caches the PNG in S3 (`nanza-static-{stage}` under `/share/`), and 302-redirects to the object
-  URL. Runs on the `sharp-arm64` Lambda layer (WebP → PNG decode).
+  caches the WebP in S3 (`nanza-static-{stage}` under `/share/`), and 302-redirects to the object
+  URL. Runs on the `sharp-arm64` Lambda layer (WebP decode for heroes, WebP encode for output).
 - **meta** — `GET /reference/{referenceCode}/meta` (`lambdas/metaHandler.ts`). Returns the Open
   Graph payload — `title` / `description` / `image` / `url` — built by `src/services/og/meta.ts`
   (`buildOgMeta`). The image field points back at the `og.png` URL above.
@@ -123,3 +128,6 @@ removed before commit.
 
 - [[../INDEX|nanza-api]]
 - [[../architecture|Architecture]]
+- [[../nanza-mobile/solution-designs/post-tag-sharing|Post & Tag Sharing]] — proposed: three new
+  letters (T=Post, V=SupportedTagValue, Y=SecondaryTagValue) through this pipeline, incl. two new
+  templates (post, tag)

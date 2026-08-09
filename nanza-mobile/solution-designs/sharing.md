@@ -34,10 +34,14 @@ not from a path segment:
 | `K` | BulKlisting (Lot) |
 | `G` | Group |
 | `U` | User / Profile |
+| `T` | Post (root posts only) |
+| `V` | SupportedTagValue |
+| `Y` | SecondaryTagValue |
 
-Codes are minted like the rest — generated on record creation (listing/bid/lot/group create),
-or **lazily on first share** for profiles. The web landing router's code validation must allow
-every live letter (`S/B/C/P/K/G/U`).
+Codes are minted like the rest — generated on record creation (listing/bid/lot/group create,
+tag-value admin create), or **lazily on first share** for profiles and posts (posts:
+`POST /post/:id/reference-code`, idempotent). The web landing router's code validation must
+allow every live letter (`S/B/C/P/K/G/U/T/V/Y`).
 
 ### Resolution and rendering
 
@@ -150,6 +154,8 @@ across five cards.
 - [[../INDEX|nanza-mobile]]
 - [[../architecture|Architecture]]
 - [[../REFERENCE|Frontend Reference]]
+- [[post-tag-sharing|Post & Tag Sharing]] — proposed extension: three new letters (T/V/Y) for
+  posts and supported/secondary tag values
 - [[scan|Scan & Camera]] — the shared `ImageViewer` that share cards reuse
 - [[collections|Collections]] — collection share card + the mosaic OG style
 - [[profile|Profile]] — profile share entry points and read-only parity

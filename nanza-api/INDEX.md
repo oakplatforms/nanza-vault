@@ -58,9 +58,24 @@ Living overviews of how each backend area works and why. One per theme in `solut
 - [[solution-designs/data-sync|Data sync]] — best-effort collection sync on listing creation and order completion, reusing the trade move primitive.
 - [[solution-designs/query-lists|Query Lists]] — admin-configured *dynamic* collections: multi-select source types (listing/bid/bulk/entity/set) + `QueryCriterion` rows joined by one `AND`/`OR` combinator, resolved live (no stored membership). Design only; first consumer is the homepage.
 - [[solution-designs/infra-push|Infra & push]] — push notifications were REMOVED; the APNs / Firebase-WIF setup history kept for a rebuild.
+- [[solution-designs/db-connections|DB connections & the socket registry]] — why Lambda×pg connections don't scale (the 71-connection dev incident); pivoted to **no VPC** — the DynamoDB socket registry (`oak-api-ws-*`, built 2026-08-04, pending deploy) takes `$connect`/`$disconnect`/fanout off Postgres, REST is capped via reservedConcurrency; RDS Proxy + VPC kept as appendix/escalation path.
 - [[solution-designs/projects|Projects / AI builder]] — the Storefront → Project refactor end state, web builder re-enable, and caps/credits (not subscriptions).
 - [[solution-designs/sources-and-insights|Sources & Insights]] — the orchestration judgment rules and legacy price algorithm; the models/runtime moved to [[../oak-cortex/solution-designs/insight-engine|oak-cortex]] (2026-07-05 pivot) — nanza-api keeps only a read-only spec endpoint and receives reviewed price migrations.
 - [[solution-designs/oak-api-platform-rescope|oak-api Platform Re-scope]] — nanza-api is really Oak's API: Oak is the platform, tenants are `Client`s (nanza = default row), `clientId` on client roots, non-breaking phasing, and the risky serverless stack rename. Design only.
+- [[solution-designs/profile-types|Profile Types]] — `ProfileType` enum (`BASIC`/`AFFILIATE`) on `Profile`, admin-assigned, the gate for later affiliate features. Design only.
+- [[solution-designs/posts|Posts]] — comments became **posts** (backend built 2026-07-31): `ContentItem` blocks (`RICH_TEXT`/`IMAGE`/`LINK`, `VIDEO` reserved but rejected), a `BRAND` home target for the brand feed (AFFILIATE-only creation), tagging permissive-within-brand, one-level replies. Responses carry `postCount` plus a deprecated `commentCount` alias. Migration not yet run.
+- [[solution-designs/tag-taxonomy-v2|Tag Taxonomy v2]] — `SubTagValue` became **`SecondaryTagValue`** hanging off `BrandTag` with a **many-to-many** link to `SupportedTagValue`, so one hero can belong to several classes; find-or-create-and-link chip endpoint; deletes block (never sweep) when they would orphan one. Backend built 2026-07-31 alongside Posts.
+- [[solution-designs/comments|Comments]] — **historical**: what the `Comment` system was before Posts replaced it. Kept because prod mobile still speaks its API through legacy shims.
+
+## Plans (in progress)
+
+Day-to-day implementation plans live alongside the solution designs in `solution-designs/` (in the
+vault, so they're visible in Obsidian — not in the repo's gitignored `.plans/`, which is retired).
+When work lands, fold the plan's durable insight into its solution design and remove the plan.
+
+- [[solution-designs/tag-taxonomy-v3-is-child|Tag Taxonomy v3 — isChild]] — collapse `SecondaryTagValue` into `SupportedTagValue` via `isChild` + a `SupportedTagValueParent` self m:n; wipe dev secondary data; supersedes v2's two-model design. Planned 2026-08-04.
+- [[solution-designs/realtime-in-app-updates|Realtime in-app updates]]
+- [[solution-designs/idempotent-post-user|Idempotent POST /user]]
 
 ## Related
 

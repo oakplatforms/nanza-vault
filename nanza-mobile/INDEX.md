@@ -54,6 +54,9 @@ tag, a `solution-design` tag, and its theme tag.
   buy/sell/join action matrix, group + profile share cards, and tap-to-expand/cropped images.
 - [[solution-designs/share-card-restyle|Share Card Restyle]] — bring the new detail-screen look
   (dark hero, jumbo title, "Sold by" row, priced CTA) to the share cards without re-pointing links.
+- [[solution-designs/post-tag-sharing|Post & Tag Sharing]] — proposed: reference codes + OG meta +
+  share cards for posts (lazy-minted, root-only) and supported/secondary tag values (new letters
+  T/V/Y), across api + web + mobile.
 - [[solution-designs/bulk|Bulk / Lots]] — items-first Lot builder, the DRAFT model, entry rewiring, and
   the 20-item cap.
 - [[solution-designs/profile|Profile]] — read-only user-profile parity: count+share headers and the
@@ -71,8 +74,24 @@ tag, a `solution-design` tag, and its theme tag.
 - [[solution-designs/data-freshness|Data Freshness]] — lazy-invalidate + refetch-on-page-visit: the
   `AppQueryClient` `refetchType:'none'` default, the navigator `onStateChange` stale-refetch, the
   `staleTime` tiers, and the price-values-active vs discovery-surfaces-lazy split.
+- [[solution-designs/tag-taxonomy|Tag Taxonomy (mobile surface)]] — the `TagCarousel` circle-thumb
+  rail (addressable by BrandTag id *or* tag name resolved server-side in one request), the home
+  "class" shelf between groups and Top Picks, and the two detail pages. Shipped; the second-level
+  rail and its screen are reshaped by
+  [[../nanza-api/solution-designs/tag-taxonomy-v2|v2]] + [[../nanza-api/solution-designs/posts|Posts]].
+- [[solution-designs/posts-chat|Posts Chat]] — the "Join the chat" era: fixed glass pill (above the
+  buy/sell bars on listings/bids), snap-open in-place composer (no slide), primary-secondary-tag
+  chicklets, reply summary card, post cards with hearts-as-SavedItems, and the ordered content
+  renderer incl. LISTING/BID/ENTITY reference cards. Design only; model in
+  [[../nanza-api/solution-designs/posts|nanza-api Posts]] § Chat release.
 - [[solution-designs/docs-infra|Documentation vault]] — the shared `nanza-vault`: relative symlinks,
   INDEX hierarchy, and how designs land here.
+
+## Plans (in progress)
+
+- [[solution-designs/whats-new|What's New]] — **plan**: affiliate-only pink plus-circle in the top
+  header opening the existing post composer in BRAND mode; brand posts surface in a "What's new"
+  homepage section (3 cards between Trending and Top Picks) with See all → paginated screen.
 
 ## Related
 

@@ -20,10 +20,11 @@ Source lives entirely under `src/` (CRA convention). Entry is `src/index.tsx` �
 - [[solution-designs/sources-and-insights|Sources & Insights (admin surface)]] — the operator UI for configuring Sources (type + weight) and reviewing product Insights. Canonical cross-repo design lives in [[../nanza-api/solution-designs/sources-and-insights|nanza-api]].
 - [[solution-designs/payments|Payments visibility (admin surface)]] — Delivery/Payment badges on the Orders list + detail for in-person/cash orders. Canonical model lives in [[../nanza-api/solution-designs/payments|nanza-api]].
 - [[solution-designs/query-lists|Query Lists / Homepage (admin surface)]] — the operator builder for admin-configured *dynamic* collections (types multi-select + criteria rows + AND/OR); the **Homepage** section is the `isPrimary` Query Lists ordered by `index`. Canonical model in [[../nanza-api/solution-designs/query-lists|nanza-api]]. Design only.
+- [[solution-designs/tag-taxonomy|Tag Taxonomy (admin surface)]] — the brand-tag dialog's nested view stack with back navigation: value chips open a supported-tag-value detail (banner/thumbnail/description) which in turn lists secondary tag values. Shipped; [[../nanza-api/solution-designs/tag-taxonomy-v2|v2]] keeps the shape but makes secondary chips **find-or-create-then-link** (and remove = unlink).
 
 ## Plans
 
-No plans yet. New plans land in `plans/`.
+- [[plans/products-price-sort-and-deep-link-pagination|Products price sort & deep-link pagination]] — server-side `sort=price_asc|price_desc` on `GET /entities` plus URL-driven page/brand/sort in the admin Products page. Planned, on hold.
 
 ## Related
 

@@ -170,6 +170,24 @@ Reference codes: a 5-digit + type-letter scheme (`referenceCodeGenerator.ts`) �
   user to seller/customer (e.g. after Stripe onboarding completes) — IAM-scoped in
   `serverless.yml`.
 
+### `validateAccount` is an ownership check, not an auth check
+
+`validateAccount(reqUser, accountId, role)` asserts **the requester IS that account** — it loads
+the account and throws unless `account.user.authId === reqUser.principalId`. It belongs on
+*mutations* and on reads of private, account-scoped data (carts, orders, saved items).
+
+**Do not call it on a public read by passing the record owner's accountId.** That inverts into
+"only the owner may read this", which is almost never the intent. `GET /bid/:id` did exactly
+that (fixed 2026-08-08): it passed `bidAuth.accountId`, so any viewer who wasn't the bidder got
+`User cannot make this request` — surfacing in the app as **"This bid could not be found"** when
+tapping someone else's bid from a post or tag page. The gate also protected nothing, since
+`GET /bids` already lists every bid on an entity (the order book behind the entity modal) and
+the reference-code resolver serves the same record unauthenticated.
+
+Marketplace records — listings, bids, entities, bulk listings — are **public reads**.
+`GET /listing/:id` has never had the check; bids were the outlier. When adding a read route, the
+question is "is this record public?", not "who owns it?".
+
 ---
 
 ## Background jobs & crons
