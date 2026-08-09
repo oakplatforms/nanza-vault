@@ -1,8 +1,8 @@
-# Nanza Founder Strategy Questionnaire — Revised Edition
+# Nanza Founder Strategy Questionnaire — Skylar Banks
 
 **Completed by:** Skylar Banks
 **Date:** 2026-08-09
-**Version / notes:** Professional revision of the 2026-08-07 voice-captured session (`nanza-founder-questionnaire.md`). Answers are reworded for clarity in a consistent first-person voice; substance and conviction are preserved. Questions 127–136, unanswered in the original session, are answered here for the first time. Follow-ups flagged in the original (Q29 re-answer, Nanza AI in the business model, Section 09 reframing) are incorporated.
+**Version / notes:** Professional revision of the 2026-08-07 voice-captured session (original raw capture now retired). Answers are reworded for clarity in a consistent first-person voice; substance and conviction are preserved. Questions 127–136, unanswered in the original session, are answered here for the first time. Follow-ups flagged in the original (Q29 re-answer, Nanza AI in the business model, Section 09 reframing) are incorporated.
 
 ## Purpose
 
