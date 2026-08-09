@@ -108,6 +108,12 @@ model now has two tiers:
    when no provider is present — a cosmetic hand-off must never crash the app. Worst realistic
    case is the splash lingering to 6s, never sticking.
 
+   **Deep-link cold starts release the splash from the navigator.** Only Home participates in
+   the handshake, but a share link cold-starts onto a state of just `[Share]` (and `wallet`,
+   `user/:id` likewise skip Main), so Home never mounts and would leave the splash riding to
+   its ceiling. `AppNavigator`'s `onReady` checks the root route and calls `markAppReady()`
+   when it isn't `Main` — the destination screen has its own loading UI and speaks for itself.
+
    **Native insurance.** Android had no `windowBackground` and inherited
    `Theme.AppCompat.DayNight`'s **white** default under a dark-only app, so any frame where no
    React view had painted flashed white — during bundle load, and in the single-frame gap
