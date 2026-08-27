@@ -36,10 +36,15 @@ The `QueryClient` default options live inline in `app/index.tsx`: queries do **n
 
 - **Marketing / landing** — `/` (`LandingPage`), `/about`, `/buy`, `/sell`, `/collect`, `/pricing`,
   `/privacy-policy`, `/terms`, plus many `ContentPage` slugs (`/how-it-works/*`, per-TCG game pages
-  like `/pokemon`, `/magic-the-gathering`, legal pages). These are static and out-rank the dynamic
-  share route by React Router v6 specificity ranking.
-- **Share landing** — `/:referenceCode` → `app/ShareDetail`. This is the **only live dynamic route**
-  and the core purpose of the deployed app.
+  like `/pokemon`, `/magic-the-gathering`, legal pages). These are static; they don't compete
+  with the share routes because each share route sits under a fixed literal type slug, not a
+  bare `/:code` catch-all (the old reliance on React Router v6 specificity ranking is moot).
+- **Share landing** — nine root-level type-scoped routes `/<slug>/:referenceCode` (`listing`,
+  `bid`, `collection`, `product`, `bulk`, `group`, `profile`, `post`, `tag`) → `app/ShareDetail`
+  with a per-route `shareType` prop. These are the **only live dynamic routes** and the core
+  purpose of the deployed app (share-route-migration, 2026-08: this final shape superseded the
+  same-day interim `/share/:referenceCode`; old shapes — root-level bare codes and the `/share`
+  prefix — are deliberately not honored, no redirect).
 - **Catch-all** — `path="*"` → `<Navigate to="/" replace />`. Any bare username or unknown path
   bounces home (there is no public profile in the live build).
 - **Dormant, commented-out** — auth (`/sign-in`, `/sign-up`, `/forgot-password`), cart
@@ -50,23 +55,29 @@ The `QueryClient` default options live inline in `app/index.tsx`: queries do **n
 
 ### Reference codes
 
-The share surface is driven by **6-character reference codes**: exactly five digits (2–9) and one
-type letter, validated by `isReferenceCode()` (duplicated in `ShareDetail/index.tsx` and
-`SmartRouter.tsx`, mirroring the backend contract). Type letters:
+The share surface is driven by type-scoped routes plus an **opaque reference code**: the URL slug
+names the record type, and the code is checked only leniently (4–12 alphanumeric — routing never
+decodes the type letter, though codes are still minted as five digits 2–9 + one letter). The old
+`isReferenceCode()` letter validation is gone from `ShareDetail`/`fetchByCode`; the slug↔type
+taxonomy lives in `src/helpers/shareTaxonomy.ts`, mirroring the API's
+`nanza-api/src/constants/shareTaxonomy.ts`. Slugs and cards:
 
-| Letter | Meaning | ShareDetail card |
-|--------|---------|------------------|
-| `S` | Listing | `FeedDetailCard` |
-| `B` | Bid | `FeedDetailCard` |
-| `P` | Product | `ProductDetailCard` |
-| `C` | List / collection | `ListDetailCard` |
-| `K` | Bulk listing | `BulkDetailCard` |
-| `G` | Group | `GroupDetailCard` |
-| `U` | Profile (`?type=sell\|bid`) | `ProfileDetailCard` |
+| Route slug | Backing record | ShareDetail card |
+|------------|----------------|------------------|
+| `/listing` | Listing | `FeedDetailCard` |
+| `/bid` | Bid | `FeedDetailCard` |
+| `/product` | Product (resolves to Entity) | `ProductDetailCard` |
+| `/collection` | List / collection | `ListDetailCard` |
+| `/bulk` | Bulk listing | `BulkDetailCard` |
+| `/group` | Group | `GroupDetailCard` |
+| `/profile` | Profile (`?type=sell\|bid`) | `ProfileDetailCard` |
+| `/post` | Post (root only) | `PostDetailCard` |
+| `/tag` | Supported tag value | `TagDetailCard` |
 
-`app/ShareDetail/index.tsx` fetches by code (`data/fetchByCode.ts`), maps the record into card props,
-and renders inside `ShareDetailShell`; invalid codes `Navigate` to `/`. `SmartRouter.tsx` (dormant)
-uses the same code check to split `/:a/:b` into a profile-reference view vs. a brand/entity slug view.
+`app/ShareDetail/index.tsx` takes the route's `shareType` prop, fetches by type + code
+(`data/fetchByCode.ts` → `GET /reference/{type}/{code}`), maps the record into card props, and
+renders inside `ShareDetailShell`; invalid codes `Navigate` to `/`. `SmartRouter.tsx` (dormant)
+keeps its own code check to split `/:a/:b` into a profile-reference view vs. a brand/entity slug view.
 
 ## Data / services layer (→ nanza-api)
 
@@ -145,8 +156,8 @@ CRA build (`npm run build`) emits a static bundle to `build/`, deployed by GitHu
   content-type, and additionally runs a **CloudFront invalidation** (`create-invalidation … /*`).
 
 **Hosting:** static site in **S3 behind CloudFront**. **Deep-link assets** ship from
-`public/.well-known/`: `apple-app-site-association` (iOS Universal Links, matching `/??????` — the
-6-char codes, appID `Y9X5CD9HAV.com.oakplatforms.nanza`) and `assetlinks.json` (Android App Links,
+`public/.well-known/`: `apple-app-site-association` (iOS Universal Links — one `"/<slug>/*"`
+component per share type, nine in all, appID `Y9X5CD9HAV.com.oakplatforms.nanza`) and `assetlinks.json` (Android App Links,
 `com.oakplatforms.nanza`). With those in place, users who already have the native app never see the
 web page — the OS opens the app; the [[plans/share-store-redirect|store redirect]] only fires for
 visitors without the app. Store URLs are centralized in `src/constants.ts` (`APP_STORE_URL`,

@@ -8,22 +8,25 @@ tags: [nanza-mobile, solution-design, sharing]
 
 Any shareable object in Nanza is addressed by a **universal reference code**: a short code
 that maps to a domain record, resolves to a deep-linkable share card in-app, and unfurls to a
-rich link preview (OG image + meta) on the web. A shared link (`https://nanza.app/<code>`)
-opens the app to a dedicated **share card** for that object — with buy/sell/join actions gated
-behind auth — or, on a device without the app, a web landing page and social preview.
+rich link preview (OG image + meta) on the web. A shared link (`https://nanza.app/<slug>/<code>`
+— root-level type-scoped, the slug naming the record type) opens the app to a dedicated
+**share card** for that object — with buy/sell/join actions gated behind auth — or, on a device
+without the app, a web landing page and social preview.
 
 The system is deliberately uniform: every shareable type plugs into the same reference-code
-plumbing (`/reference/:code`), the same in-app `ShareDetailView` switch, the same OG/meta
-pipeline, and the same share-sheet entry points. Adding a new shareable type is a matter of
-registering a letter and wiring one more case at each layer.
+plumbing (`GET /reference/{type}/{code}`), the same in-app `ShareDetailView` switch, the same
+OG/meta pipeline, and the same share-sheet entry points. Adding a new shareable type is a matter
+of registering a slug (plus a letter for minting) and wiring one more case at each layer.
 
 ## How it works
 
 ### The reference-code scheme
 
-Codes are **6 characters: 5 digits (2–9) + 1 type letter** placed at a random position, with
-uniqueness enforced per model by a `@unique` column. The **type is derived from the letter**,
-not from a path segment:
+Codes are minted as **6 characters: 5 digits (2–9) + 1 type letter** placed at a random
+position, with uniqueness enforced per model by a `@unique` column. Since the
+share-route-migration final shape (2026-08) the code is an **opaque token** — the share type
+travels in the URL's slug segment, and routing never decodes the letter. The letter survives
+for minting and for deriving the slug in `buildShareUrl` (until letterless codes ship):
 
 | Letter | Type |
 |---|---|
@@ -40,17 +43,20 @@ not from a path segment:
 
 Codes are minted like the rest — generated on record creation (listing/bid/lot/group create,
 tag-value admin create), or **lazily on first share** for profiles and posts (posts:
-`POST /post/:id/reference-code`, idempotent). The web landing router's code validation must
-allow every live letter (`S/B/C/P/K/G/U/T/V/Y`).
+`POST /post/:id/reference-code`, idempotent). The web landing routes no longer validate
+letters (a lenient 4–12 alphanumeric check); what must stay in sync instead is the slug
+taxonomy — mobile's copy lives in `src/utils/referenceCode.ts`, mirroring the API's
+`nanza-api/src/constants/shareTaxonomy.ts`.
 
 ### Resolution and rendering
 
-`GET /reference/:code` (API) derives the type from the letter, loads the record with the
-type's includes, and returns `{ type, data }`. In the app, `useFetchByReference` fetches by
-code and `ShareDetailView` switches on `result.type` to pick the card; `ShareScreen` reads
-`route.params.referenceCode`. Deep links route to the `Share` route via `getStateFromPath` +
-a `Linking` listener. Each shareable type has a dedicated dark share card in
-`src/components/share/` built from shared parts in `ShareCardParts.tsx`.
+`GET /reference/{type}/{code}` (API) takes the type from the path slug, looks straight in that
+type's table with the type's includes, and returns `{ type, data }`. In the app,
+`useFetchByReference` fetches by code and `ShareDetailView` switches on `result.type` to pick
+the card; `ShareScreen` reads `route.params.referenceCode`. Deep links route to the `Share`
+route via `getStateFromPath` + a `Linking` listener — the parser matches `<slug>/<code>`, and
+AndroidManifest carries nine matching `pathPrefix` entries. Each shareable type has a dedicated
+dark share card in `src/components/share/` built from shared parts in `ShareCardParts.tsx`.
 
 ### The buy/sell action matrix
 
@@ -71,6 +77,8 @@ returns to the share):
 Sharing is triggered from an **ellipsis / "more" menu** on each object's detail screen (built
 with the standard `ActionModal` icon+label+description rows), calling
 `guardedShare(buildShareUrl(referenceCode))` to open the native RN share sheet.
+`buildShareUrl` mints `/<slug>/<code>` links, deriving the slug from the code's type letter at
+this one choke point (until letterless codes ship).
 
 - **Group detail** ellipsis rows are role-based: non-moderator gets *Leave group* / *Share
   group*; moderator gets *Edit group* / *Share group* / *Manage members*.
@@ -93,9 +101,9 @@ landed. Existing groups get codes backfilled by hand.
 A profile shares via **one `U` reference code per user** (minted lazily on first share), with a
 **`?type=sell|bid` query parameter** selecting which view renders:
 
-- `…/<code>?type=sell` → **Listings card**: the user's active listings + a
+- `…/profile/<code>?type=sell` → **Listings card**: the user's active listings + a
   "N listings · $TOTAL" summary.
-- `…/<code>?type=bid` → **Bids card**: the user's active bids + a "N bids · $TOTAL" summary.
+- `…/profile/<code>?type=bid` → **Bids card**: the user's active bids + a "N bids · $TOTAL" summary.
 - The **bare code (no `?type`)** is unsupported — it renders the "link not found" state.
 
 Both cards share a header: profile **banner**, **avatar**, **username**, and a two-line summary
@@ -105,7 +113,8 @@ returns a discriminated `{ type: 'ProfileListings' | 'ProfileBids', data: { prof
 summary: { count, totalValue } } }`. The OG graphic is a 5-across card mosaic with a hard left
 gradient, avatar + @handle header, a big "Listings"/"Bids" title, and the summary line. Because
 the query param must survive to the OG/meta pipeline, the **Lambda@Edge injector forwards the
-querystring** to `/meta`, and the edge regex was widened to include `U`. This required touching
+querystring** to `/meta`, and the edge regex was widened to include `U` (today the edge matches
+the nine type slugs, not letters). This required touching
 `AppNavigator.tsx` to preserve the `type` query through the deep link — an approved, additive
 nav change.
 
@@ -132,9 +141,12 @@ across five cards.
 
 ## Key decisions & rationale
 
-- **Type lives in the code letter, not the path.** The deep-link interceptor keys on the first
-  path segment only; encoding the type in the letter keeps resolution uniform and avoids deeper
-  routing surgery. This is why the Profile view is selected by `?type=`, not by `/<code>/sell`.
+- **Type lives in the path slug (final shape, 2026-08).** The deep-link interceptor keys on a
+  share-type slug segment (`listing|bid|collection|product|bulk|group|profile|post|tag`) plus the
+  code after it — superseding both the original bare-first-segment shape and the same-day interim
+  literal-`share` segment. The code itself is opaque: routing never decodes its letter, which
+  survives only for minting and `buildShareUrl`'s slug derivation. This is why the Profile view is
+  selected by `?type=`, not by `/profile/<code>/sell`.
 - **One profile code, two views (via `?type`).** The user wanted a single shareable identity
   per person; two separate codes was rejected as contradicting that and doubling
   generation/storage.

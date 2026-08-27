@@ -111,6 +111,14 @@ delete that stale row (self-healing cleanup). Payload = `{ type, invalidate: ['c
    cap with a transparent reconnect.
 2. **Lifecycle** — open on foreground / after login, close on background / logout. Hook into the
    existing `AppState` wiring in `App.tsx` (next to `focusManager`).
+   **Cold-load deferral (2026-08-11):** the FIRST connect additionally waits for the one-shot
+   `isAppReady` latch (the same signal the splash uses) + `runAfterInteractions`, with a 10s
+   fallback timer so a missing signal can't strand the socket closed. Rationale: the socket only
+   carries invalidation nudges — nothing above the fold needs it — but connecting mid-startup put
+   the WS handshake in contention with the first screen's fetches on the device and added the
+   API-side `$connect` (authorizer + cold account lookup) to the startup burst, which showed up as
+   slow prod first loads. `AppReadyProvider` was hoisted in `App.tsx` to span `RealtimeBridge`.
+   Same deferral pattern as HomeScreen's below-the-fold fetches (`deferredActive`).
 3. **On message** — `queryClient.invalidateQueries` for the keys named in the payload
    (`['inboxCount', accountId]`, `['conversations']`, `['connections']`, `['systemMessages']`,
    `['messageFeed']`). Badge + list update themselves. (Optional later: direct `setQueryData` patch
@@ -176,7 +184,8 @@ Model renamed `WsConnection` → **`WebSocket`** at the user's request (before m
 - `src/services/realtime/socket.ts` — single WS: auth'd `?token=` URL, backoff+jitter reconnect,
   4-min heartbeat, `onmessage` → `queryClient.invalidateQueries([key])`. No-op if `WS_BASE_URL` unset.
 - `src/components/global/RealtimeBridge/index.tsx` — headless; opens on foreground+auth, closes on
-  background/logout (mirrors AnalyticsBridge). Mounted in `App.tsx`.
+  background/logout (mirrors AnalyticsBridge). Mounted in `App.tsx`. Since 2026-08-11 the first
+  connect is deferred behind `isAppReady` (see Lifecycle above).
 
 **Still TODO (not yet done):**
 - User: run migration; deploy WS API; set `WS_BASE_URL` in mobile `.env`; regenerate `@oakplatforms/types`.

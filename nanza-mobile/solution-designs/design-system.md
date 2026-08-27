@@ -152,6 +152,50 @@ idempotent. The plan is to extend the same script with radius/spacing/colour she
   reaches all ~900 migrated sites (proven by the Bold→SemiBold ramp swap landing as a
   two-file commit).
 
+## Haptics (August 2026)
+
+Touch feedback is a **thin wrapper over `react-native-haptic-feedback`** in
+`src/utils/haptics.ts`, exposing one intent-named function per cue the app actually uses —
+today just `hapticSelection`. Call sites never import the library or its type strings directly,
+so the haptic vocabulary (and the library behind it) is a one-file change. Add siblings (impact,
+success/error) when a call site needs one, not speculatively.
+
+### Where it fires
+
+**The bottom nav tabs only** — Home, Groups, Trade, Inbox — as a `selection` tick on
+**press-in**, in `FloatingTabBar/TabItem.tsx`. Nothing else in the app has haptics yet.
+
+Three decisions worth keeping:
+
+- **`selection`, not `impactLight`.** iOS maps it to `UISelectionFeedbackGenerator`, the tick a
+  segmented control gives — semantically "moved between discrete options", which is what a tab
+  switch is. An impact reads as "hit something".
+- **Press-in, not press.** The tick lands with the finger, alongside the existing scale-down
+  `usePressScale` drives. On `onPress` it arrives after the gesture and the `tabPress` event
+  resolve, and reads as lag.
+- **Fires on the already-active tab too**, where the navigate no-ops. The user pressed a control
+  and should feel that it took.
+
+### The shared-hook trap
+
+`usePressScale` (exported from `TabItem.tsx`) is shared by the tabs **and the Search circle** in
+`FloatingTabBar/index.tsx`. Putting the haptic in the hook is the obvious move and it is wrong —
+it silently gives Search a tick, and haptics are scoped to the tabs (Skylar, 2026-08-23). The
+call therefore sits in `TabItem`'s own press handler, which wraps the hook's. There is a comment
+on the hook saying so; keep it if the hook is refactored.
+
+### Options policy
+
+Both defaults in `haptics.ts` are deliberate: `enableVibrateFallback: false` (on a device with no
+taptic engine the fallback is a blunt motor buzz that reads as an error, so silence is the better
+failure) and `ignoreAndroidSystemSettings: false` (a user who disabled haptics in the OS meant
+it). Every trigger is wrapped in a `try/catch` — the haptic is decoration and must never cost the
+tap.
+
+**Native dependency.** The package ships a TurboModule `codegenConfig`, so it is New-Architecture
+safe (the app runs `newArchEnabled=true`). Adding or removing it requires `pod install` and a
+full rebuild, not just a Metro reload. Haptics do not fire in the iOS Simulator — verify on device.
+
 ## Light / dark theme switching — PENDING (second pass)
 
 `light.json` exists with the full Figma Light mapping and correct base scales, but is **not yet

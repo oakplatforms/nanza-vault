@@ -324,9 +324,17 @@ Skylar then reshaped the surface. Current truth:
 ### Entity references carry a FLATTENED price (2026-08-09)
 
 An ENTITY reference is a **lean, flattened shape, not an `EntityDto`**. The API's expansion
-(`postReferences.ts`) selects `product: { select: { price: true } }`, then destructures
-`product` **off** and emits `price` at the top level — null, never 0, so a card can tell
-"free" from "unpriced". The reference genuinely has no `product` object.
+(`postReferences.ts`) selects `product: { select: { price: true, number: true } }`, then
+destructures `product` **off** and emits `price` and `productNumber` at the top level — price
+null, never 0, so a card can tell "free" from "unpriced"; `productNumber` null when there's no
+number, and the line is simply omitted. The reference genuinely has no `product` object.
+
+`productNumber` joined the projection 2026-08-19 (the card's identity line is name + number +
+set; only the set had been on the wire, so the composer and the posted card both showed the set
+alone). `CardPickerLayer` carries `entity.product.number` into the local preview the same way
+it carries `price`; `PostContentItems` passes it as the lockup's `metaLine1` (full row) and as
+the first sub-line in tile/rail mode. Until `@oakplatforms/types` ships the field, `PostReference`
+in `src/types/index.ts` intersects it onto the entity variant — drop on install.
 
 That flattening is the source of a recurring class of bug: **anything reading
 `entity.product.price` off a post reference gets `undefined` and renders a dash.** Three

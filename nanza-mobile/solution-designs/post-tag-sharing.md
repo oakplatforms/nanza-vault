@@ -27,10 +27,12 @@ Three new shareable types, plugged into the existing universal reference-code pl
 2. **SupportedTagValue** — e.g. the *Warrior* class page.
 3. **SecondaryTagValue** — e.g. the *Boltyn* hero page.
 
-Everything reuses the uniform system: a letter per type, `GET /reference/:code`, the
-`ShareScreen → ShareDetailView → Share*Card` switch in mobile, `/:referenceCode` → `ShareDetail`
-in web, and the og/meta/ogEdge Lambda trio. "Adding a new shareable type is a matter of
-registering a letter and wiring one more case at each layer" — this design is those cases, ×3.
+Everything reuses the uniform system: a letter per type (for minting),
+`GET /reference/{type}/{code}`, the `ShareScreen → ShareDetailView → Share*Card` switch in
+mobile, the nine root-level typed routes `/<slug>/:referenceCode` → `ShareDetail` in web
+(posts land at `/post/<code>`, tag values at `/tag/<code>` — share-route-migration final
+shape, 2026-08), and the og/meta/ogEdge Lambda trio. "Adding a new shareable type is a matter
+of registering a letter and wiring one more case at each layer" — this design is those cases, ×3.
 
 Out of scope: sharing replies, share counts/analytics, X/Instagram embeds, any change to the
 existing seven share types.
@@ -111,14 +113,21 @@ Per [[../nanza-api/solution-designs/og-sharing|OG / Sharing]], every new letter 
 |---|---|---|
 | 1 | `lambdas/ogHandler.ts` | `TYPE_BY_LETTER` + `OG_INCLUDES_BY_TYPE` + render branches |
 | 2 | `lambdas/metaHandler.ts` | `RECORD_TYPE_BY_LETTER` + `META_INCLUDES_BY_TYPE` + `buildOgMeta` cases |
-| 3 | `lambdas/ogEdgeHandler.ts` | `REFERENCE_CODE_RE` → `[2-9SBCPKGUTVY]` — then **manually re-associate the new edge version ARN in CloudFront** (it's version-pinned) |
+| 3 | `lambdas/ogEdgeHandler.ts` | `REFERENCE_CODE_RE` → `[2-9SBCPKGUTVY]` (today the edge matches the nine type slugs `/(listing\|bid\|…\|tag)/<code>` instead of letters — share-route-migration final shape, 2026-08) — then **manually re-associate the new edge version ARN in CloudFront** (it's version-pinned; nine per-slug path-pattern behaviors, dev + prod) |
 | 4 | API `utils/referenceCodeGenerator.ts` + `validation/referenceCode.ts` | `VALID_TYPES` (both) |
 | 5 | web `src/app/SmartRouter.tsx` + `src/app/ShareDetail/index.tsx` | both local `isReferenceCode` letter lists |
 | 6 | mobile `src/utils/referenceCode.ts` | `ReferenceType` union + `VALID_TYPES` |
 | 7 | mobile `src/services/api/Reference.ts` | `buildIncludes` cases for the new letters |
 
-Smoke test per the OG doc: curl `/reference/<code>/og.png` AND `/meta` separately, then fetch
-the share page as a crawler (`curl -A facebookexternalhit`) and grep for `og:image`.
+> Post share-route-migration (2026-08) note: routing no longer decodes letters, so the live
+> cross-repo sync concern is the **slug taxonomy**, mirrored in five places — API
+> `src/constants/shareTaxonomy.ts` (source of truth), web `src/helpers/shareTaxonomy.ts`,
+> mobile `src/utils/referenceCode.ts`, the edge slug regex (+ CloudFront behaviors), and
+> AndroidManifest's nine `pathPrefix` entries. Letter lists (rows 4–6 above) remain only for
+> minting and mobile slug derivation; web's ShareDetail/SmartRouter letter lists (row 5) are gone.
+
+Smoke test per the OG doc: curl `/reference/<type>/<code>/og.png` AND `/meta` separately, then
+fetch the share page as a crawler (`curl -A facebookexternalhit`) and grep for `og:image`.
 
 ### OG image templates (`src/services/og/templates/`)
 
@@ -177,8 +186,9 @@ resolve null → 404 → no unfurl, correct.
 
 ### Deep links
 
-No navigator changes. The bare-code interception (`parseShareReferenceTarget` →
-`Share` route) is letter-agnostic once `VALID_TYPES` widens — cold and warm starts both work.
+No navigator changes. The share-link interception (`/<slug>/<code>` — `parseShareReferenceTarget` →
+`Share` route) keys on the share-type slug segment and is letter-agnostic — cold and warm starts
+both work.
 
 ### Share cards (`ShareDetailView` cases)
 

@@ -66,13 +66,42 @@ Living overviews of how each backend area works and why. One per theme in `solut
 - [[solution-designs/posts|Posts]] — comments became **posts** (backend built 2026-07-31): `ContentItem` blocks (`RICH_TEXT`/`IMAGE`/`LINK`, `VIDEO` reserved but rejected), a `BRAND` home target for the brand feed (AFFILIATE-only creation), tagging permissive-within-brand, one-level replies. Responses carry `postCount` plus a deprecated `commentCount` alias. Migration not yet run.
 - [[solution-designs/tag-taxonomy-v2|Tag Taxonomy v2]] — `SubTagValue` became **`SecondaryTagValue`** hanging off `BrandTag` with a **many-to-many** link to `SupportedTagValue`, so one hero can belong to several classes; find-or-create-and-link chip endpoint; deletes block (never sweep) when they would orphan one. Backend built 2026-07-31 alongside Posts.
 - [[solution-designs/comments|Comments]] — **historical**: what the `Comment` system was before Posts replaced it. Kept because prod mobile still speaks its API through legacy shims.
+- [[solution-designs/card-pricing|Card Pricing]] — operator-side price-recommendation orchestration (built 2026-08-20): CSV or zip in (≤50 cards per CSV), parallel `card-pricer` agents web-search current market, one `price_usd` out per card (fair NM midpoint × 0.90); the doc's methodology section is the runtime source of truth the agents read. Every run leaves a postmortem in [[pricing-runs/INDEX|Pricing Runs]]. Distinct from Sources & Insights (in-product engine).
+- [[solution-designs/social-eligibility|Social Eligibility]] — all social features (messaging/connections, group create + join, posting) require only a **registered** account (2026-08-17); customer/seller tiers gate commerce only. Messaging eligibility helpers deleted; mobile's seller/customer gate modals removed from social flows; the friend-request payment gate is gone.
+- [[solution-designs/account-feeds|Account feeds]] — `/sell-feed` (owner's listings + lots) and `/trade-feed` (those + bids, viewer-filtered; built 2026-08-26 for the profile's Trades rail): one recency-merged, paginated list per account via a shared heads→merge→hydrate page builder.
 
 ## Plans (in progress)
 
 Day-to-day implementation plans live alongside the solution designs in `solution-designs/` (in the
-vault, so they're visible in Obsidian — not in the repo's gitignored `.plans/`, which is retired).
+vault, so they're visible in Obsidian — not in the repo's gitignored `.plans/`, which is retcd ired).
 When work lands, fold the plan's durable insight into its solution design and remove the plan.
 
+- [[solution-designs/blocking-and-reporting|Blocking Visibility & Content Reporting]] — **built,
+  uncommitted (2026-08-23, Apple release blockers; migration still to run)**: blocking must hide posts/replies everywhere (home,
+  groups, profile tabs, tag pages) via a symmetric `notBlockedFilter` — no schema change; plus a
+  new `Report` model + reason enums, a mobile flag → "What are you reporting?" screen, and a
+  reported-post queue in nanza-admin (a new admin read mode on `GET /posts`). Spans API +
+  mobile + admin. See also [[solution-designs/apple-review-response|the Apple review response]].
+- [[solution-designs/affiliate-social-links|Affiliates: Banners & Social Links]] — **plan, API
+  half implemented (2026-08-15)**: admin-curated `SocialLinkType` catalog + one-URL-per-type
+  `SocialLink` rows on affiliate profiles and groups (replace-set PUTs, moderator/affiliate
+  gated); profile banner already existed. Admin + mobile halves next.
+- [[solution-designs/reference-item-chat-surfacing|Reference-Item Chat Surfacing]] — **plan
+  (2026-08-14, build tonight)**: posts that EMBED a listing/bid/entity/lot surface in that item's
+  chat, via the tag-union pattern (`referencedPostsFilter` mirroring `taggedTagValuePostsFilter`)
+  + a ContentItem `referenceId` index. API-only; mobile unchanged.
+- [[solution-designs/post-editing-and-drafts|Post Editing & the Single Draft]] — **plan (design
+  review)**: close PUT's gallery/image gaps for a composer edit mode; one persistent DRAFT-status
+  post per account (additive Status value, reads filtered). Planned 2026-08-14; mobile half in
+  nanza-mobile. NOT implemented.
+- [[solution-designs/open-posting-and-friend-visibility|Open Home Posting & Friend-Scoped Visibility]] —
+  **plan**: the BRAND affiliate create-gate becomes a read-side visibility rule — everyone posts to
+  the homepage feed; affiliates reach everyone, basic users reach self + accepted Connections. No
+  schema change. Planned 2026-08-14; mobile half (nav swap) in nanza-mobile.
+- [[solution-designs/post-carousel-and-tagging|Posts — Multi-Content Carousel & Open Tagging]] — **plan**:
+  5 content items per root post (`isPrimary` + swap endpoint), replies gain one attachment / lose
+  tag rows, 10 supported tags flat (parents+children) on every home incl. GROUP (tag-page union gains the group exclusion
+  filter). Planned 2026-08-11; mobile half in nanza-mobile.
 - [[solution-designs/tag-taxonomy-v3-is-child|Tag Taxonomy v3 — isChild]] — collapse `SecondaryTagValue` into `SupportedTagValue` via `isChild` + a `SupportedTagValueParent` self m:n; wipe dev secondary data; supersedes v2's two-model design. Planned 2026-08-04.
 - [[solution-designs/realtime-in-app-updates|Realtime in-app updates]]
 - [[solution-designs/idempotent-post-user|Idempotent POST /user]]

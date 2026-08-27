@@ -25,34 +25,52 @@ size matters.)
 
 ### The three Lambdas (and the resolver they share)
 
-- **og** — `GET /reference/{referenceCode}/og.png` (`lambdas/ogHandler.ts`). Resolves the code via
-  `src/services/referenceResolver.ts`, renders the matching card template with Satori → sharp,
-  caches the WebP in S3 (`nanza-static-{stage}` under `/share/`), and 302-redirects to the object
-  URL. Runs on the `sharp-arm64` Lambda layer (WebP decode for heroes, WebP encode for output).
-- **meta** — `GET /reference/{referenceCode}/meta` (`lambdas/metaHandler.ts`). Returns the Open
-  Graph payload — `title` / `description` / `image` / `url` — built by `src/services/og/meta.ts`
-  (`buildOgMeta`). The image field points back at the `og.png` URL above.
-- **ogEdge** — a **Lambda@Edge** origin-response function (`lambdas/ogEdgeHandler.ts`, pinned
-  `x86_64` with its own edge-trust IAM role). On a share-page request it calls `/meta` and injects
-  the resulting tags into the static web app's `<head>` so the link unfurls. It is **version-pinned**:
-  publishing a new `ogEdge` version requires manually re-associating the CloudFront behavior with
-  the new version ARN before it takes effect.
+- **og** — `GET /reference/{type}/{referenceCode}/og.png` (`lambdas/ogHandler.ts`). Resolves the
+  code via `src/services/referenceResolver.ts` (the path's type slug picks the table), renders the
+  matching card template with Satori → sharp, caches the WebP in S3 (`nanza-static-{stage}` under
+  `/share/`), and 302-redirects to the object URL. Runs on the `sharp-arm64` Lambda layer (WebP
+  decode for heroes, WebP encode for output).
+- **meta** — `GET /reference/{type}/{referenceCode}/meta` (`lambdas/metaHandler.ts`). Returns the
+  Open Graph payload — `title` / `description` / `image` / `url` — built by
+  `src/services/og/meta.ts` (`buildOgMeta`). The image field points back at the `og.png` URL
+  above; the `url` field is the typed share path `https://nanza.app/<slug>/<code>`.
+- **ogEdge** — a **Lambda@Edge** origin-request function (`lambdas/ogEdgeHandler.ts`, pinned
+  `x86_64` with its own edge-trust IAM role). On a share-page request — the root-level type-scoped
+  paths since the share-route-migration final shape (2026-08); `REFERENCE_CODE_RE` is now
+  `/^\/(listing|bid|collection|product|bulk|group|profile|post|tag)\/([A-Z0-9]{4,12})\/?$/i` — it
+  calls the typed `/meta` route and returns a **complete response** with the tags injected into
+  the static web app's `<head>`, short-circuiting the origin. It is **version-pinned**: publishing
+  a new `ogEdge` version requires manually re-associating the CloudFront behaviors with the new
+  version ARN before it takes effect — and because CloudFront path patterns can't express
+  alternation, the association is **nine path-pattern behaviors** (one per slug: `/listing/*`,
+  `/bid/*`, … `/tag/*`), manually created on both the dev and prod distributions; the old
+  root/`/share/*` behaviors must be removed.
 
-Reference codes are a 5-digit + type-letter scheme: `S`=Listing, `B`=Bid, `C`=List/collection,
-`P`=Product, `K`=BulkListing, `G`=Group, `U`=Profile, `O`=Project. The resolver loads the right
-Prisma relations per type (e.g. a Listing pulls `entity.product`, `entity.entityTags.tag`,
-`condition`, `account.profile`; a Group pulls none).
+The URL slug picks the table: `listing`=Listing, `bid`=Bid, `collection`=List, `product`=Product
+(resolving to Entity), `bulk`=BulkListing, `group`=Group, `profile`=Profile (combined
+bids+listings), `post`=Post, `tag`=SupportedTagValue. Project sharing stays disabled — no slug.
+The reference code itself is an **opaque token** (lenient 4–12 alphanumeric on lookup; still
+minted as 6 chars, five digits + a type letter, but routing never decodes the letter). The
+resolver loads the right Prisma relations per type (e.g. a Listing pulls `entity.product`,
+`entity.entityTags.tag`, `condition`, `account.profile`; a Group pulls none).
 
-### The three-map footgun
+### The letter-map footgun (historical) → the slug-taxonomy sync
 
-The single most important operational rule of this subsystem: **the letter→type mapping is
-duplicated in three places, and a new share type must be added to ALL THREE:**
+The single most important operational rule of this subsystem used to be that **the letter→type
+mapping was duplicated in three places** (`ogHandler.ts`'s `TYPE_BY_LETTER`, `metaHandler.ts`'s
+`RECORD_TYPE_BY_LETTER`, `ogEdgeHandler.ts`'s `REFERENCE_CODE_RE`) and a new share type had to
+land in all three. Since the share-route-migration final shape (2026-08) routing never decodes
+the letter — the path's type slug drives all three Lambdas — and the sync concern moved to the
+**slug taxonomy, duplicated in five places that move together:**
 
-1. `ogHandler.ts` — `TYPE_BY_LETTER` (drives which card **image** renders).
-2. `metaHandler.ts` — `RECORD_TYPE_BY_LETTER` (drives which **meta** relations load + which
-   `buildOgMeta` case runs).
-3. `ogEdgeHandler.ts` — `REFERENCE_CODE_RE` (the regex that decides whether the **edge** injects
-   tags for a given path).
+1. `nanza-api/src/constants/shareTaxonomy.ts` — the **source of truth**.
+2. web `src/helpers/shareTaxonomy.ts`.
+3. mobile `src/utils/referenceCode.ts`.
+4. `ogEdgeHandler.ts`'s slug regex — plus the **nine per-slug CloudFront behaviors**.
+5. mobile `AndroidManifest.xml`'s nine `pathPrefix` entries.
+
+(Letter lists survive only for code minting and mobile's slug derivation at the share choke
+point.) The Group incident below is the canonical story of why this class of duplication bites.
 
 When Group sharing (`G`) was added, only `ogHandler` was updated. The result was a textbook
 three-map failure, diagnosed by curling the endpoints separately (they are different Lambdas):
@@ -63,7 +81,8 @@ three-map failure, diagnosed by curling the endpoints separately (they are diffe
   Prisma threw. Fixed by adding `G: 'Group'` to `RECORD_TYPE_BY_LETTER` (Group resolves with an
   empty include set and `buildOgMeta`'s `Group` case).
 - Even after `/meta` returned 200, the preview stayed blank because `ogEdge`'s
-  `REFERENCE_CODE_RE` (`/^\/([2-9SBCPK]{6})\/?$/i`) was **missing `G`**, so `/G…` paths passed
+  `REFERENCE_CODE_RE` (then `/^\/([2-9SBCPK]{6})\/?$/i`; today the edge matches the nine type
+  slugs, not letters) was **missing `G`**, so `G…` share paths passed
   through with no tag injection. Fixed by widening the regex to `[2-9SBCPKG]`.
 
 **Debugging rule:** a working `og.png` with a broken unfurl means the bug is in `meta` or the
@@ -120,9 +139,11 @@ removed before commit.
 - **Hardcoded hex in the OG renderer is acceptable.** This is server-side rendering, not the RN app;
   a local `COLORS` map is the existing convention and the mobile CLAUDE.md theme-token rules do not
   apply.
-- **The three-map duplication is a known, documented footgun.** It has bitten Group sharing twice.
-  Until the maps are unified, every new reference type must update `ogHandler`, `metaHandler`, and
-  `ogEdgeHandler` together, and be smoke-tested by curling both endpoints plus a crawler fetch.
+- **The slug taxonomy is the new documented sync concern** (replacing the retired letter-map
+  footgun, which bit Group sharing twice). Every new share type must land in all five taxonomy
+  mirrors — API `src/constants/shareTaxonomy.ts` (source of truth), web `shareTaxonomy.ts`,
+  mobile `referenceCode.ts`, the edge slug regex (+ a new CloudFront behavior per slug), and
+  AndroidManifest — and be smoke-tested by curling both endpoints plus a crawler fetch.
 
 ## Related
 

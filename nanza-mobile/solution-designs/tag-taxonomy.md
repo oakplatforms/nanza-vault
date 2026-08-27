@@ -27,6 +27,60 @@ tags: [nanza-mobile, solution-design, tags, taxonomy]
   cards and the optimistic count-bump caches in `usePosts` still work untouched. Switching those
   reads to `postCount` is a later cleanup, not part of this refactor.
 
+## Slim facets read + paged sections (2026-08-18)
+
+The search filter screen (`SearchScreen/Filter` → `OpenTagSection`) and the post composer's
+tag screen (`TagPickerLayer` → `TagPickerSection`) both listed a brand's tags with their
+values via `GET /brand-tags?…&usePagination=false&include=supportedTagValues…`. That hands
+back whole value rows — description (~half the bytes), timestamps, admin ids — and on prod
+ran to **~450KB for one brand (21 tags, 565 values)**, for screens that read display names
+and ids. Both now ride a purpose-built slim read and page values in on demand:
+
+- **`GET /brand-tag-facets?brandId=`** (`useFetchBrandTags`, `brandTagService.facets`) —
+  a Prisma `select`, not an include: brand tag `id`/`index`, `tag {id,name,displayName}`,
+  and per value `id`/`name`/`displayName`/`isPrimary`/`index` only; the first
+  `valuesLimit` values per tag (**6** — `BRAND_TAG_VALUES_LIMIT`, the sections' collapse
+  count) ordered index-then-displayName, plus `_count.supportedTagValues` for the rest.
+  Parents only (`isChild=false`), in rows and count. Flags: `valuesIsPrimary=true`
+  (composer), `includeChildren=true` (nests `children.child` id/name/displayName),
+  `valueIds=` (pins). The shape is a strict subset of `BrandTagDto`, so no new DTO. Not
+  paginated at the brand-tag level — a brand's tag set is small. ~10–15KB on prod.
+- **"Show more" pages the rest in** — `useFetchSupportedTagValues` now starts at **page 0**
+  of `GET /supported-tag-values?brandTagId=&limit=20` (same ordering as the facets read) and
+  dedupes against the six it already holds, so the overlap never double-renders; it reports
+  "more" from the count before it has fetched anything, which is what lets a section offer
+  the pill up front. Enabled on expand, which brings the **first page only**; every page
+  after pulls in **as the open section scrolls toward its end** — `useScrollTrigger`
+  (`src/hooks/useScrollTrigger.tsx`): the host (the composer layer's ScrollView; the filter
+  page via PageLayout's new `onScroll` passthrough) owns a hub, each expanded section with
+  pages left subscribes and `measureInWindow`s itself on scroll, loading when its bottom is
+  within half a screen of the fold (and once on settle with no margin, so a page that lands
+  with room on screen fills it). Before this, expand fired every page back to back — a
+  277-value tag meant a dozen requests at once (Skylar, 2026-08-18). The composer passes
+  `isPrimary=true&include=children.child` (the list route gained `include` for this) so
+  paged-in parents bring their children.
+- **Pins, for the composer** — re-opening the tag screen floats/expands the sections
+  holding the post's committed picks, which only works if those values are in the payload.
+  The layer sends its committed ids as `valueIds`; the api merges them into their brand
+  tag's list past the cut (a pinned **child** pins its parents instead — children show
+  under a parent's section, never in the tag grid). Pins still have to pass the value
+  filters, so they can't smuggle in a value the screen wouldn't list. The query key carries
+  the pin set, so distinct committed sets are distinct cache entries.
+- **`TagPickerSection` owns its parent→children sections now.** Before, `TagPickerLayer`
+  flattened tag sections and parent sections into one list; with paging, a parent loaded by
+  "Show more" has to bring its children section with it, so the tag section draws, right
+  after itself, one nested `TagPickerSection` per loaded parent with children (child
+  sections don't page — a parent's children arrive complete). **The parent chip is the
+  door** (Skylar, 2026-08-18): a parent's children section shows only while the parent is
+  selected — or one of its children already is, so a committed child is never
+  selected-but-hidden — and folds away when it's deselected; an unpicked parent's children
+  never clutter the screen. The float-to-top logic treats a committed child pick as a pick
+  on its parent's tag section.
+
+Caveat: numeric tags (cost, power, life) sort alphabetically on the server, so the first six
+of cost are 0, 1, 10, 2, 3, 4 (the client re-sorts them numerically for display). An
+admin-set `index` on the values fixes the cut where it matters.
+
 ## Overview
 
 The taxonomy becomes browsable in the app: a circle-thumb rail on the homepage leads into a
@@ -58,15 +112,19 @@ The rail renders `CircleThumb` over each row's `thumbnail` and returns `null` wh
 empty, mirroring `GroupCircleCarousel` (also the source of the `CardCarousel` + `inset="sm"` +
 `itemGap="gutter"` shelf conventions). The title defaults to the resolved tag's display name.
 
-**`components/tags/HomeTagCarousel`** is the home shelf: a one-liner that passes the tag name
-`'class'` and the selected brand. It sits in the HomeScreen list header between
+**`components/tags/HomeTagCarousel`** is the home shelf ("Trending"): a one-liner that passes
+the selected brand alone — no tag name — so the rail spans every brand tag, mixing a class
+beside a print run. Which values appear is an admin decision twice over (2026-08-17): the
+server keeps only values that are **`isPrimary` AND carry an `index`** for this brand-wide
+mode — isPrimary curates within one tag, but across a whole brand it can run to thousands,
+so the index is the shelf's actual shortlist. Scoped rails (by brandTagId, tagName, or
+parentId) stay isPrimary-only. It sits in the HomeScreen list header between
 `GroupCircleCarousel` and the Top Picks grid, and is hidden while switching brands so it never
-flashes the previous brand's tags. It renders nothing when the selected brand has no tag by that
-name — deliberately *not* falling back to some other tag, since a shelf silently showing a
-different taxonomy than intended is worse than no shelf.
+flashes the previous brand's tags. It renders nothing when the selected brand has no primary,
+indexed values.
 
-> **This is a placeholder for a dynamic homepage config.** When that lands, the tag name and the
-> shelf's position come from config rather than the `HOME_TAG_NAME` constant.
+> **This is a placeholder for a dynamic homepage config.** When that lands, the shelf's
+> position comes from config.
 
 ## Detail pages
 
@@ -106,6 +164,7 @@ to its own tag**:
   every brand tag *and its supported values* just to find one id. The `tagName` + `brandId` filter
   on `/supported-tag-values` replaced that with a single lean request.
 - `/supported-tag-values` has no `select`, so `thumbnail` comes back with the rest of the scalars —
-  no include needed for the rail's images.
+  no include needed for the rail's images. It does take `include=` now (2026-08-18, e.g.
+  `children.child`) for the tag screen's paged-in parents.
 - `SubTagValueScreen` needs the parent id to mount the thread; it comes back on the plain
   `GET /sub-tag-value/:id` (no `select`, so all scalars return) and the thread is skipped if absent.

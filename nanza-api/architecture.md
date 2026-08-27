@@ -43,8 +43,9 @@ Client → API Gateway (HTTP API v2)
    `req.user`, mounts the aggregate router at `/`, and has a terminal error handler that maps
    thrown errors to `400` (with message) or `500`.
 5. **Router layer** — [`src/routers/all_routes.ts`](../../nanza-api/src/routers/all_routes.ts)
-   `router.use()`s every feature router. The **`universalRouter` is mounted last** so it can
-   catch bare 6-char reference codes that nothing else matched.
+   `router.use()`s every feature router. The **`universalRouter`** serves typed reference
+   lookups at `GET /reference/{type}/{code}` — the bare-code catch-all it used to be mounted
+   last for was removed in the share-route-migration (2026-08, breaking change accepted).
 
 ---
 
@@ -151,9 +152,12 @@ Everything runs under `src/`. Entry points live in `lambdas/`.
   `context`; **ProjectEdit** logs each AI edit (prompt, before/after tree, token counts).
   Currently **disabled** — the `projectRouter` is intentionally not mounted in `all_routes.ts`.
 
-Reference codes: a 5-digit + type-letter scheme (`referenceCodeGenerator.ts`) — `S`=Listing,
-`B`=Bid, `C`=List/collection, `P`=Product, `K`=BulkListing, `G`=Group, `U`=Profile,
-`O`=Project. These power all public share links.
+Reference codes: still minted as 5 digits + a type letter (`referenceCodeGenerator.ts`), but the
+code is now an **opaque token** — routing never decodes the letter. Public share links are
+root-level type-scoped (`nanza.app/<slug>/<code>`): the slug picks the table (`listing`=Listing,
+`bid`=Bid, `collection`=List, `product`=Product→Entity, `bulk`=BulkListing, `group`=Group,
+`profile`=Profile, `post`=Post, `tag`=SupportedTagValue; Project sharing disabled, no slug). The
+slug taxonomy's source of truth is `src/constants/shareTaxonomy.ts`.
 
 ---
 
@@ -234,21 +238,28 @@ webhook Lambdas hold `events:PutEvents` permission and dispatch via `utils/event
 
 Three dedicated Lambdas serve public, unauthenticated share links (crawlers send no token):
 
-- **og** — `GET /reference/{referenceCode}/og.png`
+- **og** — `GET /reference/{type}/{referenceCode}/og.png`
   ([`lambdas/ogHandler.ts`](../../nanza-api/lambdas/ogHandler.ts)). Resolves the code via
-  `services/referenceResolver.ts`, renders a per-type card with **Satori → sharp**
-  (`src/services/og/templates/*`), caches the PNG in S3, and 302-redirects to the object URL.
-  Uses the `sharp-arm64` Lambda layer (WebP → PNG decode).
-- **meta** — `GET /reference/{referenceCode}/meta`
+  `services/referenceResolver.ts` (the path's type slug picks the table), renders a per-type card
+  with **Satori → sharp** (`src/services/og/templates/*`), caches the image in S3, and
+  302-redirects to the object URL. Uses the `sharp-arm64` Lambda layer (WebP → PNG decode).
+- **meta** — `GET /reference/{type}/{referenceCode}/meta`
   ([`lambdas/metaHandler.ts`](../../nanza-api/lambdas/metaHandler.ts)). Returns the Open Graph
   payload (title/description/image/url).
-- **ogEdge** — a **Lambda@Edge** origin-response function
+- **ogEdge** — a **Lambda@Edge** origin-request function
   ([`lambdas/ogEdgeHandler.ts`](../../nanza-api/lambdas/ogEdgeHandler.ts), pinned `x86_64` with
-  its own edge-trust IAM role) that calls `/meta` and splices the tags into the static web app's
-  `<head>` so links unfurl.
+  its own edge-trust IAM role) that, on the root-level type-scoped share paths — it matches
+  `/^\/(listing|bid|collection|product|bulk|group|profile|post|tag)\/([A-Z0-9]{4,12})\/?$/i` —
+  calls the typed `/meta` route and returns the static web app's HTML with the tags spliced into
+  `<head>` (short-circuiting the origin) so links unfurl. CloudFront can't express alternation in
+  path patterns, so the edge is associated via **nine per-slug behaviors** (`/listing/*` …
+  `/tag/*`), manually maintained on the dev and prod distributions.
 
-> The og and meta handlers each keep their **own** letter→type map — a known footgun; adding a
-> new share type means updating both (see the group-OG plan in [[INDEX]]).
+> The routing Lambdas no longer decode the code's type letter — the sync concern is the **slug
+> taxonomy**, mirrored in five places that move together: `src/constants/shareTaxonomy.ts`
+> (source of truth), web `src/helpers/shareTaxonomy.ts`, mobile `src/utils/referenceCode.ts`,
+> the edge regex (+ CloudFront behaviors), and mobile's AndroidManifest. Letter lists remain
+> only for minting and mobile slug derivation.
 
 ---
 

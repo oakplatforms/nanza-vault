@@ -131,7 +131,12 @@ below is the escalation path — adopt it then, not preemptively.
 
 - **Phase 0 — IMPLEMENTED 2026-08-03 (pending deploy):** `reservedConcurrency: 20` on
   `api`, dev only (`null` in prod until the prod `max_connections` is confirmed; then size
-  a generous backstop ≈ max_connections/3 minus cron headroom) + `idleTimeoutMillis` → 10s
+  a generous backstop ≈ max_connections/3 minus cron headroom) + `idleTimeoutMillis` → 10s.
+  **2026-08-11 addendum:** prod cap set to `reservedConcurrency: 30` (≤90 conns — safe even
+  if prod is a t3.small; instance class still unconfirmed, so this is the conservative
+  backstop, not the sized number). Compatible with prod's `provisionedConcurrency: 3`
+  (reserved must stay ≥ provisioned). Resize per the formula once `max_connections` is
+  read from the console.
   (both stages, it's code). Caps on `websocket`/`fanout` were **skipped** — the registry
   (Phase 1) is next up and makes them redundant; until it ships, socket-path exhaustion is
   still possible and the interim tool is killing idle sessions via `pg_stat_activity`.
@@ -186,7 +191,8 @@ below is the escalation path — adopt it then, not preemptively.
    creds weren't available during design).
 2. `authorizer` is believed DB-free (JWT verification only) — verify; it stays untouched
    either way now that there's no VPC move.
-3. Pick the prod `reservedConcurrency` backstop for `api` once item 1 is answered
+3. ~~Pick the prod `reservedConcurrency` backstop for `api`~~ — conservative 30 set
+   2026-08-11 (see Phase 0 addendum); still resize once item 1 confirms `max_connections`
    (dev is 20; socket-family caps intentionally skipped in favor of the registry).
 
 ---

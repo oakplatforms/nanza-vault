@@ -118,6 +118,20 @@ model SupportedTagValueParent {
 - **Images:** children use the existing `supported-tag-value/<id>.webp` S3 folder. The
   `secondary-tag-value/` folder is dead.
 
+## Slim facets read (2026-08-18)
+
+`GET /brand-tag-facets?brandId=&valuesLimit=6&valuesIsPrimary=&includeChildren=&valueIds=` —
+the lean read behind mobile's search filter and tag-picker screens (design + rationale in
+[[../../nanza-mobile/solution-designs/tag-taxonomy#Slim facets read + paged sections (2026-08-18)|nanza-mobile tag-taxonomy]]).
+A Prisma `select` of display fields only (brand tag id/index, tag id/name/displayName, value
+id/name/displayName/isPrimary/index, optional `children.child` with the same three fields),
+`take: valuesLimit` per tag ordered index-nulls-last then displayName — the same order as
+`/supported-tag-values`, so the client's "Show more" pages continue the sequence — and a
+`_count` that mirrors the value filter. `valueIds` pins named values into their tag's list
+past the cut (a pinned child pins its parents); pins must still pass the filters. The
+generic `/brand-tags` include is unchanged (admin still uses it). `/supported-tag-values`
+gained an optional `include=` (generateIncludes) for the same flow.
+
 ## DB migration
 
 Nothing "secondary" is in prod use, so this is close to drop-and-recreate:

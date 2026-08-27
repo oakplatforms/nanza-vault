@@ -238,6 +238,22 @@ field* works today (it filters entities/listings by their set).
   `GROUP` is invalid for the `ENTITY` type. Validation (planned `src/validation/queryList.ts`)
   enforces this matrix **on write**, so the resolver only ever sees criteria it can translate.
 
+### Homepage read (`GET /query-lists/homepage`)
+
+Public, not admin-gated: the first `limit` primary, non-private lists for a brand in index order,
+each with its first page of resolved results embedded (`results` per source type,
+`resultsTotal`). The rows are **slim** (2026-08-18): `id`, `name`, `displayName`, `index`,
+`brandId` only — the config the resolver runs on (criteria, combinator, types) and the images /
+audit columns are read server-side and dropped from the response, since the homepage shelf
+draws title + cards and nothing else. Admin reads full rows via `GET /query-lists`.
+
+The resolver's LISTING and BID rows nest their entity through **`entityCardSelect`**
+(`src/constants/cardSelects.ts`, 2026-08-18) — id, name, displayName, image, secondaryImage,
+type, brandId, setId — instead of the full entity row: a card draws image + title and
+navigates by id, and the entity `description` was the heaviest field in every result. The
+constant is the shared definition of "what a card carries" for any card surface (feed, rails)
+to reuse, so a new card field is added in one place.
+
 ## Admin surface (nanza-admin)
 
 The admin exposes Query List authoring under a **Homepage** section — because the homepage *is* the

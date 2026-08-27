@@ -132,6 +132,35 @@ detail navigation; they aren't what blocked scrolling, and unpicking them would 
 play/scrub. Scrubbing is a horizontal drag handled by YouTube inside the iframe, so it is
 unaffected by the parent scroller winning vertical pans.
 
+## Inbox drill-downs join the slide-up family (2026-08-14)
+
+### The problem
+
+Everything tapped from the inbox — a conversation, a new-offer notification, a new-order
+notification — pushed horizontally with a left back arrow, while the rest of the app's detail
+surfaces (home drill-downs, groups, entity, listing/bid, post, tag) had migrated to the
+standard vertical slide-up with a chevron-down. Group notifications were worse: they switched
+the tab underneath to the Groups list before pushing the detail, so dismissing landed on the
+group list instead of the inbox the notification was tapped from.
+
+### The fix
+
+- **`ConversationThread`, `OfferMessageDetail`, `OrderDetail` re-registered as slide-ups** —
+  the horizontal `gestureDirection`/`cardStyleInterpolator` overrides deleted so they inherit
+  the root navigator's default vertical interpolator + vertical dismiss (the
+  SupportedTagValueScreen recipe). Their headers swap `chevron-left-3` → **`chevron-down-2`**
+  to point the way they exit. `OrderDetail` is shared with the Orders screen's cards, so order
+  details slide up from there too — consistent, and intended.
+- **Group notifications open the group directly** — `MessagesScreen.openSystemMessage` just
+  navigates to the root-stack `GroupDetailScreen`; the "seed the Groups tab first" two-step is
+  gone, so dismissing the group returns to the inbox.
+- **The Activity tab's nested horizontal `UserProfile` copy removed** — the thread header's
+  avatar tap resolves on the root stack (vertical) because `ConversationThreadScreen` itself
+  lives there; the nested copy was unreachable from any messages flow. The Trade tab still
+  keeps its nested horizontal copy until its chain migrates.
+
+The inbox main screen itself is untouched — it stays a tab main under the bar.
+
 ## Key decisions & rationale
 
 - **Gesture-handler `ScrollView` for any touchable-dense scroller.** RN's `ScrollView` loses the

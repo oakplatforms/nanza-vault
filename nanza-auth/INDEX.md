@@ -28,8 +28,13 @@ Serverless Framework v3, `nodejs20.x`, `us-east-1`, staged via `${opt:stage, 'de
 - **`deploy-prod.yml`** — same, on push to `prod`.
 
 ## Solution designs
-- [[solution-designs/social-identity-providers|Social Identity Providers]] — registering Apple/Google
-  on the consumer pool and creating the app user row for federated first-logins (mobile-native flow).
+- [[solution-designs/social-identity-providers|Social Identity Providers]] — Apple/Google federated
+  sign-in on the consumer pool (Cognito OAuth via ASWebAuthenticationSession). **Dev live
+  2026-08-25**; doc ends with the prod rollout checklist.
+- [[solution-designs/social-identity-providers#Custom auth domain — `auth.nanza.app` instead of `*.amazoncognito.com` (plan, 2026-08-26)|Custom auth domain (plan)]] — swap the hosted-UI host for `auth.nanza.app` / `auth-dev.nanza.app`: us-east-1 ACM cert → Cognito custom domain → one Route 53 alias A record → add the new `/oauth2/idpresponse` at Google + Apple → flip mobile `COGNITO_DOMAIN`.
+- [[solution-designs/apple-private-email-relay|Apple Private Email Relay]] — **setup checklist**:
+  registering nanza.app as a sender so `@privaterelay.appleid.com` addresses stop bouncing
+  (Apple's relay rejects unregistered senders as "address not found").
 
 ## Plans
 None yet. New plans land in `plans/`.

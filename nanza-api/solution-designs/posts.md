@@ -183,6 +183,14 @@ post's home says where it comes from, and that's the rule:
   further associations. No association → no secondary values. Listing/bid posts will usually carry
   none at all.
 
+> **UPDATE 2026-08-14 — the linkage rule is GONE.** Under the one-table taxonomy, children now
+> attach **freely** on every home: a post may carry any mix of child values without their parents
+> (three children from three different parents is valid), within the brand and the flat
+> `MAX_POST_TAG_VALUES` cap. `validatePostTags` no longer walks `SupportedTagValueParent` at all.
+> The parent/child self join still shapes the taxonomy rails — it just no longer constrains post
+> tagging. Mobile followed: a child tag page's composer locks ONLY the page's own chip, not its
+> parent(s).
+
 This supersedes the earlier "permissive within the brand" rule for non-brand homes — that
 permissiveness now belongs to brand posts only, which is where the multi-tag fan-out actually
 lives. It also killed the `isRichPostableType(type) ? brandId : null` scoping pattern: no more
@@ -396,8 +404,12 @@ Prod mobile will show `0` on feed cards after the migration. Not a crash — but
 - Tagging: permissive within the brand, no same-tree restriction; multi-tag allowed.
 - `Post.body` is the primary text; content items are additional blocks; replies are plain text.
 - Three-stage rollout, taxonomy v2 first.
-- Rate limits: reuse the 50/day account cap for text posts; image-bearing posts need their own
-  (lower) cap — set when stage 3 is scoped.
+- Post cap: a **lifetime total of 100 posts per account** (2026-08-15, replaced the earlier
+  50/day rate limit). `validateTotalPostLimit` counts the account's non-`DRAFT`,
+  non-`DELETED` Post rows (replies included) at non-draft create and at draft publish —
+  drafts never consume the cap, and a deleted post frees its slot (delete is hard today;
+  `DELETED` is excluded so a future soft delete behaves the same). Image-bearing posts may
+  still need their own (lower) cap — set when stage 3 is scoped.
 - **Old mobile builds must not break, but need not keep the feature** (Skylar): `Comment` is
   empty, so no backfill and no true compatibility layer — just thin shims at the five old paths
   returning well-formed empty envelopes so old builds render. Writes return
@@ -476,6 +488,17 @@ that's cheap to select still doesn't belong on the reference if no card draws it
 that's nearly-but-not-quite the right number is worse than an absent one, because a client will
 either misreport it or paper over it with a placeholder.
 
+#### Entity references also carry the product number (2026-08-19)
+
+The card's identity line is **name + product number + set** (the lockup standard every other
+entity row uses). The reference carried `set` but not the number, so the composer preview and
+the posted card both drew only the set. `entitySelect` now pulls `product: { select: { price:
+true, number: true } }` and the resolver flattens it to `productNumber: string | null` beside
+`price` — same 1:1 flattening, same "null when there's no product row or no number, and the
+client omits the line" posture. Mobile's picker already fetched `include=product`, so the local
+preview carries the number from the `EntityDto` until the server's expansion takes over on read.
+(Still not on the reference: `entityTags` — the tag line resolves to the set alone.)
+
 #### Lot references: the cover image leads
 
 A `kind: 'bulk'` reference carries both `image` (the lot's own cover, `BulkListing.image`) and
@@ -491,7 +514,9 @@ child`; the post content item was the one surface that disagreed.
 
 **Shipping note:** the contract lives in `packages/types` (`PostEntityReference`), which mobile
 consumes from the GitHub registry. The client change is only live once that package is published
-past 0.1.87 and reinstalled — until then mobile typechecks against the old shape.
+past 0.1.87 and reinstalled — until then mobile typechecks against the old shape. Same for
+`productNumber` (2026-08-19): mobile mirrors it locally in `src/types/index.ts` until a publish
+past 0.1.93 lands.
 
 ### Payload budget (decided): post payloads must not balloon
 
@@ -511,6 +536,23 @@ The slim-tags rule is one instance of a general rule for `GET /posts`:
 - **Deleted/inactive references** aren't scrubbed from old posts; they render as a tombstone
   ("listing no longer available"). The expansion simply returns `reference: null` and the client
   handles it — same posture as the polymorphic home.
+- **List payloads carry only the two items a card renders (2026-08-14).** The carousel release
+  deliberately deferred this ("client-side pick — no new endpoint shape"); the app-load audit
+  collected the debt. `GET /posts` (both home and author mode, replies included) now uses
+  `postListInclude` — content-item **metadata only** (`id, type, index, isPrimary`) — and
+  `trimPostsForList` swaps in the full rows of just the card's picks: the **first non-empty
+  RICH_TEXT** plus the **primary attachment** (`isPrimary`, else first attachment — the same
+  fallback the client applies for pre-carousel posts, which is why this is a JS pick over
+  metadata and not a naive `take: 2` by index: a post that leads with two text blocks or an
+  unflagged legacy image would truncate wrong). Winners come back in one batched `findMany`
+  with their `children`, so a gallery primary still renders whole — and reference expansion
+  now fans out only over items a card actually draws. Each list row also carries a
+  **`contentItemCount` scalar** (the "counts are scalars" idiom) so the client can tell "this IS
+  the whole post" from "items were trimmed". The **full ordered tree stays on `GET /post/:id`
+  and `GET /post/draft`** (both keep `postInclude`); mobile's PostDetail screen fetches by id
+  with the tapped card as `placeholderData` — and **skips that fetch entirely when
+  `contentItemCount` says nothing was trimmed**, which is most posts (see nanza-mobile
+  [[../../nanza-mobile/solution-designs/app-load-performance|App-load performance]]).
 
 ### Per-type v1 constraints (decided 2026-08-01)
 

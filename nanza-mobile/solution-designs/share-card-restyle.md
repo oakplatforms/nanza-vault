@@ -12,7 +12,7 @@ tags: [nanza-mobile, solution-design, sharing, share-card-restyle]
 
 ## Goal
 
-When someone opens a Nanza share link (`https://nanza.app/<code>`), they land on `ShareScreen`,
+When someone opens a Nanza share link (`https://nanza.app/<slug>/<code>`), they land on `ShareScreen`,
 which renders a per-type share card (`ShareListingCard`, `ShareBidCard`, …). Those cards are the
 **old look** — bordered light cards with a header row, a small price button, and "For sale" /
 "Wanted" badges. Meanwhile, tapping the same object from inside the app (a home thumb, a feed

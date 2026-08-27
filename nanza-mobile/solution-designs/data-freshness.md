@@ -32,8 +32,9 @@ mounted behind it, amplifying the storm.
 3. **`staleTime` tiers** (`src/constants.ts` `STALE_TIME`) decide "how stale is stale":
    - `INSTANT` (0) — price-critical live surfaces: the Entity modal
      (`ProductListings`, `ProductBids`, `entityDetail`).
-   - `30_SECS` — high-churn discovery: homepage feed (`['Feed']`) + querylist shelves
-     (`['queryLists','homepage']`).
+   - `30_SECS` — high-churn discovery: the homepage querylist shelves
+     (`['queryLists','homepage']`; the `['Feed']` query is retired — see
+     [[app-load-performance|App-load performance]]).
    - `LIVE` (5 min) — the default cache window for everything else. **Not 0** — 0 makes every
      focus refetch everything.
 4. **Same-screen updates opt in explicitly.** Where the user stays on a screen and must see the
@@ -49,7 +50,8 @@ A listing/bid edit affects two kinds of thing, handled differently:
 - **Price VALUES** — lowest ask / highest bid. The Entity modal's "Buy N for $X" reads
   `['ProductListings', entityId]`, falling back to `entityDetail.lowestAsk`. These are
   invalidated with **`refetchType: 'active'`** so the value is current immediately.
-- **Discovery surfaces** — `['Feed']`, `['queryLists']`, `['entities']`, other lists. These are
+- **Discovery surfaces** — `['queryLists']`, `['entities']`, other lists (`['Feed']` retired
+  2026-08-14; its invalidations became `['queryLists']`). These are
   invalidated **lazily** (default). We do **NOT** `setQueriesData`-patch the feed to inject the
   new value (that fights the model and caused stale/duplicated data) and we do **NOT** actively
   refetch them on edit — they re-pull the real value when the user next opens that page.
@@ -138,8 +140,8 @@ model now has two tiers:
    it fills in on its own without holding the page. Brands and auth-determined are the only
    other conditions, and only because the shelves need a `selectedBrandId` to query and a
    signed-in user shouldn't flash the guest state.
-2. **Below the fold, deferred.** Top picks (`['Feed']`) and the Query List shelves
-   (`['queryLists','homepage']`) are gated behind `deferredActive`, flipped by
+2. **Below the fold, deferred.** The Query List shelves (`['queryLists','homepage']` — one
+   request for all three, Top Picks and `['Feed']` retired) are gated behind `deferredActive`, flipped by
    `InteractionManager.runAfterInteractions` **once `isHomeReady` is true**. They fetch during
    the window between paint and the reader's first scroll, so they've landed by the time
    anyone reaches them.
@@ -188,8 +190,8 @@ shelf's own existence check) and renders nothing when its window starts past the
 a brand with fewer posts or one query list ends early rather than leaving an empty titled shell
 or orphaned posts.
 
-One consequence worth keeping: the mid-page feed spinner is now scoped to brand switching only.
-On a cold open Top picks is legitimately empty for a beat after commit, and a spinner there
+One consequence worth keeping: the mid-page spinner is now scoped to brand switching only.
+On a cold open the first shelf is legitimately empty for a beat after commit, and a spinner there
 would reintroduce exactly the stagger this removes — the shelf just appears when it lands.
 
 ## Gotchas

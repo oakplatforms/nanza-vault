@@ -17,6 +17,10 @@ Source lives entirely under `src/` (CRA convention). Entry is `src/index.tsx` �
 
 ## Solution designs
 
+- **Social Link Types (admin surface, 2026-08-15)** — the `/social-link-types` catalog page for
+  the affiliate social-links feature: name+logo rows (single multipart save, no upload two-step),
+  index ordering, Retire (soft) with an Active/Retired filter. Canonical model lives in
+  [[../nanza-api/solution-designs/affiliate-social-links|nanza-api]].
 - [[solution-designs/sources-and-insights|Sources & Insights (admin surface)]] — the operator UI for configuring Sources (type + weight) and reviewing product Insights. Canonical cross-repo design lives in [[../nanza-api/solution-designs/sources-and-insights|nanza-api]].
 - [[solution-designs/payments|Payments visibility (admin surface)]] — Delivery/Payment badges on the Orders list + detail for in-person/cash orders. Canonical model lives in [[../nanza-api/solution-designs/payments|nanza-api]].
 - [[solution-designs/query-lists|Query Lists / Homepage (admin surface)]] — the operator builder for admin-configured *dynamic* collections (types multi-select + criteria rows + AND/OR); the **Homepage** section is the `isPrimary` Query Lists ordered by `index`. Canonical model in [[../nanza-api/solution-designs/query-lists|nanza-api]]. Design only.

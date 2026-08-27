@@ -63,10 +63,29 @@ registration, params, or order — escalate instead):
 
 Deep linking is configured in `AppNavigator.tsx`: it imports `SHARE_BASE_URL` from `@env` and
 `parseShareReferenceTarget` from `src/utils/referenceCode` to turn incoming
-`nanza.app/<refCode>` links into navigation targets. This is the mobile end of the
-self-hosted shareability system (`S`/`B`/`C`/`G`/`U` reference codes).
+`nanza.app/<slug>/<refCode>` links into navigation targets (root-level type-scoped share
+routes — the slug names the record type; the code is an opaque token). This is the mobile end
+of the self-hosted shareability system.
 
-Screen transitions use `CardStyleInterpolators` from `@react-navigation/stack`.
+Screen transitions use `CardStyleInterpolators` from `@react-navigation/stack` — but the
+**root stack's default is a bottom-up slide** (translateY from screen height + fade,
+vertical dismiss gesture), and that default is the app's direction of travel
+(2026-08-10): a screen that omits `gestureDirection`/`cardStyleInterpolator` slides up
+over the tab bar, and its back affordance is a down chevron (`chevron-down-2`). The tab
+bar lives only on the tab mains; drill-downs stack vertically. Migrated so far: the
+listing/bid/post/tag details (always), the homepage "See all" screens (`FeedGrid`,
+`WhatsNew`), `UserProfile` (root copy), the whole groups cluster — whose nested
+Groups-tab copies were deleted (the tab stack keeps only `GroupsListScreen`) — the
+entity-screen flows (`AddToCollection`, `CreateBid`, `CreateListing`, `CreateOffer`),
+the collections screens (`CollectionDetail`, `UserCollectionDetail`,
+`CreateCollection`, `CollectionPicker`), and the account cluster (`AccountMain`,
+`Wallet` — outer route AND its inner navigator's interpolator — `Selling`, `Orders`,
+`Favorites`, `PayoutHistory`, `ConfirmIdentity`, `PaymentMethod`,
+`ShippingPreferences`; `ReviewCart` already slid up and traded its X for the down
+chevron + standard nav title). The Trade/Inbox tab stacks still hold nested horizontal
+`UserProfile` copies, and `OrderDetail` keeps its horizontal push, until those chains
+migrate; screens that want the old left/right push keep an explicit
+`forHorizontalIOS` override.
 
 ---
 

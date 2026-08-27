@@ -9,8 +9,8 @@ tags: [nanza-web-app, solution-design, sharing]
 Sharing is the **core live purpose** of the deployed web app: it is the public landing
 surface for Nanza's shareable reference-code links. When someone opens a share link, the
 app either sends them to the native app store (mobile, no app installed) or renders a
-read-only card of the shared thing (desktop). This covers every reference-code type —
-including profile (`U`) links with a `?type=sell|bid` selector — plus the store-redirect
+read-only card of the shared thing (desktop). This covers every share type —
+including profile links (`/profile/<code>?type=sell|bid`) — plus the store-redirect
 nudge and the store buttons in each card's header.
 
 The backend contract (nanza-api reference resolver) and the CloudFront/Lambda@Edge OG
@@ -19,40 +19,46 @@ for the same URLs.
 
 ## How it works
 
-### Reference-code landing — `/:referenceCode`
+### Reference-code landing — `/<typeSlug>/:referenceCode`
 
-`/:referenceCode` → `app/ShareDetail` is the only live dynamic route (static marketing
-paths out-rank it; anything unmatched `Navigate`s to `/`). A **6-character reference
-code** is exactly five digits (2–9) plus one type letter, validated by
-`isReferenceCode()`, which mirrors the backend contract (duplicated in
-`ShareDetail/index.tsx`, `SmartRouter.tsx`, **and** `ShareDetail/data/fetchByCode.ts`'s
-`extractTypeIdentifier` — all three letter lists must move together). Type letters and
-their cards:
+**Nine root-level type-scoped routes** — `/<slug>/:referenceCode` for `listing`, `bid`,
+`collection`, `product`, `bulk`, `group`, `profile`, `post`, `tag` — all render
+`app/ShareDetail`, each passing a `shareType` prop (share-route-migration, 2026-08: this
+final shape superseded the same-day interim `/share/:referenceCode` prefix; the slug names
+the record type and the backend looks straight in that type's table. Old shapes are not
+honored, no redirect; anything unmatched `Navigate`s to `/`). The **reference code is an
+opaque token**: routing accepts a lenient 4–12 alphanumeric check and never decodes the
+type letter — codes are still minted as 6 chars (five digits 2–9 + one letter), but the
+old `isReferenceCode()` letter validation is deleted from `ShareDetail/index.tsx` and
+`fetchByCode.ts`. The slug↔type taxonomy lives in `src/helpers/shareTaxonomy.ts`,
+mirroring the API's source of truth (`nanza-api/src/constants/shareTaxonomy.ts`). Routes
+and their cards:
 
-| Letter | Meaning | Card |
-|--------|---------|------|
-| `S` | Listing | `FeedDetailCard` |
-| `B` | Bid | `FeedDetailCard` |
-| `P` | Product | `ProductDetailCard` |
-| `C` | List / collection | `ListDetailCard` |
-| `K` | Bulk listing | `BulkDetailCard` |
-| `G` | Group | `GroupDetailCard` |
-| `U` | Profile (`?type=sell\|bid`) | `ProfileDetailCard` |
-| `T` | Post (root only) | `PostDetailCard` |
-| `V` | Supported tag value | `TagDetailCard` |
-| `Y` | Secondary tag value | `TagDetailCard` |
+| Route slug | Backing record | Card |
+|------------|----------------|------|
+| `/listing` | Listing | `FeedDetailCard` |
+| `/bid` | Bid | `FeedDetailCard` |
+| `/product` | Product (resolves to Entity) | `ProductDetailCard` |
+| `/collection` | List / collection | `ListDetailCard` |
+| `/bulk` | Bulk listing | `BulkDetailCard` |
+| `/group` | Group | `GroupDetailCard` |
+| `/profile` | Profile (`?type=sell\|bid`) | `ProfileDetailCard` |
+| `/post` | Post (root only) | `PostDetailCard` |
+| `/tag` | Supported tag value | `TagDetailCard` |
 
 The post/tag cards (post-tag-sharing design, 2026-08-03) are deliberately **thin** — the
 web landing is a fallback pushing visitors to the app. `PostDetailCard`: author header
 (avatar/@username/date), body text (falling back to the first `RICH_TEXT` content item),
 attachments as a simple image row + bare link rows, and a likes/replies meta line.
 `TagDetailCard`: one card for both tag types — banner hero (thumbnail fallback), name,
-description. `T`/`V`/`Y` send **no** client includes: the resolver hydrates posts
+description. Post/tag shares send **no** client includes: the resolver hydrates posts
 server-side and tag values render from their own columns.
 
-`ShareDetail/index.tsx` validates the code, fetches it via `data/fetchByCode.ts`
-(→ `universalService.getByCode` → `GET /reference/{code}{params}`), maps the record into
-card props, and renders inside `ShareDetailShell`. Invalid codes `Navigate` to `/`.
+`ShareDetail/index.tsx` takes the route's `shareType`, runs the lenient code check,
+fetches via `data/fetchByCode.ts` (→ `universalService.getByCode` →
+`GET /reference/{type}/{code}{params}` — the typed route that replaced the bare-code
+lookup), maps the record into card props, and renders inside `ShareDetailShell`. Invalid
+codes `Navigate` to `/`.
 
 ### Store redirect for app-less mobile visitors
 
@@ -62,7 +68,7 @@ With Universal Links (iOS) and App Links (Android) configured under
 web redirect only ever fires for visitors **without** the app, which is exactly who
 should be sent to the store.
 
-At the top of `ShareDetail` — **after** the code is validated as a real reference code,
+At the top of `ShareDetail` — **after** the code passes the lenient reference-code check,
 so garbage URLs never trigger a redirect — a device-detection helper
 (`src/helpers/getMobilePlatform.ts`) reads `navigator.userAgent` and returns
 `'ios' | 'android' | null`. iPadOS 13+ reports as a Mac, so a Mac with
@@ -97,19 +103,20 @@ store-button markup as the landing page. Rendering it in the shell rather than i
 the five variant layouts means every variant (Listing/Bid/Product/List/Bulk/Group/Profile)
 gets it for free — this replaced the earlier per-variant centered `ShareFooterLogo`.
 
-### Profile (`U`) share views
+### Profile share views
 
-Profile links render `/<U-code>?type=sell|bid` as a real landing page. The backend
+Profile links render `/profile/<code>?type=sell|bid` as a real landing page. The backend
 resolver **requires** `?type=sell|bid` (returns `null` → 404 without it) and the profile
 must be `isPublic`; the response is
 `{ type: 'ProfileListings' | 'ProfileBids', data: { profile, items, summary } }`.
 
-On the web side, `U` is an accepted code in the `validTypes` set (in both
-`ShareDetail/index.tsx` and `SmartRouter.tsx`), the `?type` param is read via
+On the web side, the `/profile/:referenceCode` route hands `ShareDetail` the profile
+`shareType` (no letter validation anymore), the `?type` param is read via
 `useSearchParams()` and passed down as `view: 'sell' | 'bid'` (missing/invalid defaults
 to `'sell'`, matching the share buttons' default). `data/fetchByCode.ts` appends
-`type=<view>` to the query for `U`, omits client includes (the API attaches its profile
-includes server-side), and includes `view` in the query key so sell/bid don't collide.
+`type=<view>` to the query for profile shares, omits client includes (the API attaches
+its profile includes server-side), and includes `view` in the query key so sell/bid don't
+collide.
 
 `ProfileDetailCard` mirrors the mobile `ShareProfileView`: an avatar + username header, an
 `N listings|bids · $TOTAL` summary from `data.summary`, and a vertical stack of the
@@ -119,15 +126,16 @@ there are no items.
 
 ### SmartRouter (dormant)
 
-`app/SmartRouter.tsx` uses the same reference-code check to disambiguate `/:a/:b` between
-a profile-reference view and a brand/entity slug. It shares the `validTypes` set (`U`
-included for parity), but the bare `/:referenceCode` → `ShareDetail` route is the primary
-share target; the SmartRouter path is part of the dormant marketplace routing.
+`app/SmartRouter.tsx` keeps its own reference-code check to disambiguate `/:a/:b` between
+a profile-reference view and a brand/entity slug, but the nine `/<slug>/:referenceCode` →
+`ShareDetail` routes are the primary share target; the SmartRouter path is part of the
+dormant marketplace routing.
 
 ## Key decisions & rationale
 
-- **Redirect only after code validation.** Gating on a valid reference code guarantees
-  we never bounce someone off a mistyped or marketing URL to the store.
+- **Redirect only after code validation.** Gating on a plausible reference code (the
+  lenient 4–12 alphanumeric check — routing never decodes the letter) guarantees we never
+  bounce someone off a mistyped or marketing URL to the store.
 - **`window.location.replace`, not `assign`.** Keeps the store redirect out of history so
   Back returns to wherever the visitor came from, not to the share page.
 - **UA sniff for platform.** A pragmatic choice for a redirect-to-store nudge, with the
