@@ -123,3 +123,10 @@ only the screen component and its route were removed.
 - [[collections|Collections]] — the items-first pattern this mirrors
 - [[scan|Scan & Camera]] — why the lot cap is separate from the scan cap
 - [[sharing|Sharing]] — the Lot (`K`) share card and share action
+
+## Lot offers (2026-08-29)
+
+Buying a lot is now an offer (see [[offer-engine|Offer Engine — Mobile]]). The lot detail's cover
+slide prices the **whole lot**: a price input prefilled with the available cards' total, "N items
+in lot" with no stepper, and "Offer – $total"; a lower total is spread across the cards
+proportionally on the offer screen (`distributeLotPrice`). Child slides still offer on one card.

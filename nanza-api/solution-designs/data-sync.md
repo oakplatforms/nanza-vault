@@ -9,7 +9,7 @@ tags: [nanza-api, solution-design, data-sync]
 A user's **Collection** is a `List` with `type: 'COLLECTION'`, holding `EntityList` join rows
 (entity + quantity). This area keeps that collection in sync with the user's marketplace activity —
 so a card you list shows up in your collection, and a card that sells moves out of the seller's
-collection and into the buyer's — mirroring what card-for-card **trades** already do. All of this
+collection and into the buyer's — (the move primitive was originally built for card-for-card trades, which have since been removed). All of this
 sync is **best-effort**: it must never throw in a way that breaks listing creation or order
 completion.
 
@@ -17,7 +17,8 @@ completion.
 
 ### The shared collection-move primitive
 
-`src/services/trade.ts` already owns the tolerant, quantity-aware collection move that trades use:
+`src/services/collection.ts` (formerly `trade.ts`, renamed when trading was removed on 2026-08-27)
+owns the tolerant, quantity-aware collection move:
 
 - `transferCollectionEntities(tx, { fromAccountId, toAccountId, entries })` — finds the sender's
   `COLLECTION` list and the receiver's (auto-creating the receiver's if missing), then for each
@@ -66,7 +67,7 @@ back or block completion.
 
 ## Key decisions & rationale
 
-- **Reuse the trade primitive, don't reinvent.** The tolerant move already exists in `trade.ts`;
+- **Reuse the collection primitive, don't reinvent.** The tolerant move already exists in `collection.ts`;
   inlining a separate add block in the listing router would duplicate the increment-or-create logic
   and risk drift if collection semantics change. Extracting `addCollectionEntities` keeps one shared
   deposit path (additive export, no signature change to the existing `transferCollectionEntities`).

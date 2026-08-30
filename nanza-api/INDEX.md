@@ -68,6 +68,7 @@ Living overviews of how each backend area works and why. One per theme in `solut
 - [[solution-designs/comments|Comments]] — **historical**: what the `Comment` system was before Posts replaced it. Kept because prod mobile still speaks its API through legacy shims.
 - [[solution-designs/card-pricing|Card Pricing]] — operator-side price-recommendation orchestration (built 2026-08-20): CSV or zip in (≤50 cards per CSV), parallel `card-pricer` agents web-search current market, one `price_usd` out per card (fair NM midpoint × 0.90); the doc's methodology section is the runtime source of truth the agents read. Every run leaves a postmortem in [[pricing-runs/INDEX|Pricing Runs]]. Distinct from Sources & Insights (in-product engine).
 - [[solution-designs/social-eligibility|Social Eligibility]] — all social features (messaging/connections, group create + join, posting) require only a **registered** account (2026-08-17); customer/seller tiers gate commerce only. Messaging eligibility helpers deleted; mobile's seller/customer gate modals removed from social flows; the friend-request payment gate is gone.
+- [[solution-designs/saved-items|Saved items retired]] — saving listings/bids/lots retired 2026-08-29 (favorites later); `SavedItem` dropped 2026-08-30 in favour of a `Like` model + `POST /post/:id/like` (migration `20260830090000_likes` copies the likes over); `/saved-item*` stays as a compat shim over `Like` (410 for card targets).
 - [[solution-designs/account-feeds|Account feeds]] — `/sell-feed` (owner's listings + lots) and `/trade-feed` (those + bids, viewer-filtered; built 2026-08-26 for the profile's Trades rail): one recency-merged, paginated list per account via a shared heads→merge→hydrate page builder.
 
 ## Plans (in progress)
@@ -76,6 +77,7 @@ Day-to-day implementation plans live alongside the solution designs in `solution
 vault, so they're visible in Obsidian — not in the repo's gitignored `.plans/`, which is retcd ired).
 When work lands, fold the plan's durable insight into its solution design and remove the plan.
 
+- [[solution-designs/offer-engine|Offer Engine & Trade Removal]] — **API built 2026-08-27, uncommitted (migration `20260827120000_offer_engine` still to run; mobile half next)**: trading dropped entirely (3 tables + enum, 410 stubs), offers v1 torn out, and offers rebuilt as a negotiation layer over orders for both listings and bids — listing offers invoice on send, bid offers invoice on the bidder's accept and auto-accept the order for the seller; drafts modeled but no UI; cart retired later, counters later. Offer-only listings carry `Listing.isOffer` (2026-08-29, migration `20260829120000_listing_is_offer`) and surface nowhere but their offer.
 - [[solution-designs/blocking-and-reporting|Blocking Visibility & Content Reporting]] — **built,
   uncommitted (2026-08-23, Apple release blockers; migration still to run)**: blocking must hide posts/replies everywhere (home,
   groups, profile tabs, tag pages) via a symmetric `notBlockedFilter` — no schema change; plus a

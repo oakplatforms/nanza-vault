@@ -46,6 +46,9 @@ Living designs of how each feature area works and why, in `solution-designs/`. E
 synthesizes the durable decisions across that theme; frontmatter carries a `nanza-mobile`
 tag, a `solution-design` tag, and its theme tag.
 
+- [[solution-designs/profile|Profile]] § Saved items retired — hearts and the Saved section are gone (2026-08-29); `SavedItemsContext` deleted (2026-08-30), post likes are `useLike` over `POST /post/:id/like`; favorites comes later.
+- [[solution-designs/inbox|Inbox]] — All / Friends / Groups / Offers (2026-08-29): friend requests have no tab — they arrive in All and the Friends tab leads with a "Friend requests (N)" row that opens an accept/decline sheet.
+- [[solution-designs/offer-engine|Offer Engine — Mobile]] — **built 2026-08-27, uncommitted (needs `@oakplatforms/types` ≥ 0.1.97)**: one `MakeOfferScreen` (listing + bid variants from the mocks, multi-card from one seller, on-the-fly listing step), Offers-tab-only inbox with a rewritten offer detail, every Buy Now → Make an Offer, and the cart (context, pill, review screen) retired.
 - [[solution-designs/app-load-performance|App-load performance]] — the five-request cold-start
   diet (2026-08-14): `/feed` + Top Picks retired (Query List 1 takes the slot, homepage lists
   `limit=3`), posts `limit=9` with two-item cards + a by-id detail fetch, the lean `/cart-preview`

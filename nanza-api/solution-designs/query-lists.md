@@ -229,10 +229,32 @@ The three schema realities this matrix pins down:
 `SET` as a *source type* is reserved and skipped by the v1 resolver (logged); `SET` as a *criterion
 field* works today (it filters entities/listings by their set).
 
-### Then
+### Then — one mixed sequence (2026-08-30)
 
-- **Enrich + paginate** each type's results like the existing list read paths; the combined count is
-  computed per request, never stored.
+The resolver no longer pages each type on its own (which handed the client all the bids, then
+all the listings, then all the lots, and let one seller's three newest listings fill a shelf).
+It now builds **one deterministic sequence** and pages *that*:
+
+1. **Candidate pools.** Per type, ids + owner (`accountId`) + `createdAt`, newest first, capped at
+   `MAX_POOL` (500). Ids only, so the pool is cheap even at the cap; a list matching more than
+   that never reaches its oldest rows.
+2. **Spread by owner** (`spreadByOwner`): within a pool each owner's items get a rank (their
+   newest = 0) and the pool re-sorts by rank, then recency — every owner's first item comes
+   before anyone's second.
+3. **Proportional type merge** (`mergeProportionally`): at each step the type furthest behind its
+   share (taken ÷ pool size) goes next — equal pools alternate, a 3:1 mix runs three-and-one. No
+   random numbers, on purpose: the same pools always merge the same way, which is what makes
+   page N+1 continue exactly where page N stopped with no repeats.
+4. **Owner separation** (`separateOwners`): a greedy pass moves the next different-owner item
+   (within a 10-item lookahead) up whenever two adjacent items share an owner.
+5. **Slice + hydrate**: the page is cut from the sequence, the rows fetched per type with the same
+   includes as before, and re-emitted as **runs of one type in order** — the response shape is
+   unchanged (`results: [{ type, data[], total }]`), a mixed page just arrives as several short
+   runs, which both mobile consumers already flatten in order. `total` is the whole sequence,
+   each run's `total` the type's pool size, and a new top-level **`hasMore`** replaces the client's
+   "a full page from any type" guess (`FeedGridScreen` reads it, falling back for older APIs).
+
+The combined count is computed per request, never stored.
 - **Legal criteria only.** Not every field/operator/type combination is valid — numeric operators
   (`>`, `<`, …) only make sense for `PRODUCT_PRICE`; `GROUP`/`SET`/tags take `EQUALS`/`NOT_EQUALS`;
   `GROUP` is invalid for the `ENTITY` type. Validation (planned `src/validation/queryList.ts`)

@@ -10,7 +10,7 @@ tags: [nanza-api, solution-design, posts, content]
 > in the same pass. **The migration has not been generated or run** — see *Remaining* below.
 >
 > **2026-08-01:** the *Chat release* section below extends this design — reference content items
-> (LISTING/BID/ENTITY), likes via `SavedItem`, and the composer contract. Design only; mobile
+> (LISTING/BID/ENTITY), likes via `Like` (was `SavedItem`), and the composer contract. Design only; mobile
 > surface in [[../nanza-mobile/solution-designs/posts-chat|posts-chat]].
 
 ## The idea
@@ -571,28 +571,31 @@ This supersedes the 2026-07-30 decision limiting content items to tag/brand post
 (and therefore content items) is available on every post surface** this release. The moderation
 concern that motivated the restriction is now handled by the caps below.
 
-### Likes = SavedItem, count derived
+### Likes = `Like`, count derived
 
-Hearting a post is **the same action as saving a listing** — one `SavedItem` row, so liked posts
-appear in the account's saved-items surface for free, and unliking is deleting the row. There is no
-separate `PostLike` model.
+**2026-08-30:** likes are their own model under the post. (They were `SavedItem` rows with a
+`postId` until saved items were retired — see [[saved-items|Saved items]].) One row per
+(account, post), nothing global: a like is a fact about a post, not an entry in an account-wide
+saved set.
 
 ```prisma
-model SavedItem {
-  // …existing listing/bid/bulkListing targets…
-  post   Post?   @relation(fields: [postId], references: [id], onDelete: Cascade)
-  postId String?
-
-  @@unique([accountId, postId])
-  @@index([postId])
+model Like {
+  id / createdAt
+  account   Account  (accountId)
+  post      Post     (postId)
+  @@unique([accountId, postId]) @@index([postId]) @@index([accountId])
 }
 ```
 
-The post's public **like count is derived** — `count(SavedItem where postId)` — exposed the same way
-`postCount` is (a `likeCount` on post responses, batched with a groupBy map for lists). Post
-responses also carry `viewerHasLiked` when a viewer account is known, so the heart renders filled
-without a second call. Routes: `POST /saved-item` already exists — it gains the `postId` target and
-the same duplicate-safe upsert semantics as the listing path.
+- **`POST /post/:id/like`** `{ accountId }` toggles the caller's like and returns
+  `{ liked, likeCount }` so the heart and its count settle from the response, no refetch. The
+  post must be viewable to the caller (`isRootPostViewable`), else 404.
+- The public **like count is derived** — `count(Like where postId)` — batched with a groupBy
+  map (`utils/postLikes.ts`), and post responses carry `likeCount` + `viewerHasLiked`.
+- Mobile keeps no like state outside the post: `useLike(post)` seeds from those two scalars,
+  flips optimistically, settles from the toggle response, and invalidates `['Posts']` lazily.
+- The old `/saved-item*` routes remain as a **compatibility shim** over `Like` for shipped
+  builds' hearts on posts (410 for card targets) until every build is on the like route.
 
 ### Image upload & S3 lifecycle
 

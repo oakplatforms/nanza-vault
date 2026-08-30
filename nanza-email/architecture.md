@@ -25,6 +25,7 @@ The `detail-type` list in the rule is the source of truth for what this service 
 
 - `invoice.confirmation.customer`
 - `order.confirmation.seller`
+- `offer.confirmation.customer` — a seller answered a bid with an offer (added 2026-08-28)
 - `order.canceled.customer`, `order.canceled.seller`
 - `order.transit.customer`
 - `order.delivered.customer`
@@ -56,6 +57,7 @@ A few branches are special:
 - **`seller.completed`** emails a hard-coded admin list (`skylar@`, `tahir@oakplatforms.com`) with `NewSellerNotification` — an internal "new seller pending verification" alert, not a customer email.
 - **`seller.application.rejected`** takes `sellerEmail`, `sellerName`, and `rejectionReason` straight off the event (no fetch needed).
 - Shared-template events (cancel, delivery-failed, failed) pass a `recipientType` prop so one template serves both customer and seller.
+- **Offer-aware wording (2026-08-28).** The seller-confirmation and cancel branches fetch `include=offer` and the templates reword themselves from `order.offer` (`utils/offerCopy.ts`): a pending listing offer renders `SellerOrderConfirmation` as "You've received an offer!"; a cancel whose offer is `DECLINED` / `CANCELED` / `EXPIRED` headlines the offer outcome instead of "your order has been cancelled". The buyer's `CustomerInvoiceConfirmation` is unchanged — nanza-api simply emits it on the seller's accept for offer orders. `BidOfferReceived` (the one new template) reuses `OrderCard` in its `summary="offer"` mode (no address / shipping / tax — the bidder hasn't checked out yet). Offer fields come through a local `OrderWithOffer` shim in `types/index.ts` until `@oakplatforms/types` ≥ 0.1.92 is picked up. **No order number on offer mails (2026-08-29):** the header's second line is `offerFromSubtitle(party)` — "Offer from @username" (the buyer on `SellerOrderConfirmation`'s listing-offer branch, the seller on `BidOfferReceived`), falling back to the full name and dropped entirely when there's nobody to name (`OrderCard` takes `orderNumberSubtitle: null` to hide the line). The order exists under the hood, but the reader shouldn't meet an order number until they accept. Design: [[../nanza-api/solution-designs/offer-engine|Offer Engine]].
 
 The handler is intentionally sequential (`await` per send) and does minimal error handling — a failed fetch or send bubbles up and the Lambda invocation errors.
 

@@ -129,6 +129,28 @@ shelf language:
   composite key) — until now items could only join a group at creation time via the
   targeting chips.
 
+## Home shelves (2026-08-29): affiliates on top, Groups banners under Trending
+
+The homepage header is now **affiliates → Trending → Groups → What's new**:
+
+- **`AffiliateCircleCarousel`** (`components/profile/`) takes the circle rail's slot at the top:
+  every public `AFFILIATE` profile's avatar + username from the new **`GET /profiles?type=`**
+  endpoint (nanza-api `routers/profile.ts` — public, paginated, slim rows: id / accountId /
+  type / username / avatar / description; not brand-filtered). For this release a tap simply
+  opens `UserProfile`. Untitled, like the circle rail it replaced. `useHomeReady` mirrors its
+  query (`['profiles','affiliates','home']`, limit 20) so the header still commits as one.
+- **`GroupBannerCarousel`** (`components/groups/`) sits under Trending, titled **"Groups"**:
+  the same brand-filtered, membership-annotated list the circles read (same
+  `['groups','home',brand,account]` key, so the prefetch is unchanged), memberships first, as
+  **`GroupBannerThumb`** tiles — the group's banner (thumbnail fallback) as a 16:9 cutout at the
+  new **`banner` thumb step (80% of the content width)**, deliberately wider than Trending's
+  240/362 `tag` tile so it reads as a different shelf; name bottom-left, and bottom-right the
+  group screen's own pills — **Join** in the white emphasis `ActionPill` dress the detail header
+  wears, **Joined** in the groups list's resting `groupThumbJoinPillJoined` form (not separately
+  tappable; the whole tile is the tap). Taps open the group detail (registered users only —
+  guests' tiles are inert, as the circles were). `GroupCircleCarousel` is no longer mounted on
+  Home but stays in the tree for any other host.
+
 ## Home shelf circles: open-first (2026-08-17)
 
 `GroupCircleCarousel` (the untitled home shelf) no longer joins on tap. Tapping an

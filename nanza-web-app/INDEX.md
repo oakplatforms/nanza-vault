@@ -23,8 +23,12 @@ Top-level dirs under `src/`:
   (commented-out) screens: `Auth/` (SignIn/SignUp/ForgotPassword), `Cart/`, `Build/` (storefront
   builder), `UserProfile/`, `UserListings/`, `UserBids/`, `UserLists/`, `UserSaved/`,
   `EntityDetail/`, `ListingDetail/`, `UniversalDetail/`.
-- **`landing/`** — marketing site: `landing/index.tsx` + `landing/pages/` (About, Buy, Sell, Collect,
-  Pricing, Privacy, Terms, ContentPage) and `landing/components/` section blocks.
+- **`landing/`, `pages/`, `sections/`, `scene/`** — the public marketing site (rebuilt 2026-08, see
+  [[solution-designs/landing-replacement|Landing Replacement]]). `landing/index.tsx` is the
+  scroll-driven landing (Lenis + GSAP timeline, a lazy-loaded React-Three-Fiber phone scene in
+  `scene/`, DOM sections in `sections/`); `pages/pages.ts` is the single list that drives both the nav
+  links and the marketing routes, rendered by `pages/PageLayout.tsx`; `pages/legal/` holds the real
+  Privacy/Terms copy. `app/usePublicSite.ts` scopes the dark theme to these surfaces only.
 - **`components/`** — shared UI: layout shells (`Layout`, `AppShell`, `DetailLayout`, `TopNav`,
   `Sidebar/`, `Toolbar/`), `Tailwind/` primitives, and per-domain folders (`entity`, `listing`,
   `bid`, `list`, `cart`).
@@ -36,9 +40,10 @@ Top-level dirs under `src/`:
 - **`types/index.ts`** — re-exports DTOs from `@oakplatforms/types` (no local domain types).
 - **`helpers/`, `utils/`, `constants.ts`** — slugify, price formatting, cart math, store URLs,
   brand/condition config.
-- **Styling** — Tailwind (`tailwind.config.js`) plus CSS custom properties for the theme scale in
-  `src/index.css` / `src/styles/globals.css` (EuclidCircularB primary, Geist/Figtree secondary),
-  the same token palette used by mobile/admin.
+- **Styling** — Tailwind (`tailwind.config.js`; Euclid Circular B primary, Figtree secondary, Roobert
+  display) with `src/index.css` as the global sheet (Euclid `@font-face`, `body` defaults). The
+  marketing site's dark theme (`page`/`ink`/`surface`/`hairline` tokens, `src/styles/public-site.css`)
+  applies only while `<html>` carries `.public-site`, so share/detail screens stay light.
 
 **Routing:** flat route table in `AppLayout.tsx`. Sharing lives at **nine root-level type-scoped
 routes** `/<slug>/:referenceCode` (listing, bid, collection, product, bulk, group, profile, post,
@@ -74,6 +79,10 @@ Universal Links / App Links assets ship under `public/.well-known/`.
 
 ## Plans (in progress)
 
+- [[solution-designs/landing-replacement|Landing Replacement]] — swap the whole marketing surface
+  (`src/landing/` + `LandingLayout` + content pages) for the scroll-driven front end built in the
+  temporary `nanza-web-app-update` repo (Lenis/GSAP timeline, R3F phone scene, generated `pages.ts`
+  routes); old landing routes/components deleted; share routes untouched. Drafted 2026-08-27.
 - [[solution-designs/share-route-migration|Share Route Migration]] — move the public share URL to
   root-level type-scoped routes `/<typeSlug>/<code>` (listing/bid/collection/…) across web,
   API/edge, and mobile; the slug picks the table, the code is an opaque token; clean cut, no

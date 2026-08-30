@@ -36,6 +36,9 @@ bidWhere?, page, limit })`:
    counts ride along via `getPostCountMap` / `withPostCount`, mirroring the home feed.
 4. **Re-project** in merged order, dropping rows that vanished mid-request.
 
+Both owner wheres carry `isOffer: false`: an offer-only listing (created on the fly to answer a
+bid — see [[offer-engine|Offer Engine]]) is hidden even from its owner's sell feed and profile.
+
 `/sell-feed` passes the owner wheres and no `bidWhere`. `/trade-feed` resolves the requester
 and, when they are **not** the account owner, ANDs the list endpoints' visibility rules onto
 each kind: `buildListingVisibilityFilter` + `buildPublicAuthorListingFilter` for listings,

@@ -34,11 +34,16 @@ The `QueryClient` default options live inline in `app/index.tsx`: queries do **n
 `src/app/AppLayout.tsx` is a single `<BrowserRouter>` with a flat `<Routes>` table, wrapped in
 `BrandFilterProvider` and `LayoutAnimationProvider`. Route groups:
 
-- **Marketing / landing** — `/` (`LandingPage`), `/about`, `/buy`, `/sell`, `/collect`, `/pricing`,
-  `/privacy-policy`, `/terms`, plus many `ContentPage` slugs (`/how-it-works/*`, per-TCG game pages
-  like `/pokemon`, `/magic-the-gathering`, legal pages). These are static; they don't compete
-  with the share routes because each share route sits under a fixed literal type slug, not a
-  bare `/:code` catch-all (the old reliance on React Router v6 specificity ranking is moot).
+- **Marketing / landing** — `/` (`LandingPage`, `src/landing/index.tsx`) plus every path in
+  `src/pages/pages.ts`: the primary nav (`/create`, `/collect`, `/buy`, `/sell`, `/trade`, `/share`,
+  `/support`) and the footer set (`/fair-market`, `/refund-and-return-policy`, `/about`,
+  `/privacy-policy`, `/terms`). `AppLayout` generates these routes from that one list, so a nav
+  link and its route cannot disagree; `/privacy-policy` and `/terms` get their real copy from
+  `src/pages/legal/` via a small `LEGAL_BODIES` table, everything else renders `PageLayout`'s
+  headline + intro. The pre-2026-08 marketing routes (`/pricing`, `/how-it-works/*`, per-TCG game
+  pages, `/legal`, `/terms-of-use`, …) were retired with the landing rebuild and fall to the
+  catch-all. These are static; they don't compete with the share routes because each share route
+  sits under a fixed literal type slug, not a bare `/:code` catch-all.
 - **Share landing** — nine root-level type-scoped routes `/<slug>/:referenceCode` (`listing`,
   `bid`, `collection`, `product`, `bulk`, `group`, `profile`, `post`, `tag`) → `app/ShareDetail`
   with a per-route `shareType` prop. These are the **only live dynamic routes** and the core
@@ -133,13 +138,25 @@ uncomment the auth routes.
 
 ## Styling
 
-Tailwind CSS drives layout/utility styling. `tailwind.config.js` scans `src/{components,app,landing}`
-and extends the theme with the brand font families (`sans` → Euclid Circular B, `figtree` → Figtree)
-and a `fadeIn` animation. The full color scale and semantic tokens are defined as CSS custom
-properties in `src/styles/globals.css` and `src/index.css` (`--color-primary-*`, font-family vars),
-with `@font-face` declarations for Euclid Circular B, Geist, and Figtree — the **same token palette
-and font stack shared with nanza-mobile and nanza-admin**. Component styling is Tailwind class names
-(with `clsx` for conditionals), not a StyleSheet abstraction as in mobile.
+Tailwind CSS drives layout/utility styling. `tailwind.config.js` scans
+`src/{components,app,landing,pages,sections,scene}` and `src/*.tsx`, and extends the theme with the
+brand font families (`sans` → Euclid Circular B, `figtree` → Figtree, `roobert` → Roobert for
+display type), a `fadeIn` animation, and the marketing site's dark tokens (`page`, `ink`/`ink-muted`/
+`ink-faint`, `surface`, `hairline` — `src/theme.ts` mirrors the hexes for SVG/canvas use).
+`src/index.css` is the global sheet (`@tailwind`, Euclid `@font-face`, `body` defaults);
+`src/styles/public-site.css` (imported from `src/index.tsx`) carries the Roobert faces, Lenis
+classes, and the dark ground — every rule in it that would reach the whole document is scoped under
+`html.public-site`, a class `src/app/usePublicSite.ts` adds while a marketing route is mounted and
+removes on the way out, so share/detail screens never inherit it. Fonts are served from `src/fonts/`
+via relative `url()`s (CRA's css-loader rejects root-absolute paths). Component styling is Tailwind
+class names (with `clsx` for conditionals), not a StyleSheet abstraction as in mobile.
+
+The landing itself (see [[solution-designs/landing-replacement|Landing Replacement]]) is one
+scrubbed timeline: `scene/useScrollTimeline.ts` owns the single Lenis instance (driven off the GSAP
+ticker) and writes to a plain mutable `scene/motionState.ts` that the DOM sections and the
+React-Three-Fiber phone (`scene/PhoneCanvas.tsx`, `React.lazy` so `three`/drei ship as their own
+chunk) read every frame — no React state on the scroll path. `scene/useImmersive.ts` turns the 3D
+scene off (→ `sections/StaticPhone.tsx`) for reduced-motion, <768px, and no-WebGL.
 
 ## Build and deploy
 

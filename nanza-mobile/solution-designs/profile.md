@@ -184,17 +184,27 @@ Trades → Saved Items (own only).
   quantity badge (`thumbPillRow`, the lockup's pill-cluster gap). Listings pass
   `listing.quantity`, bids `bid.quantity`, lots their available total — so every rail and
   grid that uses the thumb trio shows it, not just the profile.
-- **WTB / WTS intent tag:** `intent="buy"` (bids → "WTB") or `"sell"` (listings and lots →
-  "WTS"), all caps, a small corner label pinned to the tile's top-left (`thumbIntentTag`,
-  `small` 12pt type — a step under the price pill — inset a full `gutter` so it aligns with
-  the footer title's left edge) over the image; the footer keeps the ×qty + price pills
-  left-aligned. **Temporary:** a white "WTT" (`intent="trade"`) variant plus a strict
-  WTS→WTT alternation over single listings on the GROUP detail's Trades rail exist for a
-  partner screenshot only — marked DEMO/TODO in `ItemThumb`, `ListingThumb`,
-  `GroupDetailScreen`, `cards.ts`; remove after. The profile surfaces carry no demo. Colour-coded, not white: WTB on the app's bid pink (`action` / primary 400,
-  `thumbIntentTagBuy`), WTS on the condition scale's mint green (`conditionColors.mint`,
-  `thumbIntentTagSell`), both with an `ink` label. (Iterated live the same day: footer-row
-  dark-grey pill → intent colours → corner tag.)
+- **WTB / WTS intent tag in the pill row (2026-08-29, shared `IntentTag`):** every carousel /
+  grid tile says what its owner wants as the FIRST pill of the footer's pill row, ahead of the
+  white price pill; the ×qty count sits at the far RIGHT end of that same row (`marginLeft:
+  'auto'`) as a black `ink` badge with off-white `neutral.100` digits (`thumbQuantityBadge*`,
+  2026-08-29 — it had been a second white pill beside the price): `intent="buy"` (bids → **WTB**, bid pink `action` / primary 400)
+  or `"sell"` (listings and lots → **WTS**, condition-scale mint `conditionColors.mint`), ink
+  label on both. `ItemThumb` takes `intent`; `ListingThumb` / `BulkThumb` pass `sell`,
+  `BidThumb` passes `buy`. No owner identity on the tile: an avatar + username strip was tried
+  the same day (top of the tile, then above the title, then under the pills) and scrapped
+  along with its API plumbing — query-list results and the entity rails' `ProductListings` /
+  `ProductBids` are back to `entity` only, with no `account.profile` widening.
+  The chiclet itself lives in `src/components/global/IntentTag` with its styles in
+  `badges.ts` (`intentTag*`): the `'tile'` variant wears the thumb price pill's exact dress
+  (`pricePillAmount` face, xs sides, xxs vertical, xs corners, the same `min` descender nudge) so
+  the row reads as one run of pills; the `'row'` variant (sm sides, xxs corners) is the squarer
+  chiclet the listing / bid detail's compact `UserActionRow` shows beside the username (it used
+  to own its own `userIntentTag*` styles in `detail.ts` — those moved here so the two surfaces
+  can't drift). An earlier one-off corner tag (`thumbIntentTag*`, plus a temporary white "WTT"
+  demo variant) had been removed; this is the durable replacement. The pill row's slot is `xs`
+  shy of the min hit target (`thumbPillSlot` / `thumbPillSlack` in `cards.ts`) — tightened the
+  same day — and the footer padding subtracts the bottom slack so the pills land on the gutter.
 - The old preview hooks (`useUserSellFeedPreview`, `useUserBidsPreview`) were deleted; the
   infinite `useUserSellFeed` / `useUserBids` stay for the Trade screen and the post composer's
   ELB picker.
@@ -206,3 +216,15 @@ Trades → Saved Items (own only).
 - [[../REFERENCE|Frontend Reference]]
 - [[collections|Collections]] — the collection grid + read-only detail in depth
 - [[sharing|Sharing]] — the profile (`U`) reference code and share cards
+
+## Saved items retired (2026-08-29)
+
+The profile's **Saved Items** section and its See-all mode are gone, along with every heart on
+listing, bid and lot cards and detail screens (`Feed*Card`, `ListingScreen`, `BidScreen`). `SavedItemsContext` and `services/api/SavedItem.ts` are deleted too (2026-08-30): the heart on a
+post is `hooks/useLike.ts` — local optimistic state seeded from the post's `likeCount` /
+`viewerHasLiked`, one `postService.toggleLike` (`POST /post/:id/like`) — so nothing about likes
+is fetched at app load any more. `screens/savedItems/`, `FeedItem.isSaved` and the `savedItems`
+styles/query keys are deleted. Favorites replaces
+saving in a later release. API side: [[../../nanza-api/solution-designs/saved-items|Saved items →
+post likes only]].
+

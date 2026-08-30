@@ -54,12 +54,13 @@ Client → API Gateway (HTTP API v2)
 Everything runs under `src/`. Entry points live in `lambdas/`.
 
 - **`src/routers/*`** — one Express `Router` per domain concept (`listing`, `bid`, `order`,
-  `group`, `trade`, `cart`, `message`, `feed`, …). Each file exports a named router
+  `group`, `offer`, `cart`, `message`, `feed`, …). Each file exports a named router
   (`export const listingRouter`). Handlers read `req.user`, run validators, call into Prisma
   (often directly) or a service, and return DTO-shaped JSON. Routes carry inline `@openapi`
   JSDoc for spec generation. `all_routes.ts` composes them.
 - **`src/services/*`** — cross-cutting business logic that spans multiple models or needs its
-  own client: `order.ts` (collection sync on completion), `trade.ts` (quantity-aware
+  own client: `order.ts` (accept / cancel-pending / collection sync), `offer.ts` +
+  `offerStatus.ts` (the offer engine over orders), `collection.ts` (quantity-aware
   collection moves), `resolver.ts` / `referenceResolver.ts` (derived pricing + share-code
   resolution), `og/` (share-image rendering), `anthropic.ts` (Claude client for the storefront
   builder), `transcribe.ts` (voice → text), `scan.ts` (card scanning), `payout.ts`,
@@ -122,7 +123,9 @@ Everything runs under `src/`. Entry points live in `lambdas/`.
   `referenceCode`, `isPublic`, and optional group scoping via **GroupListing** / **GroupBid**.
 - **BulkListing** ("lots") groups many child **Listing**s; joined to groups via
   **BulkListingGroup**. **ScanItem** is a staged pre-listing produced by card scanning.
-- **Offer** (a bid/listing negotiation) → an **Order** on acceptance.
+- **Offer** (`OfferStatus` / `OfferType`) — a negotiation wrapper around exactly one **Order**
+  (`Order.offerId`, 1:1); sender/recipient are Accounts, `listing` always set, `bid` for bid
+  offers, `parentId` reserved for counters. See [[solution-designs/offer-engine|Offer Engine]].
 - **SavedItem** is a polymorphic bookmark over Listing / Bid / BulkListing.
 
 **Orders, payments, fulfillment**
@@ -144,8 +147,6 @@ Everything runs under `src/`. Entry points live in `lambdas/`.
   **SystemMessage** hangs off a Message (1:1) with `SystemMessageCategory` /
   `SystemMessageType` — the notification backbone.
 - **Comment** — self-referential threads, polymorphic over `CommentableType`.
-- **Trade** (`TradeStatus`) with **TradeOfferEntity** / **TradeRequestEntity** — card-for-card
-  swaps that move entities between collections.
 
 **AI builder**
 - **Project** (`ProjectType`, default STOREFRONT) holds a JSON `tree` page + free-text

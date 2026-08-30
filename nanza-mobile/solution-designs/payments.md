@@ -4,6 +4,11 @@ tags: [nanza-mobile, solution-design, payments, checkout]
 
 # Payments & Checkout — Solution Design
 
+> **Superseded 2026-08-27.** The cart this describes was retired by the
+> [[offer-engine|Offer Engine]]; the delivery selector, Pay-With radios and summary math it
+> documents live on in the offer screen's panels (`OfferShippingPanel`, `OfferPaymentPanel`,
+> `OfferSummary`, `utils/offerTotals.ts`). Kept for the rules, not the screens.
+
 ## Overview
 
 How the mobile cart lets a buyer choose **how they get an order** and **how they pay for it**, and
