@@ -10,7 +10,7 @@ tags: [nanza-api, solution-design, posts, content]
 > in the same pass. **The migration has not been generated or run** — see *Remaining* below.
 >
 > **2026-08-01:** the *Chat release* section below extends this design — reference content items
-> (LISTING/BID/ENTITY), likes via `Like` (was `SavedItem`), and the composer contract. Design only; mobile
+> (LISTING/BID/ENTITY), likes via `PostLike` (was `SavedItem`), and the composer contract. Design only; mobile
 > surface in [[../nanza-mobile/solution-designs/posts-chat|posts-chat]].
 
 ## The idea
@@ -571,7 +571,7 @@ This supersedes the 2026-07-30 decision limiting content items to tag/brand post
 (and therefore content items) is available on every post surface** this release. The moderation
 concern that motivated the restriction is now handled by the caps below.
 
-### Likes = `Like`, count derived
+### Likes = `PostLike`, count derived
 
 **2026-08-30:** likes are their own model under the post. (They were `SavedItem` rows with a
 `postId` until saved items were retired — see [[saved-items|Saved items]].) One row per
@@ -579,7 +579,7 @@ concern that motivated the restriction is now handled by the caps below.
 saved set.
 
 ```prisma
-model Like {
+model PostLike {
   id / createdAt
   account   Account  (accountId)
   post      Post     (postId)
@@ -590,11 +590,11 @@ model Like {
 - **`POST /post/:id/like`** `{ accountId }` toggles the caller's like and returns
   `{ liked, likeCount }` so the heart and its count settle from the response, no refetch. The
   post must be viewable to the caller (`isRootPostViewable`), else 404.
-- The public **like count is derived** — `count(Like where postId)` — batched with a groupBy
+- The public **like count is derived** — `count(PostLike where postId)` — batched with a groupBy
   map (`utils/postLikes.ts`), and post responses carry `likeCount` + `viewerHasLiked`.
 - Mobile keeps no like state outside the post: `useLike(post)` seeds from those two scalars,
   flips optimistically, settles from the toggle response, and invalidates `['Posts']` lazily.
-- The old `/saved-item*` routes remain as a **compatibility shim** over `Like` for shipped
+- The old `/saved-item*` routes remain as a **compatibility shim** over `PostLike` for shipped
   builds' hearts on posts (410 for card targets) until every build is on the like route.
 
 ### Image upload & S3 lifecycle
@@ -792,3 +792,12 @@ Threat model per type, and where each is enforced:
   with every hop re-validated (a 302 into 169.254.169.254 is the classic metadata grab);
   5s timeout, 200KB body cap; `og:image` returned only when http(s).
 - **Body/tag text** — rendered through RN Text everywhere; no innerHTML anywhere in the app.
+
+- **Reference caps raised (2026-08-30).** `validation/post.ts`: `MAX_LISTING_ITEMS` (listings +
+  bids, one shared budget) and `MAX_ENTITY_ITEMS` (cards) went from 5 to **10**; texts and links
+  stay at 5, images at 2, one collection, replies one attachment. Mobile's composer mirrors it.
+
+- **Author feed = brand + tag posts only (2026-08-31).** `GET /posts?accountId=` (the profile
+  Posts surface) now returns only `BRAND` and `SUPPORTED_TAG_VALUE` roots — card chatter on
+  listings / bids / entities stays on those pages, GROUP posts stay in their group. The
+  affiliate-or-connection gate on BRAND rows for other viewers is unchanged.

@@ -70,12 +70,7 @@ Universal Links / App Links assets ship under `public/.well-known/`.
 - [[architecture|Architecture]] — entry, routing, services, auth flow, styling, build/deploy
 - [[fe_spec|Frontend Spec]] — engineering standards, non-negotiables, escalation process
 - [[../_shared/INDEX|Shared brain]] — cross-project architecture & decisions
-
-## Strategy
-
-- [[nanza-founder-skylar|Founder Strategy Questionnaire — Skylar]] — 136-question strategy capture
-  (origin, customer, product vision, moat, licensors, model, growth, risk, philosophy) in a consistent
-  first-person voice; all questions answered, session follow-ups folded in.
+- [[../business/INDEX|Business]] — founder strategy, onboarding brief, connection map, investor relations (moved out of this folder 2026-09-24)
 
 ## Plans (in progress)
 

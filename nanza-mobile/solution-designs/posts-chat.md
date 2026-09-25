@@ -452,3 +452,12 @@ card shows a dash in the composer and a price once posted.
   tap on its own), and the WebView's own scroll view bounces vertically inside the card unless
   scrolling is disabled on BOTH the WebView and the HTML page.
 - Types 0.1.85 (EMBED enum value only) pending publish.
+
+- **Tapping an attached card opens the card, not the post (2026-08-30).** In `PostContentItems`
+  every reference row (entity / collection, in the gallery rail or alone) now takes its press
+  through a core-RN `TouchableOpacity` with the lockup rendered `pointerEvents="none"`
+  (`referencePress`) — the shape Android already used for rail children, extended to iOS and
+  to the full-width rows. The lockup's own gesture-handler touchable lost to the post card's
+  core-RN touchable (which opens `PostDetail`) on both platforms, so tapping an entity in a home
+  card opened the post. Listing / bid / lot hero tiles were already core-RN. The post detail now
+  opens only from the rest of the card (header, text, empty areas).

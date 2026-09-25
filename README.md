@@ -31,6 +31,7 @@ Each links to a project map (`INDEX`) with a structural overview, an `architectu
 - [[oak-cortex/INDEX|oak-cortex]] — Oak's intelligence engine: separate Postgres+Prisma DB, local-Claude loops enriching the canonical catalog (pricing first); prod is read-only to it.
 - [[nanza-auth/INDEX|nanza-auth]] — auth glue: Cognito user-pool trigger Lambdas, token & password flows.
 - [[_shared/INDEX|_shared]] — cross-project architecture, decisions & the capabilities catalog.
+- [[business/INDEX|business]] — the company rather than the products: founder strategy, go-to-market and outreach, investor relations, corporate structure. Keep product folders technical; anything general goes here.
 
 ## Capabilities
 

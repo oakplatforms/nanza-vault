@@ -3,17 +3,34 @@
 Summaries of multi-agent / multi-step orchestration patterns we use. The *pattern* is a reusable playbook documented here; the runnable agents live per repo in `.claude/agents/`.
 
 ## Card-data migration pipeline (nanza-api)
-A staged pipeline coordinated by `migration-orchestrator`, fanning out to dedicated sub-agents in dependency order:
+A staged pipeline coordinated by `migration-orchestrator`, fanning out to dedicated sub-agents in dependency order. Input is one raw cards export per drop (e.g. `entities-flesh_and_blood-created-<date>.csv`); output is a per-release folder of DBeaver-ready SQL under `migrations/output-sql/<release>/` with a `MANIFEST.md` giving the run order. Generators live in `migrations/orchestration/` (committed); CSVs and SQL are local-only (lost once, 2026-08-19 — keep the raw export somewhere durable).
 
-1. `migration-sets` — insert `Set` records (runs first).
-2. `migration-entities-products` — insert `Entity` + one `Product` each (looks up `Set.id`).
-3. `migration-supported-tag-values` — add new `SupportedTagValue` rows (diff-shaped).
-4. `migration-entity-tags` — attach per-card tag values as `EntityTag` rows (batched).
-5. `migration-images` — download, rename to `<entityId>.<ext>`, emit `UPDATE Entity.image`.
+0. `normalize_new_cards.py` — raw export → template-shaped CSV (`migrations/templates/new-cards-template.csv` is the contract). This is where every data-shape rule lives; see the gotchas below. Its printed report (unresolved card types, casing fixes, one-set-per-name map, promo remaps, fill counts) is the human's first review gate.
+1. `migration-sets` — insert `Set` records, one per code, idempotent on `(code, brandId)` (runs first).
+2. `migration-entities-products` — insert `Entity` + one `Product` each; `Product.number` = uppercase(id minus `fab-`) is the durable card key; `Set` resolved by code, admin by email (`MIGRATION_ADMIN_EMAIL`, default `skylarcbanks@gmail.com`).
+3. `migration-supported-tag-values` — diff-shaped: adds only NEW `SupportedTagValue` rows; the prevalidate prints the NEW/exists grid so new values (e.g. a new `type`) are reviewed before insert.
+4. `migration-entity-tags` — attach per-card tag values as `EntityTag` rows, batched at 2,000; only values that exist as `SupportedTagValue` are attached, unsupported ones are reported, never invented.
+5. `migration-images` — needs a DBeaver export of `Product.number → Entity.id` (entities got fresh cuids in stage 2); downloads and renames images to `<entityId>.<ext>`, emits `UPDATE Entity.image`; the human uploads the folder to S3.
 
 Plus `migration-fix-comma-values` as a one-off cleanup for comma-joined tag values.
 
+Every stage emits `prevalidate → insert batches → postvalidate` with an "Expect …" comment on each check; the human runs them in DBeaver with Execute Script (Alt+X). SQL resolves brand/tag/category/set by *name or code* at runtime, so the same files run unedited in dev and prod. Never execute SQL from the pipeline itself.
+
 **Pattern shape:** orchestrator → ordered stages with hard dependencies → each stage is idempotent DBeaver SQL, generated not executed (human runs it). Good template for any staged, dependency-ordered data migration.
+
+### Gotchas (each one has bitten a real run)
+
+- **One Set per name; the export's `set_code` is not the card's set** (2026-09-23). Exports stamp hero-deck reprints with the code of the card's *original* printing, so a Prism deck card numbered `SAT001` arrives as `DTD`/`MON`/… and the sets prevalidate shows `Prism` under nine codes. Brand rule: every card sharing a set name belongs to the ONE Set of that name, whatever code the export used — the set code is only a grouping key, `Product.number` is the card key and is never changed. The normalizer maps each name to one code (the code an earlier drop already used for that name → the existing Set, e.g. `Viserai` = `SVI`; else the majority card-number prefix among the name's rows; else the majority export code) and rewrites all its rows. A name must never appear under two codes in its report. The 2026-08-17 load predates this rule and may have ~79 mis-set entities to re-point by name.
+- **Tag-value casing drifts in exports** (2026-08-17, again 2026-09-22). The entity-tags guard matches `SupportedTagValue.displayName` case-insensitively but stores the CSV string, so lowercase `red` lands as-is and needs a DB repair. The normalizer now re-cases every tag value to the canonical casing. Lesson: validate-and-normalize at the mouth of the pipeline, not with repair scripts at the end.
+- **Validation must use the insert's own key.** The sets prevalidate used to check `(code, displayName)` while the insert guards on `code`, producing bogus NEW rows for existing codes whose label differed. A check that disagrees with its insert is worse than no check.
+- **Export columns lie about identity.** `product_number` drops the foil suffix (`-RF`) — derive the number from `id`. `referenceCode` is a random P-code since 2026-07 — never join on it. `set_code` is the original printing (above).
+- **Promo cards go to one Set** (`PSM`), regardless of the code the export stamped; promo numbering prefixes (`FAB`, `GEM`, `JDG`, `LGS`) are not sets.
+- **New card types need an explicit mapping.** `type` is derived from `card_type` by majority vote over prior drops; a card type nobody has seen (`Event`, `Arakni Mentor` → `Mentor`, 2026-09-22) stays unresolved until added to the normalizer's `TYPE_OVERRIDES`, and then shows as a NEW `type` value in stage 3.
+- **Export artifacts in single values** get a targeted fix, not a new value: `Iar Marvel` → `Marvel` (set code baked into a rarity, 2026-09-22). Localized values (`影`, `Ombra`, `盟友`) are kept as exported — decided 2026-09-23.
+- **Comma-joined tag values must be split** (class/type/subtype/talent/keywords split on `,` and `/`); postvalidates assert zero commas remain.
+- **DBeaver runs one statement on Ctrl+Enter.** `DO $$` batches *and* multi-statement inserts (the sets file is one INSERT per code) need Execute Script (Alt+X), or the run "succeeds" having inserted one row. Also `cuid()` must exist in the DB.
+- **An empty admin email is not a failure** — it means a NULL creator; the entities prevalidate now says so instead of printing an expect-1 check that returns 0.
+- **Don't infer DB state from an old CSV.** Nine IAR rows in the 2026-06 file did not mean an IAR Set existed; the entities prevalidate's missing-codes check is the truth, and "missing sets" there usually just means the sets insert didn't land yet.
 
 ## Tag-metadata pipeline (nanza-api)
 A second, separate orchestration (`migration-metadata-orchestrator`) added 2026-08-18. It runs off a different source — a curated supported-tags metadata CSV (`Brand Tag, Supported Tag Value, Description, …`) — and *enriches* the SupportedTagValues the card pipeline created, rather than inserting anything:
@@ -30,3 +47,8 @@ A third orchestration (added 2026-08-20), unrelated to the DB migrations — an 
 **Pattern shape:** orchestrator → parallel identical workers over ≤50-row shards (vs. the migrations' *ordered dependency* stages) → methodology lives in the vault ([[../nanza-api/solution-designs/card-pricing|Card Pricing]]) and is read by workers at runtime, so tuning the rules is a doc edit, not an agent edit. Good template for any fan-out-over-shards research task. No DB writes, no SQL — files only.
 
 **Model tiering (2026-08-20):** workers pin `model: haiku`, the orchestrator pins `model: sonnet`, and flagged/low-confidence rows are escalated to one sonnet-override worker pass — cheap models do the bulk, the expensive model only sees the hard tail. First pipeline to tier explicitly (migration agents inherit the session model); apply the same pattern there if migration runs ever feel expensive.
+
+## Codebase audit fan-out (nanza-mobile, 2026-09-16)
+A read-only *review* orchestration, not a data pipeline: the top-level session ran the mechanical tools first (`tsc --noEmit`, ESLint JSON, `knip`, `depcheck`) and handed their outputs to **six parallel sub-agents, one per audit dimension** — dead code · dependencies & size · network/data layer · component standards · runtime performance · obsolete practices & tooling. Each agent was briefed with the repo's `CLAUDE.md`, the ui-review checklist and the relevant solution designs, told to verify tool claims with its own greps (knip/depcheck produced several false positives), and required to write a report with severity / effort / risk / fix-now-vs-later per finding. The top level then re-verified any claim two agents disagreed on and wrote the synthesis ([[../../nanza-mobile/solution-designs/codebase-audit-2026-09|Codebase audit — September 2026]]); raw reports archived under `nanza-mobile/audits/<date>/`.
+
+**Pattern shape:** tools → parallel dimension-specific reviewers (no shared files, no writes) → top-level reconciliation → one triaged doc + archived evidence. Model tiering: sonnet for the mechanical dimensions (dead code, deps, obsolete), opus for the judgment-heavy ones (network, components, performance). ~2,000 lines of evidence for ~60 minutes wall-clock. Reusable for any "where are we" audit of a repo; the dimension list is the knob.

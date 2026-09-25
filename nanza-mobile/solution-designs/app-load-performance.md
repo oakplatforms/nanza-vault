@@ -18,6 +18,24 @@ fetched on that screen's mount with the load-time copy as placeholder where a in
 matters. This is the payload-budget rule from the Posts design, generalized to the whole cold
 start.
 
+## The three-request gate (2026-09-11)
+
+The home page's first paint now waits on **exactly three requests**, the same for guests and
+signed-in viewers: the affiliate circles, Trending (primary tag values) and Groups. `useHomeReady`
+fetches those three together and latches `isReady`; everything else lands after the commit and
+fills in where it belongs:
+
+- **`/posts` (the What's-new bands) is off the gate.** It was a fourth gate and the most
+  expensive read on the page, and it was stretching the cold start. `WhatsNewSection` now owns
+  the request — it mounts once the page is up and calls `usePosts` itself — so the three bands
+  appear as the posts land. The one-cache-entry rule still holds (every band and PostThread
+  share the `['Posts','BRAND',id,viewer]` key); only *when* it fires changed.
+- **Query List shelves** stay behind `deferredActive` (after interactions), as before.
+- **Groups shelf shows for guests.** `GroupBannerCarousel` had hidden itself for signed-out
+  viewers since 2026-08-30; it now renders for everyone so the page reads the same in both
+  states, and guest tiles open the group detail like anyone else's (with no Join pill on the
+  tile or the detail) — see [[groups|Groups]].
+
 ## What loads now (and what moved)
 
 ### 1. Home feed: `/feed` is retired on the frontend

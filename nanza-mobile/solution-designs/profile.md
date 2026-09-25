@@ -209,6 +209,35 @@ Trades → Saved Items (own only).
   infinite `useUserSellFeed` / `useUserBids` stay for the Trade screen and the post composer's
   ELB picker.
 
+### Section-heading "Add new" pills (2026-09-11)
+
+Every section on the OWN profile — Posts, Collections, Trades — carries a white emphasis
+**Add new** pill on its heading, to the RIGHT of the quiet See all, at the same pill
+geometry. It shows in every state (content, pending, empty): an empty section is exactly
+where the create entry matters. The friends row's **Add collection** pill is retired — the
+row is now just the facepile + count — and Collections' Add new is its replacement.
+
+- **What each does (the host `ProfileScreen` owns it):** Posts opens the brand-feed post
+  composer (BRAND + the selected brand, the same target the Home plus posts to; hidden when no
+  brand is selected, the FAB's own gate); Collections opens `CreateCollection`; Trades
+  navigates to the Trade tab (`Main → Trade → TradeScreen`, which also dismisses the profile
+  slide-up — the CreateListingsScreen recipe).
+- **The shelf family grew an emphasis action:** `ShelfProps` / `ShelfHeading` / `CardGrid` /
+  `CardCarousel` take `emphasisActionLabel` + `onEmphasisActionPress`, rendered as
+  `ActionPill emphasis` inside a right-hand cluster (`carouselHeadingActions`, sm gap). It is
+  never overflow-gated (the primary See all still is), and an emphasis action always keeps the
+  pill layout rather than the whole-row link. `ProfileSections` takes `onAddPost` /
+  `onAddCollection` / `onAddTrade` and threads them into every heading; the public profile
+  passes none, so nothing changes there.
+- **The composer host:** `JoinChatFooter` gained `open` + `onClose` — a host-driven "open now"
+  for its entry-less `placement="none"`, the way `replyTo` opens it for a reply — so the
+  profile reuses the one Modal/GestureHandlerRootView/AlertProvider host instead of forking
+  PostDetail's edit modal. The posts preview refetches because every post mutation marks
+  `['UserProfilePosts']` stale with an ACTIVE refetch — `useCreatePost` for a new root post
+  (added 2026-09-11; it had only touched the post's home feed, so a fresh post stayed missing
+  from both profiles until an app reload), plus the composer's edit and draft-publish paths
+  and the update / delete / set-primary hooks.
+
 ## Related
 
 - [[../INDEX|nanza-mobile]]
@@ -221,10 +250,21 @@ Trades → Saved Items (own only).
 
 The profile's **Saved Items** section and its See-all mode are gone, along with every heart on
 listing, bid and lot cards and detail screens (`Feed*Card`, `ListingScreen`, `BidScreen`). `SavedItemsContext` and `services/api/SavedItem.ts` are deleted too (2026-08-30): the heart on a
-post is `hooks/useLike.ts` — local optimistic state seeded from the post's `likeCount` /
+post (card footer only — the detail's header heart went 2026-08-30) is `hooks/usePostLike.ts` — local optimistic state seeded from the post's `likeCount` /
 `viewerHasLiked`, one `postService.toggleLike` (`POST /post/:id/like`) — so nothing about likes
 is fetched at app load any more. `screens/savedItems/`, `FeedItem.isSaved` and the `savedItems`
 styles/query keys are deleted. Favorites replaces
 saving in a later release. API side: [[../../nanza-api/solution-designs/saved-items|Saved items →
 post likes only]].
+
+**Heart snap-back fixed (2026-09-24).** Tapping the heart flashed the new count then fell
+back, while a relaunch showed the like had landed (the API was right). `usePostLike`'s
+re-seed effect depended on its own `isToggling` flag, so the moment the toggle settled it
+re-ran and copied the post's ORIGINAL cached props over the server's answer. Now: the effect
+re-seeds only when the post's own `viewerHasLiked` / `likeCount` change (an in-flight
+toggle is guarded by a ref, which never re-runs it), and the settled `{ liked, likeCount }`
+is written into every cached copy of the post — `Posts` / `Replies` / `UserProfilePosts`
+pages, the profile preview page, `PostDetail` — via `setQueriesData`, so the props feeding
+the hook (and every other card showing that post) agree with the server at once. `Posts`
+is still marked stale for its next visit, but no longer refetched on every tap.
 

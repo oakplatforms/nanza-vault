@@ -52,3 +52,9 @@ reason.
   (`SellerGateModal` deleted); the join `CustomerGateModal` arm removed from
   `GroupsListScreen`, `GroupDetailScreen`, `GroupCircleCarousel` (component survives
   for bid/buy gates). Signed-out users still get `AuthModal` / placeholder screens.
+
+- **Group accept ≠ friendship (2026-08-31).** Approving a membership (`PUT
+  /group/:id/members/:memberAccountId` → ACTIVE) no longer auto-creates or upgrades a
+  Connection between moderator and member (it used to, "mirroring order acceptance"). Being let
+  into a group grants the group, nothing more; messaging each other still takes an ordinary
+  friend request. Order acceptance keeps its connection behavior.

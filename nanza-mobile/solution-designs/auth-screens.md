@@ -184,7 +184,7 @@ Sync failures are log-and-continue: the DB email is the app's source of truth.
 state — signed in, account loaded, no `profile.username` → the sheet is up, with no
 backdrop tap, no swipe-down, no close. Home is visible behind it but untouchable. All
 three completion paths share it: a fresh social sign-in, the email flow (ConfirmationCode
-now clears the signup form, sets isSignedIn, and replaces to Main — landing on Home IS
+now clears the signup form, sets isSignedIn, and pops to Main (`popTo`, 2026-09-16 — `navigate`/`replace` stacked a second Main) — landing on Home IS
 the username step), and a relaunch that skipped completion — **which closes the known
 hole below.** The `SignUpUsername` screen and its route are deleted; sign-up is two
 screens (credentials, code) plus this sheet. Completion is implicit: the PUT lands,
@@ -197,6 +197,23 @@ App Review risk. Social users therefore always arrive with an email and the shee
 username only. The sheet's conditional email field and nanza-api's `syncCognitoEmail`
 (email + `email_verified=true` pushed to the pool) remain as the safety net for
 providers that genuinely omit email — phase-2 Facebook.
+
+**Email-less social account = dead end, now an exit (Skylar, 2026-09-24).** The sheet's
+email field is GONE. Repro: delete the Nanza account (which deletes the Cognito user),
+then Sign in with Apple again — Apple sends the email only on the very first consent, so
+the re-created pool user and app row are born email-less, and the "add an email +
+username" form could not finish (the PUT failed and the locked sheet had no way out).
+Skylar's call: don't try to complete such an account at all. `CompleteProfileModal` now
+treats "signed in, no username, **no email**" as a broken provider identity and renders an
+apology variant — "Sorry, something went wrong with your Apple/Google account. Please sign
+up with your email and password instead." (provider read off the `cognito:username`
+prefix) — with one button, **Sign up with email**, which signs the broken identity out,
+clears the session, and navigates to the `SignUp` screen. Any PUT failure other than a
+fixable "username taken" flips to the same exit. Rule: a locked sheet must never be a
+locked room. The orphaned email-less Cognito user + app row are left in place (harmless:
+no email, so no collision with the manual sign-up); nanza-api's PUT `/user` email path and
+`syncCognitoEmail` still exist but no longer have an app caller. Phase-2 Facebook, if it
+ever ships, needs its own email collection design rather than reviving the field.
 
 ~~**KNOWN HOLE (follow-up):** a social user who kills the app on the completion screen
 re-enters with a live Cognito session and no username.~~ **CLOSED 2026-08-25** by the

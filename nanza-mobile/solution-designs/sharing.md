@@ -58,6 +58,15 @@ route via `getStateFromPath` + a `Linking` listener — the parser matches `<slu
 AndroidManifest carries nine matching `pathPrefix` entries. Each shareable type has a dedicated
 dark share card in `src/components/share/` built from shared parts in `ShareCardParts.tsx`.
 
+**Chrome (2026-09-17):** `ShareScreen` presents like the detail screens it mirrors — it inherits
+the navigator's slide-up entrance and vertical dismiss (no horizontal override), and its
+floating header points a **down chevron** plus the share circle; back is `popTo('Main')`, which on
+a cold open from a link replaces the screen with Home. The screen measures its floating header
+band the way `PageLayout` does and, for a shared **post** only, gives `SharePostCard` the same
+clearance `PostDetailScreen` gives its root post (band + 32 − 14) via `ShareDetailView
+postClearance` → `SharePostCard topInset`. Hero-led cards tuck under the header themselves, and
+Search's headerless reuse of `ShareDetailView` passes no clearance.
+
 ### The buy/sell action matrix
 
 Each share card carries the primary action that fits its object, all funneled through

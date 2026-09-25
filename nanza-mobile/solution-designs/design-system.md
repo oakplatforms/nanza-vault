@@ -203,3 +203,27 @@ wired**: `ThemeProvider` still hard-imports `dark.json`, and its `themeMode` sta
 Wiring mode selection (and the resolver path for two live modes) is the next architectural step —
 **this section, and `architecture.md`, get updated when that lands.** Until then the app is
 dark-only and `light.json` is inert-but-ready.
+
+
+## Button's loading arc — the asset that never drew (fixed 2026-09-11)
+
+`Button`'s `loading` prop keeps the label and spins a Lottie arc at the trailing edge, tinted
+to the label color via `colorFilters` on the single layer "Shape Layer 1". It had never been
+visible anywhere in the app: the source was `assets/icons/loading-2.lottie`, a **dotLottie v2**
+bundle (animation at `a/Main Scene.json`), and the lottie-ios build behind lottie-react-native
+7.2 reads the v1 layout, fails silently and draws nothing. The success check is a plain `Icon`,
+which is why a save showed a checkmark at the end but no spinner during — Skylar's repro on the
+seller-onboarding Submit. `SocialAuthButtons` had already worked around it by pointing at
+`assets/lottie/loading-2.json` (the same animation extracted); `Button` now uses that JSON too.
+Rule: **Lottie sources are plain `.json` in `assets/lottie/`**, never a `.lottie` bundle.
+
+## DetailActionBar — the fade band passes taps through (2026-09-11)
+
+The bar's gradient band (transparent → solid over `fadeBand`) used to be a touch target at
+all times: it declined the responder when the keyboard was closed, but a hit-tested view that
+declines still swallows the touch, so a field scrolled under the nearly transparent top of the
+band — the listing form's "Add photo", its last field — looked tappable and wasn't. The band is
+now `pointerEvents="box-none"` while the keyboard is closed (taps fall through to the content;
+the CTA, a child, keeps its own) and `auto` while it's open, where a tap on the band still
+dismisses the keyboard in one go. Screens still reserve `useActionBarPadding()` so the last
+field can scroll fully clear; this only fixes the case where it hasn't yet.

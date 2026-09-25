@@ -213,3 +213,25 @@ would reintroduce exactly the stagger this removes — the shelf just appears wh
 
 - [[architecture|Architecture]] — the provider tree / navigation wiring these hook into.
 - Project `CLAUDE.md` → "Query freshness" (the enforced rules, rules 26–30).
+
+## Profile posts and identity changes (2026-09-11)
+
+Two staleness bugs Skylar hit on his own profile, both fixed by widening invalidations:
+
+- **The profile's Posts surfaces read their own key.** `ProfileSections` (3-post preview) and
+  the See-all list use `['UserProfilePosts', accountId, viewer(, 'preview')]`, not the post's
+  home key — so a delete, edit, set-primary or create that only marked `['Posts', …]` left the
+  profile showing the old copy until a reload. Every post mutation now also invalidates
+  `['UserProfilePosts']` (`invalidateProfilePosts` in `usePosts.ts`; the composer's create and
+  edit paths do the same), and does it with `refetchType: 'active'` — the profile is usually the
+  screen sitting under the detail/composer the mutation ran from, so it has to be fresh by the
+  time the reader pops back.
+- **Identity is denormalized across the cache.** Post headers, replies, feed cards, group
+  facepiles and message rows each carry the author's username/avatar on their own row. Saving a
+  new username or uploading an avatar/banner used to patch only the session, so every cached
+  surface kept the old name. `AccountScreen/Profile` now calls `queryClient.invalidateQueries()`
+  (no filter) after a profile save and after each media upload — the whole cache marked stale,
+  **lazily**: nothing refetches on the spot, and each screen refreshes on its next visit through
+  the focus-refetch. Deliberately broad rather than a hand-kept list of every key that embeds a
+  profile: that list would drift, and the action is rare enough that one round of refetches on
+  the next few screens is the right trade.

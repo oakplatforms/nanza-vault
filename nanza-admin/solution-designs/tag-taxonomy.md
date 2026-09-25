@@ -66,6 +66,14 @@ This "nested modal with back navigation" is a new pattern for the admin app — 
   nested in it triggers `validateDOMNesting` warnings. Use `DialogBody` (a `<div>`, already padded
   `p-4`) for dialog form content instead.
 
+- **Never overwrite an image at the same S3 key.** The value's banner/thumbnail were first keyed by
+  the value id (`supported-tag-value/<id>.webp`) so re-uploads replaced the object in place. The
+  image CDN ([[../nanza-api/solution-designs/image-cdn|image-cdn]]) edge-caches by path, so the
+  replaced image kept serving the old bytes and the admin preview (same `src`) never changed.
+  Since 2026-09-22 every upload gets a fresh random key and the old object is deleted;
+  `removeBanner=true` / `removeThumbnail=true` on the `PUT` deletes and clears a field (the image
+  field shows a **Remove** button beside the preview). A file in the same request wins over its flag.
+
 ## Data layer
 
 - `src/services/api/SupportedTagValue.ts` gained `get`, `update` (FormData); new

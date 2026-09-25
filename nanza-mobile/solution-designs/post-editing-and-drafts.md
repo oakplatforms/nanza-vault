@@ -78,3 +78,23 @@ tags: [nanza-mobile, solution-design, plan, posts]
 Shared list in the [[../nanza-api/solution-designs/post-editing-and-drafts|api plan]].
 Mobile-only: dismiss behavior (silent auto-save vs "Keep draft?" prompt), and whether
 the composer surfaces a visible "Draft" chip/banner when restored.
+
+## Edit opens whole, with its tags (2026-09-11)
+
+Skylar's repro: editing an existing post sometimes opened with no tag chips; a second open
+showed them. Two causes, both in what the composer is handed at mount (it seeds its tree, chips
+and dirty-baseline ONCE, from `editPost`):
+
+- **The pencil could open before the full post landed.** `PostDetailScreen` renders
+  `fullPost ?? cachedPost`, where the by-id fetch's `placeholderData` is the tapped card's
+  trimmed copy. Tapping edit while that fetch was in flight seeded the composer from the
+  trimmed row — and a save from that seed would have PUT the trimmed item set back over the
+  real one. `usePostDetail` now also returns `isReady` (the card was already complete, or the
+  real fetch has replaced the placeholder), and the detail header shows the owner's pencil
+  only once it's true.
+- **Tag-page posts had no brandId.** The composer's tag line is gated on `brandId` end to end,
+  and the detail only derived it for BRAND (the home itself) and GROUP (the group's brand).
+  A post homed on a tag page (`SUPPORTED_TAG_VALUE`) got `undefined`, so its edit never
+  showed tags at all. The detail now mirrors `SupportedTagValueScreen`'s
+  `['supportedTagValue', id]` query (same key + `include=brandTag`, a cache hit when arriving
+  from the tag page) and reads `brandTag.brandId` from it.

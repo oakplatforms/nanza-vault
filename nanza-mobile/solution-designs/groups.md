@@ -211,3 +211,20 @@ Two causes, same symptom ("the list flashes / double-loads"):
 - [[share-card-restyle|Share Card Restyle]] — the same "match the detail screens" push for
   the share surfaces; `ShareGroupCard`'s repaint is scoped there.
 - [[design-system|Design System]] — tokens and typography slots the header uses.
+
+- **Groups shelf: shown to everyone (2026-09-11, reversing 2026-08-30).** `GroupBannerCarousel`
+  had hidden itself for signed-out viewers (it was inert for them — no Join, no tap). Skylar
+  wants the homepage to read the same signed in or out, so it now renders for guests too, and
+  a guest tap opens the group detail like a member's. **Guests see no Join anywhere** (same
+  day): the tile's pill is omitted (`GroupBannerThumb` takes `membership` optional — none means
+  no pill) and the detail's action-row right slot renders nothing for them (Share was already
+  hidden). Title stays "Groups" and the contents are unchanged: the brand's
+  groups, the viewer's memberships sorted first (Skylar, 2026-08-30 — "My groups" was
+  considered and dropped since others stay visible). The shelf is one of the three requests
+  that gate the home page's first paint — see [[app-load-performance|App-load performance]].
+
+- **Home tile pill: three states (2026-08-31).** `GroupBannerThumb` takes `membership:
+  'member' | 'requested' | 'none'` — Joined / Requested / Join — matching the group detail's
+  own pill (a sent request used to still read "Join"). Requested wears the Joined resting
+  dress; only Join keeps the emphasis pill. The rail derives the state from `members[0].status`
+  (ACTIVE / PENDING).

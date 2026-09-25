@@ -148,6 +148,74 @@ Both approved verbally on 2026-08-27 as part of this plan.
   panel has no "Pay with" title. A listing's own photo sits `contain` on a dark frame in the thumb
   slot; `EntityLockupRow` gained an additive `fadeColor` prop so the tag-line fade matches the
   card's surface instead of painting a page-coloured square over it.
+- **Own listing / lot gets the proactive sheet (2026-08-31).** `useShareActions` `onBuy` /
+  `onBuyBulk` now show the bid flow's "This is your bid" pattern — "This is your listing / lot.
+  You cannot make an offer on your own …" (`ConfirmSheetContent`) — before the offer screen ever
+  opens, instead of letting the owner fill the draft and hit the API error at submit. Covers
+  every entry point (listing detail, feed cards, share cards).
+- **Seller sees "You receive" (2026-08-31).** `OfferSummary` gained `showSellerReceives` /
+  `isCash`: when the viewer is the seller reading full totals (a listing offer, or a settled
+  bid offer — never the bidder's live checkout), the summary appends OrderSummary's payout
+  block — processing fee (3% + $0.50) and tax as deductions, then "You receive"; a cash handoff
+  keeps the full total. Same math as the order screen, one screen earlier.
+- **The detail speaks the inbox's sentence (2026-08-31).** The WTS / WTB chiclet and the status
+  pill are gone from the offer detail. The top block is the party row (avatar + username, tap →
+  profile) followed by the SAME title + body the viewer's system message carries —
+  `utils/offerCopy.ts` (`offerStatusCopy(offer, viewerAccountId, status)`) mirrors the API's
+  `offerStatus.ts` per status / side / type, lot-aware, plus the two states the inbox never
+  shows (your own pending "You sent @x an offer", "You canceled your offer"). The nav keeps the
+  "Offer" title (avatar-in-nav was tried and scratched the same morning). Later the same day:
+  the **title line was dropped** (the body sentence under the name says it all), the avatar grew
+  to 44 with the username on `typography.title`, and the envelope moved back **beside the
+  username** (`detailPartyLine`), connected-only. The bid offer's card lost its listing-price
+  and ×N pills (the price read as the offer's; the deal lives in the sentence and summary) and
+  sits at a md top margin, while the bid checkout rows regained rowsCard's own lg gap. Copy changes must land in `offerStatus.ts`
+  and `offerCopy.ts` together.
+- **Offer detail spacing + stored totals split (2026-08-30, later).** The status row pulls up
+  by xs into PageLayout's 32pt floating gap (`detailStatusRow` `marginTop: -xs`); the checkout
+  card under the lines card drops its own top margin (`detailCheckoutCard`, a `style` prop on
+  `OfferCheckoutSummary` / `OfferCheckoutRows`) since the lines card already carries the lg
+  bottom margin — the two stacked to a double gap. The stored order's one "Shipping" line now
+  splits like the make-offer preview: seller's / fixed shipping rate, each of the method's
+  handling fees, each add-on — the API's `offerInclude` carries
+  `shippingMethod.shippingOptions` for it. When the order's method carries no handling fees to
+  split out, the rate line reads **"Shipping & handling"** rather than "Seller's shipping rate"
+  over a number that may still include them.
+- **WTS / WTB is the shown party's (2026-08-30).** The offer detail's intent tag describes the
+  person on the row — the other party — not the sender: a bid offer's sender sells and its
+  recipient buys, a listing offer's sender buys and its recipient sells, so the viewer's own
+  side is inverted. It used to show the sender's intent to both sides.
+- **Bidder's address always populated (2026-08-30).** On a bid offer's accept rows the Shipping
+  line read "Add an address" with one on file; the row now takes the session customer's address
+  and falls back to the order's `customerSnapshot` (`utils/offerCheckout` `readCustomerSnapshot`
+  / `formatSnapshotAddress[Lines]`, shared with `OfferCheckoutSummary`). The API opts the
+  snapshot back in on `offerInclude`.
+- **The buyer's checkout, read back (2026-08-30).** `OfferCheckoutSummary` — the same
+  tap-to-expand rows as `OfferCheckoutRows` (Shipping / Shipping method / Shipping services /
+  Payment) but read-only, built from the stored order: `deliveryType` + `shippingMethod`
+  (Tracked / Untracked / In Person), `orderShippingOptions`, `paymentType` (Card / Cash) and the
+  `customerSnapshot` address. Rendered on the offer detail whenever the order already carries a
+  checkout — a listing offer (chosen on send) or any accepted offer — so the seller can see how
+  it ships and how they're paid before Sell Now. The bid-offer accept flow keeps the editable
+  rows. The status row also lost its top padding (was xs) to sit closer to the header.
+- **Confirmation quotes the order total (2026-08-30).** `OfferConfirmation` for a listing offer
+  receives `totals.total` (cards + shipping, handling, add-ons, small-order fee, tax) — it used
+  to show the card subtotal, so "$4.50" understated what the buyer had offered to pay. A bid
+  offer still passes the subtotal: the bidder picks shipping on accept, so no total exists yet.
+- **Party row cluster (2026-08-30, revised 2026-08-31).** On the listing / bid detail the
+  compact `UserActionRow` groups the WTS / WTB tag and the envelope circle right beside the
+  avatar + username (they were pinned far right for a day, then pulled back next to the name).
+  The offer detail's envelope lives in the nav's `rightIcons` instead and shows **only when the
+  viewer is already connected** to the other party (`useMessageUser` → `'ACCEPTED'`; no request
+  flow from there).
+- **Shipping services in person + on the offer detail (2026-08-30).** The services pills stay
+  live under In Person (`OfferCheckoutRows`: switching tabs keeps `shippingOptionIds`, no dimming,
+  the help line reads "when you meet up"); `computeOfferTotals` prices the add-ons in person too —
+  only the method rate and handling drop — and `OrderSummary` counts and lists them on an
+  in-person order. The API mirrors this (in-person invoice = add-ons only). The offer detail
+  used to show the seller just the shipping sum; it now breaks the order's stored
+  `orderShippingOptions` out as named rows (`addOnItem`, shared with the live preview) with the
+  remainder as "Shipping", so the recipient sees the sleeve / shield the buyer asked for.
 - **Totals** are previewed client-side by `utils/offerTotals.ts` (`computeOfferTotals`,
   `defaultShippingMethodId`) mirroring the API invoice math; the API is the source of truth
   once the offer is invoiced.
@@ -182,6 +250,10 @@ Both approved verbally on 2026-08-27 as part of this plan.
   their listing prices — a $2 discount on a $7 lot comes off every card evenly, unit prices
   rounded to cents with the remainder on the first single-quantity line — so the offer still
   goes out as ordinary per-line `lines` and the API is untouched. Child slides are unchanged.
+  Every lot line arrives at the card's **full quantity** (`lineFromListing(l, l.quantity)`), the
+  way the API expands a lot — a multi-buyer child used to default to 1, which undercounted the
+  lot, spread the cover total across too few units, and pushed every unit price outside the 30%
+  band (fixed 2026-08-30).
 
 - **Offer line card wears the order Items card thumb (2026-08-29, voice session).** The
   lockup's thumb IS the order screen's card — `panels.ts` `orderCardImageWrapper` (black
@@ -261,6 +333,28 @@ Both approved verbally on 2026-08-27 as part of this plan.
   (`lineCardFirst`); the identity sits sm+xxs below the thumb's top. **"Remove from offer"** shows
   on every listing-offer card: with several cards it drops that one, with a single card it closes
   the screen (same as the header chevron); styled as a small accent link.
+
+- **One price box on every terms row (2026-09-16).** `OfferTermsRow`'s hugging price box (52
+  tall, input fill, 12 radius, the "$" in the amount's own face, the invisible twin sizing the
+  slot) is now shared by both variants: the make-offer `OfferLineCard` wears it too, in place of
+  the capped-width form pill it inherited from the create forms (`linePriceWrap` /
+  `linePriceInput` retired). The amount a buyer set on the listing / bid detail now looks like the
+  same control when it reappears on the offer card. The `glass` split is only the stepper and
+  count now — the offer screen keeps the ink `QuantityStepper` and body-type count.
+
+- **In person defaults to cash (2026-09-16).** Picking the In Person delivery tab on the offer
+  screen sets the payment to `CASH` (`OfferCheckoutRows.selectTab`); card stays selectable in
+  the Payment panel, and moving back to a shipping tab still resets cash to `CARD`.
+
+- **Closing the confirmation uses `popTo('Main')` (2026-09-16).** React Navigation 7's `navigate`
+  pushes unless the target is the current route, so `navigate('Main')` from `OfferConfirmation`
+  stacked a **second Main** over the closed screen. That copy is a modal card carrying the root
+  stack's vertical swipe-to-dismiss gesture, so on Android every scroll on the duplicated Home was
+  consumed as a dismiss swipe (the "frozen homepage"), and a long swipe popped the copy and
+  brought the confirmation back. Same fix on `OrderConfirmation`, `ShareScreen`, the listing /
+  bid `handleBack` fallbacks, the header logo, and the sign-in / sign-up completions (see
+  social-auth). Rule: to return to a screen already in the stack, `popTo`, never `navigate` or
+  `replace`.
 
 ## Phasing
 

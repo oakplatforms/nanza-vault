@@ -89,6 +89,19 @@ migrate; screens that want the old left/right push keep an explicit
 
 ---
 
+**Returning to a screen that is already in the stack (React Navigation 7, 2026-09-16).**
+`navigate` PUSHES unless the target is the current route, and `replace` only swaps the top —
+neither goes back. `navigate('Main')` from a root-stack screen therefore stacked a second
+Main over the closed screen: a modal card carrying the root stack's vertical
+swipe-to-dismiss gesture, so on Android every scroll on the duplicated Home was consumed as a
+dismiss swipe (the "frozen homepage" after sign-in and after making an offer) and a long
+swipe popped the copy to reveal the screen that had just been closed. The rule, applied
+across the app: to go back to an existing route use `popTo(name, params)` (a no-op when it is
+already on top; swaps the current screen for it on a cold open), and to go back to Main AND
+land on a tab use `CommonActions.navigate({ name: 'Main', params: { screen, params }, pop:
+true })`. Confirmation closes, sign-in / sign-up completions, the header logo, `backTo`
+backs, the bulk / scan "land on Trade" finishes and the group-delete return all follow it.
+
 ## State & data layer
 
 State is split by lifetime: **server state** lives in React Query; **cross-cutting client

@@ -268,8 +268,10 @@ chosen for SHIP orders, then — listing offer — card on file + seller Stripe 
 seller `isAdminVerified` + Stripe account, order stays `CREATED`. `sentAt`/`expiresAt` are set
 and the order's `createdAt` is reset to the send time so the unshipped-order sweep's clock
 starts at send, not at draft creation. The invoice service **skips its `ORDER_SOLD` system
-message** for offer orders (the engine sends `OFFER_RECEIVED` instead); the seller/customer
-confirmation **emails are unchanged** (follow-up: offer-specific templates in nanza-email).
+message** for offer orders (the engine sends `OFFER_RECEIVED` instead). nanza-email's
+`SellerOrderConfirmation` sold variant now asks for **shipping only** — "Ship Within 3 Days",
+no accept language (2026-08-31: a sold order is already accepted; only the offer-received
+variant still asks the seller to accept).
 
 **Accept.** Listing offer → `acceptOrder` as the seller. Bid offer → the bidder's checkout
 (`validateOfferAcceptBody` → `resolveShippingSelection`, the same seller-offers-it / add-ons-exist
@@ -279,6 +281,20 @@ then card-on-file check, invoice (which prices shipping/tax/total from those rel
 `acceptOrder` on the seller's behalf, then the bid's quantity is reduced by the offer quantity
 (INACTIVE at zero — partial fills keep the bid open for the remainder). Send no longer requires
 a shipping method on a bid offer (2026-08-28); it still does on a listing offer.
+
+**The buyer's address rides on the offer (2026-08-30).** `Order.customerSnapshot` is omitted
+globally (multi-KB JSON); `offerInclude` opts back in (`omit: { customerSnapshot: false }`) so
+both parties see where the order ships before accepting — the seller on a listing offer, the
+bidder as a fallback when their session's customer row is behind. Accepting still charges and
+ships to the live Customer record, never to the snapshot.
+
+**In person keeps the add-ons (2026-08-30).** An in-person checkout drops the shipping method
+(no shipment, no postage) but **not** the seller's add-ons — a buyer may still want the sleeve
+or shield at a meet-up, and the seller is still owed for it. `parseCheckoutFields` used to blank
+`shippingOptionIds` for `IN_PERSON`; it now parses them for every delivery type, and the invoice
+prices an in-person order's `shipping` as `calculateShippingOptionsRate` alone (was a flat 0).
+Cash in person still waives tax and the small-order fee. The stored `OrderShippingOption` rows
+ride on `offerInclude`, which is what lets the recipient see which services were chosen.
 
 **Expiry.** `OFFER_EXPIRY_HOURS = 84`, matching the existing sweep exactly (the plan said
 "72h / same window" — the cron's window is 84h, so 84h wins for consistency). Listing offers
@@ -326,24 +342,35 @@ a $10 one is fine (condition, trust). In their place, an offer must stay within 
 reference — `assertOfferPriceInRange(price, reference, 'listing' | 'bid')` in
 `validation/offer.ts` (`OFFER_PRICE_TOLERANCE`), run per line in `validateOfferContext`: the
 listing price for listing offers (a lot's spread total moves every line by one ratio), the bid
-price for bid offers. Mobile mirrors the bound inline; the API is the gate.
+price for bid offers. Mobile mirrors the bound inline; the API is the gate. A lot's cards must
+reach the offer screen at their **full quantity** (mobile `MakeOfferScreen`, matching the API's
+expansion): defaulting a multi-buyer child to 1 undercounted the lot, so the cover total spread
+across too few units and every unit price fell outside the band (fixed 2026-08-30).
 
-**Notification copy (rewritten 2026-08-29, twice).** One voice throughout: the **title** names
-who did what on whose bid / listing, the **body** carries the details line — what was wanted,
-the card, the terms — then what happens next.
+**Notification copy (rewritten 2026-08-29 twice, personalized 2026-08-31).** One personal
+voice throughout: titles are always **your / their offer** — "`@x` sent you an offer", "`@y`
+accepted your offer", never "an offer" — and once a deal settles the body speaks in the past
+tense from the reader's seat: **"You bought / You sold …"**, then what happens next. A lot is
+"your lot" / "their lot" (every line from one `bulkListingId`), never "your listing". The
+mobile offer detail renders these same sentences (`utils/offerCopy.ts` mirrors this file —
+update the two together).
 
 | Event | Title | Body |
 |---|---|---|
-| New offer (recipient) | "`@x` sent an offer for your bid / listing" | "Wants to sell 3× Card for $45.00 · Near Mint. You have 3 days to accept or decline." |
-| Accepted (sender) | "`@y` accepted your offer for their bid / listing" | "Wanted to sell … Ship the order to complete the sale." / "… Your order is on the way." |
-| Accepted (recipient row) | "You accepted `@x`'s offer for your bid / listing" | details + "They will ship your order." / "Ship the order …" |
-| Declined | "`@y` declined your offer for their …" / "You declined `@x`'s offer for your …" | details (+ "You can send a new offer.") |
-| Canceled (recipient row) | "`@x` canceled their offer for your …" | details |
-| Expired | "Your offer for `@y`'s bid / listing expired" / "`@x`'s offer for your … expired" | details + "didn't respond within 3 days" |
+| New offer (recipient) | "`@x` sent you an offer" | "I want to buy 2× Card for $28.00 from you. It’s in Near Mint condition. Your original listing price was $36.00. You have 3 days to accept or decline." — or "This offer matches your bid/listing price." when they line up (`originalPriceSentence`; reference = bid price × qty, or the listings' own prices; `offerNotifyInclude` carries `bid.price` + `listing.price` for it). No "for N" tail anywhere — the card name carries the count (2026-08-31, twice: first lots-only, then removed outright). |
+| Accepted (sender) | "`@y` accepted your offer" | "You bought 2× Card for $28.00 from `@y`. It’s in Near Mint condition. Your order is on the way." / "You sold … to `@y`. It’s in … condition. Ship the order to complete the sale." |
+| Accepted (recipient row) | "You accepted `@x`'s offer" | "You sold … to `@x`. Ship the order …" / "You bought … from `@x`. They will ship your order." |
+| Declined (sender) | "`@y` declined your offer" | "You wanted to buy/sell …" only — no "send a new offer" nudge (allowed, not promoted). Canceled/expired recaps read the same way: "You wanted to …" to the sender, "They wanted to …" to the recipient (2026-08-31). |
+| Declined (recipient row) | **deleted** — a decline is over for the decliner (`deleteSystemMessage`) | — |
+| Canceled (recipient row) | "`@x` canceled their offer" | "I wanted to buy … from you." — the row speaks in the sender's voice (2026-08-31) |
+| Payment failed on accept | *not an offer row* | The offer closes `CANCELED` silently (`notify: false`) and both parties get order-worded payment-failed rows instead — see [[system-messages#Payment failed on accept (2026-09-17)|System messages]] (2026-09-17). |
+| Expired | "Your offer to `@y` expired" / "`@x`'s offer expired" | details + "didn't respond within 3 days" |
 
-Helpers: `cardName` ("3× Card" for one line, "6 cards" total for several), `offerTerms`
-("$45.00 for 3 · Near Mint" — agreed total, quantity when > 1, condition when one listing),
-`wantsLine` ("Wants / Wanted to sell|buy `card` for `terms`"), `yourThing` / `theirThing`.
+Helpers: `cardName(offer, side)` ("3× Card" for one line, "6 cards" total for several, "your /
+their lot" for a lot), `offerTerms` ("$45.00 for 3 · Near Mint" — agreed total, quantity when
+> 1, condition when one listing), `wantsLine(offer, side, tense)`. The wider system-message
+rules (avatars, group / refund rows, the delete-on-decline convention) live in
+[[system-messages|System messages]].
 `offerNotifyInclude` therefore carries line `price` and the listing's `condition`. Offer rows
 also set **`SystemMessage.actorId`** (new nullable `Account` relation, migration
 `20260829130000_system_message_actor`): the sender on the recipient's row, the recipient on the
@@ -375,7 +402,9 @@ reason: a decline reaches the sender, a cancel the recipient, expiry both. `canc
 and the cron use it only when `closeOfferForOrder` actually closed a PENDING offer — an accepted
 offer that is then never shipped stays a plain order cancellation. Bid offers, which never had
 cancel events, now emit them from `declineOffer` / `cancelOffer` / `expireUnansweredBidOffers`.
-`sendOrderCanceledEvents` (exported from `services/order.ts`) is the single cancel emitter.
+`sendOrderCanceledEvents` (exported from `services/order.ts`) is the single cancel emitter; a
+capture failure on accept sends only the **customer** entry, flagged `paymentFailed: true`, so
+nanza-email headlines "Your payment didn't go through" rather than "Offer canceled" (2026-09-17).
 Follow-up: bump nanza-email's `@oakplatforms/types` once ≥ 0.1.92 is published; until then it
 reads the offer through a local `OrderWithOffer` shim.
 
@@ -431,7 +460,9 @@ reading them.
    recipient at a time (the recipient must respond before another can be sent — spam guard).
    **Accepted connections** may have any number open. The check (`assertCanSendOffer`, in
    `validation/offer.ts`) uses `findConnectionBetween` from `services/connection.ts` and runs at
-   send time, not draft time. Blocked in either direction always rejects. Quantity is decremented
+   send time, not draft time. Blocked in either direction always rejects. The rejection copy
+   says why the cap applies and how to lift it (2026-09-17): not connected → wait or send a
+   friend request; request pending → wait for the other side to accept. Quantity is decremented
    on send for listing offers, so a second buyer can only offer on what's left.
 
 ## Open questions

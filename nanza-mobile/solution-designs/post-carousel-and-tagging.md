@@ -51,9 +51,11 @@ tags: [nanza-mobile, solution-design, plan, posts, tagging]
 ## Second revision — per-type budgets & picker polish (2026-08-12 PM, voice + chat; implemented)
 
 - **Per-circle caps** (mirrors the api's second revision): 1 library photo, 1 camera snap
-  (IMAGE drafts carry `source` to tell them apart), 5 texts / links / listings+bids / cards,
-  **1 collection** (briefly five, re-decided same afternoon). The cards budget is
-  **EITHER/OR: one collection or up to five individual cards, never both** (server-enforced
+  (IMAGE drafts carry `source` to tell them apart), 5 texts / links, **10 listings+bids and 10
+  cards** (raised from five on 2026-08-30, `MAX_LISTING_ITEMS` / `MAX_ENTITY_ITEMS` api-side,
+  `MAX_LISTINGS` / `MAX_ENTITIES` in the composer), **1 collection** (briefly five, re-decided
+  same afternoon). The cards budget is
+  **EITHER/OR: one collection or up to ten individual cards, never both** (server-enforced
   too) — the circle disables the moment either bucket is spent, the rows' Add button disables
   once any entity rides the post, and the card multi-select zeroes out once a collection does.
   `draftTypeCounts` in draft.ts is the single tally; `capMessageFor` names the exact
@@ -156,6 +158,31 @@ tags: [nanza-mobile, solution-design, plan, posts, tagging]
   then inside one: search + multi-select entity rows (`pickerRowSelected` tint) with Clear/Add,
   or **"Add collection"** (shown while nothing is picked) attaching the whole library as a
   COLLECTION draft. The My collection / Nanza toggle is gone. Banner/tab dress deferred.
+  **Picks take the first tap (2026-09-16):** `SearchEntityRow`'s "first tap with the keyboard
+  up only dismisses it" gate now applies only to its own navigation path (the Search screen).
+  Overlay hosts that pass `onPress` — this picker, the collection search — get the tap
+  immediately, since they multi-select while the search field is live; in the picker every
+  pick used to cost a keyboard-dismiss tap, and on Android (where the keyboard-visible flag
+  lags inside the composer's modal window) several. The collection search overlay keeps its
+  own dismiss-first scrim. **And the tint wrapper is `collapsable={false}`:** it only carries
+  a style while the row is picked, so Fabric flattened it away on unpick and re-parented the
+  row's children, which killed the gesture-handler touchable inside on Android — a card
+  unpicked once could never be picked again (six taps, none delivered to JS). Any wrapper
+  whose style comes and goes around a gesture-handler control needs the same pin.
+  **Picks ride raw touch events, not the lockup's button (2026-09-17):** even with both fixes
+  above, Android picks still took two or three taps. Instrumented on device: every tap reached
+  the tint wrapper (touchStart + touchEnd, no cancel) and put the gesture-handler button in
+  its began state, but only about one in five reached end and fired `onPress` — the rest were
+  cancelled between finger-down and finger-up, with no pattern in row position or hold time.
+  So the picker's rows render without the button (`SearchEntityRow tapHandledByHost`) and the
+  wrapper recognises the tap itself: a touch ending within 10px / 500ms of where it began
+  toggles the pick; a drag is intercepted by the list (touchCancel) or moves too far. Which
+  handler cancels the button inside the composer's Modal is not pinned down. The two lists
+  also persist taps `"always"` (gesture-handler buttons never claim the JS responder, so
+  under `"handled"` the list spent the tap dismissing the keyboard) and dismiss on drag; the
+  picked tint moved from `ink` (same as `surface` in dark, invisible on Android) to
+  `glassActive`; and the footer X closes on `onPressIn`, so a keyboard re-layout between
+  down and up cannot drop it.
 - **Renderer**: `collection` reference branch — the entity row's gradient dress with the card
   count as meta, navigating to **`CollectionDetail`** (the real banner + 3-column screen; its
   `isOwn`/route-`accountId` logic already covers viewing someone else's). This retired

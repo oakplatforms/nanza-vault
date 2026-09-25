@@ -41,9 +41,10 @@ tags: [nanza-mobile, solution-design, profile, plan]
 >   margin).
 > - **Section spacing** — `profileSectionsStack` gap adds ~12 on top of each section's
 >   own 20pt break ("a tad more"), without touching the app-wide shelf rhythm.
-> - **No Add-New pills on section headings** — explored (white pill beside See all,
->   posts + collections), then dropped; the shelf ShelfHeading/ActionPill/CardGrid API
->   is unchanged. Posts has no create entry (no standalone composer exists).
+> - **Add-New pills on section headings** — explored (white pill beside See all,
+>   posts + collections), dropped, then **brought back 2026-09-11** for all three sections
+>   (Posts / Collections / Trades) and the friends-row "Add collection" pill retired with
+>   it; see [[profile|Profile]] → "Section-heading Add new pills".
 > - **Old-tab-era orphans deleted**: `ProfileScreen/tabs/*`, `ProfileScreen/Profile/`,
 >   `UserProfileCollection`, `UserCollection`, `ReviewRow`, `fetchUserReviews`, and the
 >   review style families in `profile.ts`/`layout.ts`.

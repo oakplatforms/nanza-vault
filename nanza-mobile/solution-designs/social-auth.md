@@ -71,8 +71,9 @@ side by side on the same button background.
   leaves the glyph off-centre. Icon-only controls elsewhere (header circles, the composer
   send) are built the same way. Styles reuse `buttonXxlMuted`'s fill and
   `BUTTON_XXL_HEIGHT`, so the circles match their labelled twins.
-- **`onComplete` prop added.** The labelled variant does `navigation.replace('Main')`,
-  but sign-in lives in **LoginModal** — a sheet. Replacing from inside it swaps the
+- **`onComplete` prop added.** The labelled variant does `navigation.popTo('Main')` (was
+  `replace`, then `navigate` — see the 2026-09-16 note below), but sign-in lives in
+  **LoginModal** — a sheet. Replacing from inside it swaps the
   screen BEHIND the sheet and leaves it open. Sheet hosts now pass `onComplete` (LoginForm
   passes its existing one) and own the dismissal; `returnTo` is ignored when set.
 - Sign-in is `LoginForm` inside `SignUpScreen/`, reached from the header pill — NOT a
@@ -251,3 +252,13 @@ runs with the email from the provider claims. Idempotency: keying the app row on
 
 - [[../architecture|Architecture]] — how auth is wired (direct Cognito SDK, `SessionContext`).
 - [[../../_shared/decisions/|Shared decisions]] — cross-project auth stack lives here.
+
+- **Sheet-hosted sign-in defers the session flip, and every completion uses `popTo`
+  (2026-09-16).** Inside LoginModal the form no longer calls `setIsSignedIn` on submit —
+  the sheet does, in its dismiss-complete handler, so the guest tab bar (which hosts the
+  sheet) can't swap to its signed-in tree and unmount the sheet mid-dismiss. Social buttons
+  follow the same rule when given `onComplete`; the full-screen sign-up path flips as before.
+  Completion then goes `popTo('Main')` / `popTo(returnTo)`: React Navigation 7's `navigate`
+  pushes unless the target is the current route, so `navigate('Main')` stacked a second Main
+  whose modal card ate every scroll on Home (Android) — the "frozen homepage after sign-in".
+  `replace(returnTo)` had the same duplication problem for the screen the flow started from.

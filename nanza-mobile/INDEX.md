@@ -73,6 +73,9 @@ tag, a `solution-design` tag, and its theme tag.
   rule that killed the cold-open flash.
 - [[solution-designs/profile|Profile]] — read-only user-profile parity: count+share headers and the
   read-only collection grid + detail.
+- [[solution-designs/seller-onboarding|Seller onboarding]] — the three-step "Get ready to sell"
+  flow; since 2026-09-11 every screen in it is a vertical sheet with the glass down-chevron
+  (the ID screens' horizontal-push overrides are gone) and every busy CTA spins.
 - [[solution-designs/trade-screen|Trade tab screen]] — the Trade tab's two pills, **Bids** and
   **Listings** (renamed from Buy/Sell, 2026-08-26); the Offers pill and the hidden trade-proposal
   subsystem were deleted the same day.
@@ -107,6 +110,7 @@ tag, a `solution-design` tag, and its theme tag.
 
 ## Plans (in progress)
 
+- [[solution-designs/codebase-audit-2026-09|Codebase audit — September 2026]] — **bundles A–D built 2026-09-16, uncommitted, pending QA (tsc 60→0, lint 254→0 errors); Later list + 8 decisions open**: six-agent read-only sweep (dead code · deps & size · network · component standards · performance · tooling). Headline: style buckets rebuilt on every render at ~500 sites (memoize the getters — zero call-site changes), the tsconfig base preset silently not applied (one-line fix, 60→33 type errors), react-hooks lint absent, offer accept/decline invalidating dead keys, ~8–9 MB of dead fonts/images, 41 dead files. Fix-now bundles A–D vs a later-release list; eight decisions for Skylar. Raw reports in `audits/2026-09-16/`.
 - [[solution-designs/auth-screens|Auth: modal → full screens + social sign-in]] — **plan,
   NOT STARTED**: the auth modal shrinks to a single marketing interstitial (logo, copy,
   Sign up / Keep browsing); the whole sign-up flow moves to full screens and collapses

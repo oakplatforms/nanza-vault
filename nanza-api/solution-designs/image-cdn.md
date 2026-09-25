@@ -101,3 +101,14 @@ Standing up the distribution surfaced four traps, all now encoded in `serverless
 - [[og-sharing]] — the other sharp-on-Lambda subsystem; shares the `sharp-arm64` layer and the
   `nanza-static` bucket.
 - [[infra-push]] — Serverless/CloudFront deployment patterns.
+
+## Uploads are auto-oriented (2026-09-11)
+
+`uploadImage` now runs `sharp(buffer).rotate()` before `resize()`. Bare `rotate()` reads the
+EXIF Orientation tag, rotates the pixels upright and drops the tag; without it Sharp resized
+the raw pixel grid and stripped the metadata, so any upload that still carried its orientation
+in EXIF landed sideways — the "listing image comes in the wrong direction sometimes" Skylar
+hit. The mobile app normally bakes orientation in on-device (react-native-image-resizer,
+rotation 0, keepMeta false), but its resize-failure fallback sends the original file, and
+nothing else in the pipeline guarded it. Server-side is the guarantee: every image, every
+caller, regardless of what the client did.
