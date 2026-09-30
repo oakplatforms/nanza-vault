@@ -15,7 +15,7 @@ Real source lives at `nanza-email/` (repo root); `documentation/` there is a sym
 - **`types/index.ts`** — re-exports DTOs (`OrderDto`, `InvoiceDto`, `AccountDto`, …) from `@oakplatforms/types`; no local domain types.
 - **`local/`** — offline preview harness (`preview.tsx` + `configs.ts` + generated `preview.html`) so templates can be rendered without deploying; run via `npm run preview`.
 - **`serverless.yml`** — defines the Lambda, its SES IAM permissions, the `SES_SOURCE_EMAIL` env var, and the EventBridge rule listing every event type it subscribes to.
-- **`.github/workflows/`** — `deploy-dev.yml` / `deploy-prod.yml` (branch-push deploys via GitHub OIDC + Serverless).
+- **`buildspec.yml`** — run by the `nanza-email-<stage>` CodePipeline (see [[../_shared/architecture/deploy-pipelines|Deploy pipelines]]) on manual release: CodeArtifact login, `npm ci`, SSM config, `serverless deploy`. `.github/workflows/` is the retired GitHub Actions version.
 
 ## How sending works (one line)
 

@@ -62,7 +62,8 @@ when signed in and otherwise a cached guest token. Base URL from `REACT_APP_API_
 the guest-only stub; re-enabling restores the real wrapper + the commented auth routes.
 
 **Build/deploy:** `npm run build` (CRA) → `aws s3 sync` to an S3 bucket, fronted by CloudFront, via
-GitHub Actions (`.github/workflows/deploy-dev.yml`, `deploy-prod.yml`) using OIDC role assumption.
+the `nanza-web-app-<stage>` CodePipeline running the repo's `buildspec.yml` (see
+[[../_shared/architecture/deploy-pipelines|Deploy pipelines]]); `.github/workflows/` is retired.
 Universal Links / App Links assets ship under `public/.well-known/`.
 
 ## Deeper docs

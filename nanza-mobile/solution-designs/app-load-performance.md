@@ -18,17 +18,25 @@ fetched on that screen's mount with the load-time copy as placeholder where a in
 matters. This is the payload-budget rule from the Posts design, generalized to the whole cold
 start.
 
-## The three-request gate (2026-09-11)
+## The two-request gate (2026-09-28; three from 2026-09-11)
 
-The home page's first paint now waits on **exactly three requests**, the same for guests and
-signed-in viewers: the affiliate circles, Trending (primary tag values) and Groups. `useHomeReady`
-fetches those three together and latches `isReady`; everything else lands after the commit and
-fills in where it belongs:
+The home page's first paint now waits on **exactly two requests**, the same for guests and
+signed-in viewers: Trending (primary tag values) and Groups. `useHomeReady` fetches both
+together and latches `isReady`; everything else lands after the commit and fills in where it
+belongs.
+
+**Affiliates left the gate on 2026-09-28** along with the row itself: the affiliate circle
+carousel that opened the page is gone (component deleted, `GET /profiles?type=AFFILIATE` no
+longer fires from Home), so the gate went from three requests to two. The page now opens with
+Trending — untitled, no divider — and the order below it is **What's new 1–3 → Groups → What's
+new 4–6 → Query List 1 → What's new 7–9 → Query List 2 → Query List 3** (Groups moved down
+under the first band; Query List 3 follows Query List 2 directly since there are only nine
+posts). Cutting the affiliate request also drops one round trip from the cold start.
 
 - **`/posts` (the What's-new bands) is off the gate.** It was a fourth gate and the most
   expensive read on the page, and it was stretching the cold start. `WhatsNewSection` now owns
   the request — it mounts once the page is up and calls `usePosts` itself — so the three bands
-  appear as the posts land. The one-cache-entry rule still holds (every band and PostThread
+  appear as the posts land. (Was the fourth of three gates; now the third of two.) The one-cache-entry rule still holds (every band and PostThread
   share the `['Posts','BRAND',id,viewer]` key); only *when* it fires changed.
 - **Query List shelves** stay behind `deferredActive` (after interactions), as before.
 - **Groups shelf shows for guests.** `GroupBannerCarousel` had hidden itself for signed-out

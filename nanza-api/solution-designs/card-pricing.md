@@ -221,6 +221,16 @@ accepted — output then appends `price_usd`/`confidence`/`priced_at`/`note` col
    trend *at or below* the original once new supply lands; never mark one up on reprint
    speculation.
 
+5f. **A comparable-price guess can hide inside a `medium` label, not just `low` (2026-09-30).**
+   Applying one card's price to several sibling rows ("estimate per FAB360 comparable", "similar
+   tier to FAB465", "same as RFA/RFB variants") is the same cross-card substitution rule 5b/17
+   already bans — but a worker can self-rate it `medium` instead of `low`, which defeats any
+   triage that only re-checks `low`/`unresolved` rows. The confidence column is not proof real
+   per-card research happened; **check whether the note names a source for that exact
+   `raw_card_number`, or names a different row/card as the basis.** If it's the latter, it's a
+   guess regardless of label — resolve it with a real per-card search or mark `unresolved`, never
+   leave it standing as `medium`.
+
 5c. **Sanity-check against the base card.** Most FaB non-foil commons/rares from recent sets sit
    **under $1**; a non-foil, non-promo card priced above ~$2 needs an observed number behind it.
    Conversely, tournament/prize promos (Pro Tour, Nationals, GEN CON, Gold Foil) routinely run
@@ -263,6 +273,15 @@ accepted — output then appends `price_usd`/`confidence`/`priced_at`/`note` col
    `confidence: low` with `note: set-level bulk estimate` on every row it covers — never a bare
    `medium` with an empty note. Uniform prices across a whole shard with no note is the
    signature of skipped research, and the orchestrator treats it as a flag.
+10. **Row counts on migration new-cards CSVs must come from a real CSV parser, never `wc -l`
+    or a raw line count (added 2026-09-25).** The `effect`, `true_text`, and `flavor_text`
+    columns contain embedded newlines inside quoted multi-line fields (rules text spans multiple
+    `<p>` paragraphs), so a naive line count on a valid 50-row shard can read as 130-250+ lines.
+    A 711-card run saw 9 of 15 shards falsely self-reject as "oversized" on this basis before
+    the miscount was caught. Both the orchestrator (when splitting/validating) and any worker
+    sanity-checking its input must count rows with a real parser — e.g.
+    `python3 -c "import csv; print(len(list(csv.reader(open(path))))-1)"` — never a
+    line-counting tool, on this pipeline's CSVs specifically.
 
 ## After every run: write a run note in the vault
 

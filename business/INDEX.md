@@ -23,6 +23,10 @@ Everything about Nanza / Oak Platforms **as a company** rather than as a set of 
 - [[nanza-connection-map|Nanza / Oak Connection Map]] — 775 LinkedIn connections (May–Sep 2026) bucketed into
   venture, licensing, partnerships, founders/leaders, and gaming/TCG professionals, grouped by company with a
   one-line company description and each contact's role. Draft 2026-09-11.
+- [[nanza-outreach-intros|Nanza Outreach Intros]] — standard first-touch intros for the campaign starting
+  2026-10-05: base blurb from the Asmodee thread, then LinkedIn / DM / email variants for founder-led TCGs,
+  licensor-backed TCGs in three tiers, investors, affiliates / vendors, and community members per game. Regroup
+  internally before any reply. Draft 2026-09-28.
 
 ## Conventions
 

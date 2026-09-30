@@ -131,7 +131,14 @@ shelf language:
 
 ## Home shelves (2026-08-29): affiliates on top, Groups banners under Trending
 
-The homepage header is now **affiliates → Trending → Groups → What's new**:
+> **Superseded 2026-09-28.** The affiliate circles are gone from Home (component deleted, no
+> request), Trending opens the page untitled and without a divider, and Groups moved down under
+> the first What's new band: **Trending → What's new 1–3 → Groups → What's new 4–6 → Query
+> List 1 → What's new 7–9 → Query List 2 → Query List 3**. The `GroupBannerCarousel` details
+> below still hold; only its slot changed. See
+> [[app-load-performance|App-load performance]] for the two-request gate.
+
+The homepage header was **affiliates → Trending → Groups → What's new**:
 
 - **`AffiliateCircleCarousel`** (`components/profile/`) takes the circle rail's slot at the top:
   every public `AFFILIATE` profile's avatar + username from the new **`GET /profiles?type=`**

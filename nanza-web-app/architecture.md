@@ -160,17 +160,20 @@ scene off (→ `sections/StaticPhone.tsx`) for reduced-motion, <768px, and no-We
 
 ## Build and deploy
 
-CRA build (`npm run build`) emits a static bundle to `build/`, deployed by GitHub Actions:
+CRA build (`npm run build`) emits a static bundle to `build/`, deployed by the
+`nanza-web-app-<stage>` CodePipeline defined in `nanza-pipelines` (see
+[[../_shared/architecture/deploy-pipelines|Deploy pipelines]]). GitHub Actions
+(`.github/workflows/`) is retired as of 2026-09-29.
 
-- **`.github/workflows/deploy-dev.yml`** — triggers on push to `dev`. Node 20, `npm ci
-  --legacy-peer-deps` (auth to GitHub Packages for `@oakplatforms/types`), assumes an AWS role via
-  **OIDC** (`aws-actions/configure-aws-credentials`, no static keys), builds with `REACT_APP_*` env
-  from GitHub vars (API base URL, S3 image base, Cognito pool/client, Stripe key), then
-  `aws s3 sync build/ s3://<S3_WEBAPP_BUCKET_DEV> --delete`. A follow-up step re-uploads
-  `.well-known/apple-app-site-association` with `Content-Type: application/json`.
-- **`.github/workflows/deploy-prod.yml`** — triggers on push to `prod`. Same shape (build env omits
-  Cognito/Stripe vars, matching the disabled state), syncs to the prod bucket, fixes the AASA
-  content-type, and additionally runs a **CloudFront invalidation** (`create-invalidation … /*`).
+- **Trigger:** push to `dev` / `prod`, then a manual *Release change* on the pipeline.
+- **`buildspec.yml`** (one file, both stages): Node 20, `aws codeartifact login` for
+  `@oakplatforms/types`, `npm ci --legacy-peer-deps`, config from SSM Parameter Store
+  (`/nanza-web-app/<stage>/…`: API base URL, S3 image base, bucket; Cognito pool/client and
+  Stripe key where set, which today is dev only), `npm run build` with `CI=true`, then
+  `aws s3 sync build/ s3://<S3_WEBAPP_BUCKET> --delete`. A follow-up step re-uploads
+  `.well-known/apple-app-site-association` with `Content-Type: application/json`, and a
+  **CloudFront invalidation** (`create-invalidation … /*`) runs when `CLOUDFRONT_DIST_ID` is set
+  for the stage (prod today).
 
 **Hosting:** static site in **S3 behind CloudFront**. **Deep-link assets** ship from
 `public/.well-known/`: `apple-app-site-association` (iOS Universal Links — one `"/<slug>/*"`

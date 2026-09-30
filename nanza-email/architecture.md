@@ -142,9 +142,9 @@ The Lambda's IAM role grants only `ses:SendEmail` and `ses:SendRawEmail` on `Res
 Serverless-based, one stack per stage.
 
 - **Scripts:** `npm run deploy:dev` / `deploy:prod` (`serverless deploy --stage …`); `npm run build` runs `tsc`.
-- **CI:** `.github/workflows/deploy-dev.yml` deploys on push to `dev`; `deploy-prod.yml` on push to `prod`. (README also mentions a `stage` branch → stage environment; only dev and prod workflows exist in the repo.)
-- **Auth:** GitHub **OIDC** assumes an AWS role (`AWS_ROLE_ARN_DEV` / `_PROD` repo vars) — no long-lived AWS keys. `@oakplatforms` packages install from GitHub Packages using the workflow `GITHUB_TOKEN`.
-- **Env in CI:** `API_BASE_URL`, `REACT_APP_S3_BASE_URL`, `SES_SOURCE_EMAIL` are injected from GitHub **Variables** (`vars.*`) at deploy time.
+- **CI:** the `nanza-email-<stage>` CodePipeline defined in `nanza-pipelines` (see [[../_shared/architecture/deploy-pipelines|Deploy pipelines]]) runs the repo's `buildspec.yml` on a manual release after a push to `dev` / `prod`. The GitHub Actions workflows in `.github/workflows/` are retired (2026-09-29).
+- **Auth:** CodeBuild runs under a service role with deploy rights — no OIDC, no long-lived keys. `@oakplatforms/types` installs from **CodeArtifact** after `aws codeartifact login` in the build.
+- **Env in CI:** `API_BASE_URL`, `REACT_APP_S3_BASE_URL`, `SES_SOURCE_EMAIL` are read from SSM Parameter Store (`/nanza-email/<stage>/…`) at deploy time.
 - The Serverless dashboard/telemetry is explicitly disabled in both workflows.
 
 Deploying replaces the Lambda **and** re-applies the EventBridge rule + permission from `serverless.yml`, so adding a new event type is a code + config change followed by a redeploy.

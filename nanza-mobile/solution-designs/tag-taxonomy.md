@@ -118,9 +118,10 @@ beside a print run. Which values appear is an admin decision twice over (2026-08
 server keeps only values that are **`isPrimary` AND carry an `index`** for this brand-wide
 mode — isPrimary curates within one tag, but across a whole brand it can run to thousands,
 so the index is the shelf's actual shortlist. Scoped rails (by brandTagId, tagName, or
-parentId) stay isPrimary-only. It sits in the HomeScreen list header between
-`GroupCircleCarousel` and the Top Picks grid, and is hidden while switching brands so it never
-flashes the previous brand's tags. It renders nothing when the selected brand has no primary,
+parentId) stay isPrimary-only. Since 2026-09-28 it **opens the HomeScreen list header** —
+untitled (the "What's trending" heading is gone; the tiles' own labels carry it) and with no
+divider, where the affiliate circles used to sit — and is hidden while switching brands so it
+never flashes the previous brand's tags. It renders nothing when the selected brand has no primary,
 indexed values.
 
 > **This is a placeholder for a dynamic homepage config.** When that lands, the shelf's

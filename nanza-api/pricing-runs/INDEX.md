@@ -12,6 +12,8 @@ so the next run starts from everything the previous ones learned, and Obsidian s
 
 | Run | Input | Rows | Outcome |
 |-----|-------|------|---------|
+| [[2026-09-30-fab-new-cards-2026-09-28|2026-09-30 · fab-new-cards-2026-09-28]] | fab-new-cards-2026-09-28.csv | 84 | ✅ 39/84 priced (7 high, 18 medium, 14 low), 45 unresolved after a second escalation re-sourced the 29 `medium` comparable-guess rows (12 resolved, 17 blanked; FAB362-GF went $31.46 → $584.97). cardsrealm violation caught and escalated (FAB467/489-MV). Comparable-guess rows correctly caught when labeled `low` (escalated), but 28 more of the same pattern shipped hidden under `medium` — new lesson. Escalation pass caught its own cross-treatment mixup (FAB469-CF/-MV) at merge. |
+| [[2026-09-25-fab-new-cards-2026-09-22|2026-09-25 · fab-new-cards-2026-09-22]] | fab-new-cards-2026-09-22.csv | 711 | ✅ 6/711 priced, 705 unresolved (correct — IAR released same-day, 523 of 711 rows). 9/15 shards falsely rejected as oversized (wc -l overcounts embedded newlines in quoted fields — new lesson). 6 shard attempts used banned cardsrealm source, rejected and re-run. Session search budget exhausted mid-correction; escalation tail blocked, workers correctly refused to fabricate. |
 | [[2026-08-20-fab-new-cards\|2026-08-20 · fab-new-cards]] | fab-new-cards-2026-08-17.csv | 334 | ❌ **Output discarded** — rarity-heuristic pricing, 4–8× errors both directions. Produced rules 5/5b/5c/9. |
 | [[2026-08-20-fab-rerun\|2026-08-20 · fab-rerun]] | same, corrected rules | 334 | 🔄 in progress |
 | [[2026-08-21-fab-new-cards-part6\|2026-08-21 · fab-new-cards-part6]] | fab-new-cards-part6.csv | 50 | ✅ 50/50 priced (49 direct-USD, 1 GBP-converted). First real test of rule 21 (relaxed non-USD) — confirms it works. |
@@ -21,6 +23,18 @@ so the next run starts from everything the previous ones learned, and Obsidian s
 Rules born from real failures — the detail lives in each run note, the rule lives in the
 [[../solution-designs/card-pricing|methodology]]:
 
+24. **A comparable-price guess can hide inside a `medium` label, not just `low` (2026-09-30).**
+   The rule-of-thumb "escalate every `low`/`unresolved`/flagged row" misses it if the worker
+   self-rates its own cross-card substitution as `medium` instead of `low` — the confidence
+   column is not reliable evidence that real per-card research happened. The tell is in the note
+   text: does it name a source **for this exact `raw_card_number`**, or does it name a *different*
+   row/card as the basis ("similar to FAB409," "estimate per FAB360 comparable," "same as RFA/RFB
+   variants," "similar tier to FAB465")? A 2-shard FAB promo run (84 rows) correctly escalated 36
+   `low`-labeled comparable guesses in shard 2, but missed 28 structurally identical guesses that
+   shard 1 had labeled `medium` — they shipped as-is because they were outside the escalation
+   net's scope. When triaging a shard for escalation, grep every row's note (not just the `low`
+   ones) for comparable-substitution language ("similar to", "estimate per", "same as", "similar
+   tier") regardless of its confidence label.
 1. **Verify workers actually searched.** A confident summary is not evidence; check the output
    for cited sources (and the transcript for search calls if in doubt). *(2026-08-20 run 1: one
    worker priced 50 rows from memory and labeled them `medium`.)*
@@ -98,3 +112,11 @@ Rules born from real failures — the detail lives in each run note, the rule li
     `confidence: unresolved`. A blank cell Skylar fills by hand beats a plausible number with no
     real backing. The one exception stays the genuinely marketless bulk-common shard (a named,
     `low` set-level estimate) — never used to justify a single high-value card's guess.
+23. **Row counts on this pipeline's CSVs must come from a real CSV parser, never `wc -l`
+    (2026-09-25).** The migration new-cards CSV's `effect`/`true_text`/`flavor_text` columns
+    contain embedded newlines inside quoted multi-line fields (card rules text spans multiple
+    `<p>` paragraphs). A raw line count treats every embedded newline as a new row, overcounting
+    a valid 50-row shard as 130-250+ "rows." Nine of fifteen shards in one run falsely
+    self-rejected as oversized on this basis. Always verify row count with
+    `python3 -c "import csv; print(len(list(csv.reader(open(path))))-1)"` (or equivalent),
+    never a line-counting tool, on this pipeline's CSVs specifically.

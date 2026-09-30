@@ -1,6 +1,6 @@
 # nanza-admin
 
-The internal admin console for the Nanza marketplace — a React 18 single-page app (Create React App + TypeScript) used by the Nanza team to manage the catalog and marketplace back office: brands, categories, tags, sets, products (entities), conditions, shipping methods/options, sellers, and orders. It authenticates admins through AWS Cognito (via Amplify Auth), reads and writes through the shared `nanza-api`, and is styled entirely with Tailwind + Headless UI. The package name is `oak-admin` and the UI still self-identifies as "TCGx"/"TCGX" in a few places.
+The internal admin console for the Nanza marketplace — a React 18 single-page app (Create React App + TypeScript) used by the Nanza team to manage the catalog and marketplace back office: brands, categories, tags, sets, products (entities), conditions, shipping methods/options, sellers, and orders. It authenticates admins through AWS Cognito (via Amplify Auth), reads and writes through the shared `nanza-api`, and is styled entirely with Tailwind + Headless UI. The package name is `oak-admin`; the UI brands itself "Nanza" (the old "TCGx" labels were renamed 2026-09-29).
 
 ## Structural overview
 

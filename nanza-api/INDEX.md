@@ -40,8 +40,10 @@ Everything runs under `src/`; Lambda entry points live in `lambdas/`.
 - **`prisma/`** — `schema.prisma` (~55 models) + full `migrations/` history.
 - **`packages/types`** — generated `@oakplatforms/types` DTO package (shared across API,
   mobile, web).
-- **`serverless.yml`** + **`.github/workflows/`** — deploy config; GitHub Actions deploy on
-  push to `dev`/`prod` via OIDC (`prisma migrate deploy` → `serverless deploy`).
+- **`serverless.yml`** + **`buildspec.yml`** — deploy config; the `nanza-api-<stage>` CodePipeline
+  (see [[../_shared/architecture/deploy-pipelines|Deploy pipelines]]) runs the buildspec on manual
+  release (`prisma migrate deploy` → types publish → `serverless deploy`). `.github/workflows/`
+  is the retired GitHub Actions version.
 
 **Dominant patterns:** router-per-domain composed in `all_routes.ts`; handler → validation →
 service/Prisma → DTO; lazy singletons (Prisma/Stripe/Shippo) initialized on Lambda cold start;

@@ -81,7 +81,7 @@ Everything runs under `src/`. Entry points live in `lambdas/`.
 - **`packages/types`** — the `@oakplatforms/types` DTO package generated from the Prisma schema;
   the single source of truth for shared domain types across API, mobile, and web.
 - **`prisma/`** — `schema.prisma` + the full `migrations/` history.
-- **`migration-scripts/`** — one-off data-backfill scripts (the card-data import pipeline).
+- **`migrations/`** — the card-data import pipeline: `orchestration/` (committed generators, one per stage: normalize → sets → entities+products → supported-tag-values → entity-tags → images, plus pricing/metadata), `templates/` (the CSV contract), and gitignored `import-csv/` + `output-sql/<release>/` (DBeaver-ready SQL with a `MANIFEST.md` per release). Stages 1 and 5 round-trip through a DBeaver export the human saves as CSV. Pattern + gotchas: [[../_shared/capabilities/orchestrations|Orchestration patterns]].
 
 ### Prisma usage
 
@@ -270,11 +270,13 @@ Three dedicated Lambdas serve public, unauthenticated share links (crawlers send
   **arm64** (except `ogEdge`), region `us-east-1`, bundled with `serverless-esbuild`. Stages:
   `dev` and `prod`, each with its own S3 bucket, base URLs, memory/storage, and provisioned
   concurrency (prod api = 3).
-- **GitHub Actions** deploy on branch push:
-  [`.github/workflows/deploy-dev.yml`](../../nanza-api/.github/workflows/deploy-dev.yml) (branch
-  `dev`) and `deploy-prod.yml` (branch `prod`). Each job authenticates to AWS via **OIDC**
-  (no static keys), pulls DB creds from Secrets Manager, runs **`prisma migrate deploy`** +
-  `prisma generate`, then `serverless deploy --stage <stage>`. Pool ids and
-  `LATEST_APP_VERSION` are injected from GitHub `vars`.
+- **AWS CodePipeline** (`nanza-api-dev` / `nanza-api-prod`, defined in `nanza-pipelines`; see
+  [[../_shared/architecture/deploy-pipelines|Deploy pipelines]]) runs the repo's
+  [`buildspec.yml`](../../nanza-api/buildspec.yml) on a manual release after a push to `dev` /
+  `prod`. The build pulls DB creds from Secrets Manager, runs **`prisma migrate deploy`** +
+  `prisma generate`, publishes `@oakplatforms/types` to CodeArtifact when its output changed
+  (dev only), then `serverless deploy --stage <stage>`. Pool ids and `LATEST_APP_VERSION` come
+  from SSM Parameter Store (`/nanza-api/<stage>/…`). The GitHub Actions workflows under
+  `.github/workflows/` are retired (2026-09-29) and no longer run.
 - Local dev: `npm run dev` (`ts-node src/localhost.ts`) with a `DATABASE_URL` env; a
   `docker-compose.yml` Postgres backs the Jest test suite.

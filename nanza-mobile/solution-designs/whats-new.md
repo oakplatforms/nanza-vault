@@ -43,9 +43,11 @@ New screen.
 
 ## The "What's New" homepage section (mock landed 2026-08-04)
 
-- **Placement: between Trending (`HomeTagCarousel`) and "Top picks for you"** in
-  `HomeScreen`'s list header. Current order: groups shelf → Trending → *(What's New here)* →
-  Top Picks → query-list shelves. Heading reads **"What's new"** (sentence case, standard
+- **Placement (2026-09-28): band 1 sits directly under Trending** in `HomeScreen`'s list
+  header, with Groups under it. Current order: Trending (untitled) → *What's new 1–3* → Groups →
+  *What's new 4–6* → Query List 1 → *What's new 7–9* → Query List 2 → Query List 3. (Originally
+  mocked between Trending and Top Picks; the affiliate circles that once opened the page are
+  gone.) Heading reads **"What's new"** (sentence case, standard
   section heading), with **"See all" far right of the heading row** (the standard `ActionPill`
   heading recipe, same as Top Picks).
 - **Content:** the brand's posts — `posts WHERE postableType='BRAND' AND postableId=:brandId`
