@@ -29,3 +29,4 @@ implementing session sees them.
 | Date | Handoff | Screen | Status |
 |------|---------|--------|--------|
 | 2026-10-23 | [[handoffs/2026-10-23-makeoffer-listing-card\|Make Offer — listing card]] | MakeOffer | built |
+| 2026-10-24 | [[handoffs/2026-10-24-entity-tabs-market\|Entity — tabs + Market charts]] | Entity | open |
