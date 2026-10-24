@@ -430,6 +430,50 @@ sites keep their own style and press handling — and is sized from a `100×100`
 component serves every diameter (its `pill` shape is the exception, above). The falloff lives
 in `effects.glassRim.stops`, retunable in JSON alongside `effects.glow.stops`.
 
+## Haptics (August 2026)
+
+Touch feedback is a **thin wrapper over `react-native-haptic-feedback`** in
+`src/utils/haptics.ts`, exposing one intent-named function per cue the app actually uses —
+today just `hapticSelection`. Call sites never import the library or its type strings directly,
+so the haptic vocabulary (and the library behind it) is a one-file change. Add siblings (impact,
+success/error) when a call site needs one, not speculatively.
+
+### Where it fires
+
+**The bottom nav tabs only** — Home, Groups, Trade, Inbox — as a `selection` tick on
+**press-in**, in `FloatingTabBar/TabItem.tsx`. Nothing else in the app has haptics yet.
+
+Three decisions worth keeping:
+
+- **`selection`, not `impactLight`.** iOS maps it to `UISelectionFeedbackGenerator`, the tick a
+  segmented control gives — semantically "moved between discrete options", which is what a tab
+  switch is. An impact reads as "hit something".
+- **Press-in, not press.** The tick lands with the finger, alongside the existing scale-down
+  `usePressScale` drives. On `onPress` it arrives after the gesture and the `tabPress` event
+  resolve, and reads as lag.
+- **Fires on the already-active tab too**, where the navigate no-ops. The user pressed a control
+  and should feel that it took.
+
+### The shared-hook trap
+
+`usePressScale` (exported from `TabItem.tsx`) is shared by the tabs **and the Search circle** in
+`FloatingTabBar/index.tsx`. Putting the haptic in the hook is the obvious move and it is wrong —
+it silently gives Search a tick, and haptics are scoped to the tabs (Skylar, 2026-08-23). The
+call therefore sits in `TabItem`'s own press handler, which wraps the hook's. There is a comment
+on the hook saying so; keep it if the hook is refactored.
+
+### Options policy
+
+Both defaults in `haptics.ts` are deliberate: `enableVibrateFallback: false` (on a device with no
+taptic engine the fallback is a blunt motor buzz that reads as an error, so silence is the better
+failure) and `ignoreAndroidSystemSettings: false` (a user who disabled haptics in the OS meant
+it). Every trigger is wrapped in a `try/catch` — the haptic is decoration and must never cost the
+tap.
+
+**Native dependency.** The package ships a TurboModule `codegenConfig`, so it is New-Architecture
+safe (the app runs `newArchEnabled=true`). Adding or removing it requires `pod install` and a
+full rebuild, not just a Metro reload. Haptics do not fire in the iOS Simulator — verify on device.
+
 ## Light / dark theme switching — PENDING (second pass)
 
 `light.json` exists with the full Figma Light mapping and correct base scales, but is **not yet
@@ -437,3 +481,27 @@ wired**: `ThemeProvider` still hard-imports `dark.json`, and its `themeMode` sta
 Wiring mode selection (and the resolver path for two live modes) is the next architectural step —
 **this section, and `architecture.md`, get updated when that lands.** Until then the app is
 dark-only and `light.json` is inert-but-ready.
+
+
+## Button's loading arc — the asset that never drew (fixed 2026-09-11)
+
+`Button`'s `loading` prop keeps the label and spins a Lottie arc at the trailing edge, tinted
+to the label color via `colorFilters` on the single layer "Shape Layer 1". It had never been
+visible anywhere in the app: the source was `assets/icons/loading-2.lottie`, a **dotLottie v2**
+bundle (animation at `a/Main Scene.json`), and the lottie-ios build behind lottie-react-native
+7.2 reads the v1 layout, fails silently and draws nothing. The success check is a plain `Icon`,
+which is why a save showed a checkmark at the end but no spinner during — Skylar's repro on the
+seller-onboarding Submit. `SocialAuthButtons` had already worked around it by pointing at
+`assets/lottie/loading-2.json` (the same animation extracted); `Button` now uses that JSON too.
+Rule: **Lottie sources are plain `.json` in `assets/lottie/`**, never a `.lottie` bundle.
+
+## DetailActionBar — the fade band passes taps through (2026-09-11)
+
+The bar's gradient band (transparent → solid over `fadeBand`) used to be a touch target at
+all times: it declined the responder when the keyboard was closed, but a hit-tested view that
+declines still swallows the touch, so a field scrolled under the nearly transparent top of the
+band — the listing form's "Add photo", its last field — looked tappable and wasn't. The band is
+now `pointerEvents="box-none"` while the keyboard is closed (taps fall through to the content;
+the CTA, a child, keeps its own) and `auto` while it's open, where a tap on the band still
+dismisses the keyboard in one go. Screens still reserve `useActionBarPadding()` so the last
+field can scroll fully clear; this only fixes the case where it hasn't yet.

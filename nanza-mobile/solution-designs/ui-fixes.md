@@ -96,8 +96,77 @@ Remaining operational to-dos: set the `LATEST_APP_VERSION_DEV/PROD` config value
 App Store numeric ID in the store-link helper (Android package `com.oakplatforms.nanza` is known),
 and redeploy the API.
 
+## Scroll gets stuck on Android over dense content
+
+### The problem
+
+Pages built on `PageLayout` — supported-tag-value detail chief among them — could not be
+scrolled by dragging over parts of the page. Content below the stuck point was unreachable, so
+the page looked truncated. Android only, and it affected several different tag pages, not just
+ones with an embedded video, which is what ruled out the video player as the cause.
+
+### The cause
+
+`PageLayout` used `ScrollView` from **`react-native`**. Its screens are dense with child
+touchables — tag chips, carousels, post cards, inline WebView players — and on Android those
+touchables win the pan gesture from RN's `ScrollView`, creating dead zones where a drag does
+nothing at all. The more interactive the page, the more of it can't be scrolled.
+
+This exact failure was diagnosed and fixed once before, in `ReviewCartScreen` (2026-06): the
+cart was dense with quantity steppers, toggles and checkboxes, and had the same dead zones.
+
+### The fix
+
+`PageLayout` now imports `ScrollView` from **`react-native-gesture-handler`**, whose scroll pan
+reliably wins over child touchables on Android. It's a drop-in — same props, same
+`onScroll`/ref usage — and it's already the established pattern in this codebase
+(`ReviewCartScreen`, `CreateListingScreen`, `CreateBidScreen`, `ShareScreen`, `DetailHero`,
+`ImageViewer`, the carousels).
+
+Fixing it in `PageLayout` rather than on the tag screen means every screen built on the shared
+layout gets it, since any of them can become touchable-dense.
+
+**The embed player's touch handling was deliberately left alone.** Its platform-forked
+responder props and touch-stamping exist to route *taps* between the video and the card's
+detail navigation; they aren't what blocked scrolling, and unpicking them would regress
+play/scrub. Scrubbing is a horizontal drag handled by YouTube inside the iframe, so it is
+unaffected by the parent scroller winning vertical pans.
+
+## Inbox drill-downs join the slide-up family (2026-08-14)
+
+### The problem
+
+Everything tapped from the inbox — a conversation, a new-offer notification, a new-order
+notification — pushed horizontally with a left back arrow, while the rest of the app's detail
+surfaces (home drill-downs, groups, entity, listing/bid, post, tag) had migrated to the
+standard vertical slide-up with a chevron-down. Group notifications were worse: they switched
+the tab underneath to the Groups list before pushing the detail, so dismissing landed on the
+group list instead of the inbox the notification was tapped from.
+
+### The fix
+
+- **`ConversationThread`, `OfferMessageDetail`, `OrderDetail` re-registered as slide-ups** —
+  the horizontal `gestureDirection`/`cardStyleInterpolator` overrides deleted so they inherit
+  the root navigator's default vertical interpolator + vertical dismiss (the
+  SupportedTagValueScreen recipe). Their headers swap `chevron-left-3` → **`chevron-down-2`**
+  to point the way they exit. `OrderDetail` is shared with the Orders screen's cards, so order
+  details slide up from there too — consistent, and intended.
+- **Group notifications open the group directly** — `MessagesScreen.openSystemMessage` just
+  navigates to the root-stack `GroupDetailScreen`; the "seed the Groups tab first" two-step is
+  gone, so dismissing the group returns to the inbox.
+- **The Activity tab's nested horizontal `UserProfile` copy removed** — the thread header's
+  avatar tap resolves on the root stack (vertical) because `ConversationThreadScreen` itself
+  lives there; the nested copy was unreachable from any messages flow. The Trade tab still
+  keeps its nested horizontal copy until its chain migrates.
+
+The inbox main screen itself is untouched — it stays a tab main under the bar.
+
 ## Key decisions & rationale
 
+- **Gesture-handler `ScrollView` for any touchable-dense scroller.** RN's `ScrollView` loses the
+  pan to child touchables on Android. This is the second time the same root cause produced a
+  "page won't scroll" bug (cart, then tag detail) — fixing it in the shared `PageLayout` is what
+  stops a third.
 - **Normalize the non-square icon at the `Icon` level.** `more` is the only non-square glyph these
   call sites size; deriving height from width inside `Icon` means every call site only needs a
   consistent width number, regardless of the `size` vs `width` prop path.

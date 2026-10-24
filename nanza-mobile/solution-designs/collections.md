@@ -119,11 +119,40 @@ old header `+` circle button was removed. The read-only user profile gets **no**
 `UserProfileScreen` shows the **same `CollectionTargetCard` grid** (driven by `accountId`,
 public collections only). Tapping a card opens **`UserCollectionDetailScreen`** — a read-only
 detail: a header, a **debounced search input** (server-side, via
-`listService.getCollection(accountId, '?search=…&page=…')` — the same endpoint the
+`listService.getCollection(accountId, '?listId=…&search=…&page=…')` — the same endpoint the
 propose-trade flow uses), and a read-only `EntityCardList` (`gestures={false}`). There is **no**
 add/edit/save/delete and no edit menu; **share is allowed** because these collections are
 public. Deliberately **not** built by threading a `readOnly` flag through the editable
 `CollectTab` — a thin dedicated screen keeps the live editable flow untouched.
+
+### One collection endpoint, scoped by `listId`
+
+Every **read-only** collection read — the profile Collections tab (`UserCollection`), the
+read-only detail (`UserCollectionDetailScreen`), propose-trade — goes through the **single**
+`GET /list/collection/:accountId` endpoint. (The owner's **editable** `CollectTab` locked mode
+still reads/writes a non-primary list via `GET /list/:listId/entities`, since it needs the
+per-list edit semantics, not portfolio totals — that path is intentionally unchanged.) It accepts an optional
+`listId` query param: **with** it, it paginates that specific collection's entities; **without**
+it, it falls back to the account's **primary** collection. This replaced an earlier split where
+non-primary collections were read via `GET /list/:listId/entities` (which has no search/tag
+filtering) while the primary used the collection endpoint — the asymmetry meant the read-only
+detail screen ignored the tapped `listId` and always showed the primary's cards. One endpoint,
+one code path, and search/tag filters work on every collection.
+
+### Portfolio totals are account-wide, per-collection counts are per-list
+
+The collection endpoint's envelope `entityListCount`/`entityListValue` are the **account-wide
+portfolio totals** — summed across *all* public collections (`computePublicPortfolioTotals`),
+independent of which `listId` is being paginated. So:
+
+- **Profile header "Collected / Portfolio Value"** must be the account-wide total. Both
+  `UserProfileScreen` (another user, public collections only) and the own `ProfileScreen`
+  (includes private collections) compute it by **summing the per-list `entityListCount`/
+  `entityListValue` across the collection list DTOs they already hold** — mirroring the backend
+  sum. Reading a single list DTO (the old bug) showed only the primary's numbers.
+- **Per-tab "N collected"** on `UserCollection` is a *per-collection* count, so it reads the
+  **active list's DTO** value, **not** the envelope total (which would repeat the account-wide
+  number on every tab).
 
 ### Sharing a collection
 

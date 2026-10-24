@@ -43,8 +43,9 @@ Client → API Gateway (HTTP API v2)
    `req.user`, mounts the aggregate router at `/`, and has a terminal error handler that maps
    thrown errors to `400` (with message) or `500`.
 5. **Router layer** — [`src/routers/all_routes.ts`](../../nanza-api/src/routers/all_routes.ts)
-   `router.use()`s every feature router. The **`universalRouter` is mounted last** so it can
-   catch bare 6-char reference codes that nothing else matched.
+   `router.use()`s every feature router. The **`universalRouter`** serves typed reference
+   lookups at `GET /reference/{type}/{code}` — the bare-code catch-all it used to be mounted
+   last for was removed in the share-route-migration (2026-08, breaking change accepted).
 
 ---
 
@@ -53,12 +54,13 @@ Client → API Gateway (HTTP API v2)
 Everything runs under `src/`. Entry points live in `lambdas/`.
 
 - **`src/routers/*`** — one Express `Router` per domain concept (`listing`, `bid`, `order`,
-  `group`, `trade`, `cart`, `message`, `feed`, …). Each file exports a named router
+  `group`, `offer`, `cart`, `message`, `feed`, …). Each file exports a named router
   (`export const listingRouter`). Handlers read `req.user`, run validators, call into Prisma
   (often directly) or a service, and return DTO-shaped JSON. Routes carry inline `@openapi`
   JSDoc for spec generation. `all_routes.ts` composes them.
 - **`src/services/*`** — cross-cutting business logic that spans multiple models or needs its
-  own client: `order.ts` (collection sync on completion), `trade.ts` (quantity-aware
+  own client: `order.ts` (accept / cancel-pending / collection sync), `offer.ts` +
+  `offerStatus.ts` (the offer engine over orders), `collection.ts` (quantity-aware
   collection moves), `resolver.ts` / `referenceResolver.ts` (derived pricing + share-code
   resolution), `og/` (share-image rendering), `anthropic.ts` (Claude client for the storefront
   builder), `transcribe.ts` (voice → text), `scan.ts` (card scanning), `payout.ts`,
@@ -79,7 +81,7 @@ Everything runs under `src/`. Entry points live in `lambdas/`.
 - **`packages/types`** — the `@oakplatforms/types` DTO package generated from the Prisma schema;
   the single source of truth for shared domain types across API, mobile, and web.
 - **`prisma/`** — `schema.prisma` + the full `migrations/` history.
-- **`migration-scripts/`** — one-off data-backfill scripts (the card-data import pipeline).
+- **`migrations/`** — the card-data import pipeline: `orchestration/` (committed generators, one per stage: normalize → sets → entities+products → supported-tag-values → entity-tags → images, plus pricing/metadata), `templates/` (the CSV contract), and gitignored `import-csv/` + `output-sql/<release>/` (DBeaver-ready SQL with a `MANIFEST.md` per release). Stages 1 and 5 round-trip through a DBeaver export the human saves as CSV. Pattern + gotchas: [[../_shared/capabilities/orchestrations|Orchestration patterns]].
 
 ### Prisma usage
 
@@ -121,7 +123,9 @@ Everything runs under `src/`. Entry points live in `lambdas/`.
   `referenceCode`, `isPublic`, and optional group scoping via **GroupListing** / **GroupBid**.
 - **BulkListing** ("lots") groups many child **Listing**s; joined to groups via
   **BulkListingGroup**. **ScanItem** is a staged pre-listing produced by card scanning.
-- **Offer** (a bid/listing negotiation) → an **Order** on acceptance.
+- **Offer** (`OfferStatus` / `OfferType`) — a negotiation wrapper around exactly one **Order**
+  (`Order.offerId`, 1:1); sender/recipient are Accounts, `listing` always set, `bid` for bid
+  offers, `parentId` reserved for counters. See [[solution-designs/offer-engine|Offer Engine]].
 - **SavedItem** is a polymorphic bookmark over Listing / Bid / BulkListing.
 
 **Orders, payments, fulfillment**
@@ -143,17 +147,18 @@ Everything runs under `src/`. Entry points live in `lambdas/`.
   **SystemMessage** hangs off a Message (1:1) with `SystemMessageCategory` /
   `SystemMessageType` — the notification backbone.
 - **Comment** — self-referential threads, polymorphic over `CommentableType`.
-- **Trade** (`TradeStatus`) with **TradeOfferEntity** / **TradeRequestEntity** — card-for-card
-  swaps that move entities between collections.
 
 **AI builder**
 - **Project** (`ProjectType`, default STOREFRONT) holds a JSON `tree` page + free-text
   `context`; **ProjectEdit** logs each AI edit (prompt, before/after tree, token counts).
   Currently **disabled** — the `projectRouter` is intentionally not mounted in `all_routes.ts`.
 
-Reference codes: a 5-digit + type-letter scheme (`referenceCodeGenerator.ts`) — `S`=Listing,
-`B`=Bid, `C`=List/collection, `P`=Product, `K`=BulkListing, `G`=Group, `U`=Profile,
-`O`=Project. These power all public share links.
+Reference codes: still minted as 5 digits + a type letter (`referenceCodeGenerator.ts`), but the
+code is now an **opaque token** — routing never decodes the letter. Public share links are
+root-level type-scoped (`nanza.app/<slug>/<code>`): the slug picks the table (`listing`=Listing,
+`bid`=Bid, `collection`=List, `product`=Product→Entity, `bulk`=BulkListing, `group`=Group,
+`profile`=Profile, `post`=Post, `tag`=SupportedTagValue; Project sharing disabled, no slug). The
+slug taxonomy's source of truth is `src/constants/shareTaxonomy.ts`.
 
 ---
 
@@ -169,6 +174,24 @@ Reference codes: a 5-digit + type-letter scheme (`referenceCodeGenerator.ts`) �
   `AdminRemoveUserFromGroup` / `AdminDeleteUser`) via `utils/cognitoClient.ts` when promoting a
   user to seller/customer (e.g. after Stripe onboarding completes) — IAM-scoped in
   `serverless.yml`.
+
+### `validateAccount` is an ownership check, not an auth check
+
+`validateAccount(reqUser, accountId, role)` asserts **the requester IS that account** — it loads
+the account and throws unless `account.user.authId === reqUser.principalId`. It belongs on
+*mutations* and on reads of private, account-scoped data (carts, orders, saved items).
+
+**Do not call it on a public read by passing the record owner's accountId.** That inverts into
+"only the owner may read this", which is almost never the intent. `GET /bid/:id` did exactly
+that (fixed 2026-08-08): it passed `bidAuth.accountId`, so any viewer who wasn't the bidder got
+`User cannot make this request` — surfacing in the app as **"This bid could not be found"** when
+tapping someone else's bid from a post or tag page. The gate also protected nothing, since
+`GET /bids` already lists every bid on an entity (the order book behind the entity modal) and
+the reference-code resolver serves the same record unauthenticated.
+
+Marketplace records — listings, bids, entities, bulk listings — are **public reads**.
+`GET /listing/:id` has never had the check; bids were the outlier. When adding a read route, the
+question is "is this record public?", not "who owns it?".
 
 ---
 
@@ -216,21 +239,28 @@ webhook Lambdas hold `events:PutEvents` permission and dispatch via `utils/event
 
 Three dedicated Lambdas serve public, unauthenticated share links (crawlers send no token):
 
-- **og** — `GET /reference/{referenceCode}/og.png`
+- **og** — `GET /reference/{type}/{referenceCode}/og.png`
   ([`lambdas/ogHandler.ts`](../../nanza-api/lambdas/ogHandler.ts)). Resolves the code via
-  `services/referenceResolver.ts`, renders a per-type card with **Satori → sharp**
-  (`src/services/og/templates/*`), caches the PNG in S3, and 302-redirects to the object URL.
-  Uses the `sharp-arm64` Lambda layer (WebP → PNG decode).
-- **meta** — `GET /reference/{referenceCode}/meta`
+  `services/referenceResolver.ts` (the path's type slug picks the table), renders a per-type card
+  with **Satori → sharp** (`src/services/og/templates/*`), caches the image in S3, and
+  302-redirects to the object URL. Uses the `sharp-arm64` Lambda layer (WebP → PNG decode).
+- **meta** — `GET /reference/{type}/{referenceCode}/meta`
   ([`lambdas/metaHandler.ts`](../../nanza-api/lambdas/metaHandler.ts)). Returns the Open Graph
   payload (title/description/image/url).
-- **ogEdge** — a **Lambda@Edge** origin-response function
+- **ogEdge** — a **Lambda@Edge** origin-request function
   ([`lambdas/ogEdgeHandler.ts`](../../nanza-api/lambdas/ogEdgeHandler.ts), pinned `x86_64` with
-  its own edge-trust IAM role) that calls `/meta` and splices the tags into the static web app's
-  `<head>` so links unfurl.
+  its own edge-trust IAM role) that, on the root-level type-scoped share paths — it matches
+  `/^\/(listing|bid|collection|product|bulk|group|profile|post|tag)\/([A-Z0-9]{4,12})\/?$/i` —
+  calls the typed `/meta` route and returns the static web app's HTML with the tags spliced into
+  `<head>` (short-circuiting the origin) so links unfurl. CloudFront can't express alternation in
+  path patterns, so the edge is associated via **nine per-slug behaviors** (`/listing/*` …
+  `/tag/*`), manually maintained on the dev and prod distributions.
 
-> The og and meta handlers each keep their **own** letter→type map — a known footgun; adding a
-> new share type means updating both (see the group-OG plan in [[INDEX]]).
+> The routing Lambdas no longer decode the code's type letter — the sync concern is the **slug
+> taxonomy**, mirrored in five places that move together: `src/constants/shareTaxonomy.ts`
+> (source of truth), web `src/helpers/shareTaxonomy.ts`, mobile `src/utils/referenceCode.ts`,
+> the edge regex (+ CloudFront behaviors), and mobile's AndroidManifest. Letter lists remain
+> only for minting and mobile slug derivation.
 
 ---
 
@@ -240,11 +270,13 @@ Three dedicated Lambdas serve public, unauthenticated share links (crawlers send
   **arm64** (except `ogEdge`), region `us-east-1`, bundled with `serverless-esbuild`. Stages:
   `dev` and `prod`, each with its own S3 bucket, base URLs, memory/storage, and provisioned
   concurrency (prod api = 3).
-- **GitHub Actions** deploy on branch push:
-  [`.github/workflows/deploy-dev.yml`](../../nanza-api/.github/workflows/deploy-dev.yml) (branch
-  `dev`) and `deploy-prod.yml` (branch `prod`). Each job authenticates to AWS via **OIDC**
-  (no static keys), pulls DB creds from Secrets Manager, runs **`prisma migrate deploy`** +
-  `prisma generate`, then `serverless deploy --stage <stage>`. Pool ids and
-  `LATEST_APP_VERSION` are injected from GitHub `vars`.
+- **AWS CodePipeline** (`nanza-api-dev` / `nanza-api-prod`, defined in `nanza-pipelines`; see
+  [[../_shared/architecture/deploy-pipelines|Deploy pipelines]]) runs the repo's
+  [`buildspec.yml`](../../nanza-api/buildspec.yml) on a manual release after a push to `dev` /
+  `prod`. The build pulls DB creds from Secrets Manager, runs **`prisma migrate deploy`** +
+  `prisma generate`, publishes `@oakplatforms/types` to CodeArtifact when its output changed
+  (dev only), then `serverless deploy --stage <stage>`. Pool ids and `LATEST_APP_VERSION` come
+  from SSM Parameter Store (`/nanza-api/<stage>/…`). The GitHub Actions workflows under
+  `.github/workflows/` are retired (2026-09-29) and no longer run.
 - Local dev: `npm run dev` (`ts-node src/localhost.ts`) with a `DATABASE_URL` env; a
   `docker-compose.yml` Postgres backs the Jest test suite.

@@ -40,8 +40,10 @@ Everything runs under `src/`; Lambda entry points live in `lambdas/`.
 - **`prisma/`** — `schema.prisma` (~55 models) + full `migrations/` history.
 - **`packages/types`** — generated `@oakplatforms/types` DTO package (shared across API,
   mobile, web).
-- **`serverless.yml`** + **`.github/workflows/`** — deploy config; GitHub Actions deploy on
-  push to `dev`/`prod` via OIDC (`prisma migrate deploy` → `serverless deploy`).
+- **`serverless.yml`** + **`buildspec.yml`** — deploy config; the `nanza-api-<stage>` CodePipeline
+  (see [[../_shared/architecture/deploy-pipelines|Deploy pipelines]]) runs the buildspec on manual
+  release (`prisma migrate deploy` → types publish → `serverless deploy`). `.github/workflows/`
+  is the retired GitHub Actions version.
 
 **Dominant patterns:** router-per-domain composed in `all_routes.ts`; handler → validation →
 service/Prisma → DTO; lazy singletons (Prisma/Stripe/Shippo) initialized on Lambda cold start;
@@ -53,11 +55,63 @@ resolved by a single reference-code resolver shared by the JSON, OG, and meta pa
 Living overviews of how each backend area works and why. One per theme in `solution-designs/`.
 
 - [[solution-designs/og-sharing|OG / sharing]] — the og/meta/ogEdge Lambdas, reference-code resolution, the three letter→type maps, and share-card style parity.
+- [[solution-designs/image-cdn|Image CDN / resizing]] — on-demand `?width=` WebP resizing via CloudFront + a single-origin resizer Lambda over `nanza-static`; no stored thumbnails; client `getImage(id,{width})`/`px()` sizing by tile; the four Function-URL/OAC/ListBucket deploy gotchas.
 - [[solution-designs/payments|Payments]] — the 3% + $0.50 + tax application fee, the removed 1% moderator rev-share, and the delivery-mode × payment-type model (in-person cash/card).
 - [[solution-designs/data-sync|Data sync]] — best-effort collection sync on listing creation and order completion, reusing the trade move primitive.
+- [[solution-designs/query-lists|Query Lists]] — admin-configured *dynamic* collections: multi-select source types (listing/bid/bulk/entity/set) + `QueryCriterion` rows joined by one `AND`/`OR` combinator, resolved live (no stored membership). Design only; first consumer is the homepage.
 - [[solution-designs/infra-push|Infra & push]] — push notifications were REMOVED; the APNs / Firebase-WIF setup history kept for a rebuild.
+- [[solution-designs/db-connections|DB connections & the socket registry]] — why Lambda×pg connections don't scale (the 71-connection dev incident); pivoted to **no VPC** — the DynamoDB socket registry (`oak-api-ws-*`, built 2026-08-04, pending deploy) takes `$connect`/`$disconnect`/fanout off Postgres, REST is capped via reservedConcurrency; RDS Proxy + VPC kept as appendix/escalation path.
 - [[solution-designs/projects|Projects / AI builder]] — the Storefront → Project refactor end state, web builder re-enable, and caps/credits (not subscriptions).
-- [[solution-designs/sources-and-insights|Sources & Insights]] — admin-configurable Source + Insight models (typed enum, default PRICING; scales to EVENT/ARTICLE/SOCIAL_POST), the current price-rollup algorithm, the local-Claude per-product loop, and the Opus-lead/Haiku-worker orchestration that picks the best insight.
+- [[solution-designs/sources-and-insights|Sources & Insights]] — the orchestration judgment rules and legacy price algorithm; the models/runtime moved to [[../oak-cortex/solution-designs/insight-engine|oak-cortex]] (2026-07-05 pivot) — nanza-api keeps only a read-only spec endpoint and receives reviewed price migrations.
+- [[solution-designs/oak-api-platform-rescope|oak-api Platform Re-scope]] — nanza-api is really Oak's API: Oak is the platform, tenants are `Client`s (nanza = default row), `clientId` on client roots, non-breaking phasing, and the risky serverless stack rename. Design only.
+- [[solution-designs/profile-types|Profile Types]] — `ProfileType` enum (`BASIC`/`AFFILIATE`) on `Profile`, admin-assigned, the gate for later affiliate features. Design only.
+- [[solution-designs/posts|Posts]] — comments became **posts** (backend built 2026-07-31): `ContentItem` blocks (`RICH_TEXT`/`IMAGE`/`LINK`, `VIDEO` reserved but rejected), a `BRAND` home target for the brand feed (AFFILIATE-only creation), tagging permissive-within-brand, one-level replies. Responses carry `postCount` plus a deprecated `commentCount` alias. Migration not yet run.
+- [[solution-designs/tag-taxonomy-v2|Tag Taxonomy v2]] — `SubTagValue` became **`SecondaryTagValue`** hanging off `BrandTag` with a **many-to-many** link to `SupportedTagValue`, so one hero can belong to several classes; find-or-create-and-link chip endpoint; deletes block (never sweep) when they would orphan one. Backend built 2026-07-31 alongside Posts.
+- [[solution-designs/comments|Comments]] — **historical**: what the `Comment` system was before Posts replaced it. Kept because prod mobile still speaks its API through legacy shims.
+- [[solution-designs/card-pricing|Card Pricing]] — operator-side price-recommendation orchestration (built 2026-08-20): CSV or zip in (≤50 cards per CSV), parallel `card-pricer` agents web-search current market, one `price_usd` out per card (fair NM midpoint × 0.90); the doc's methodology section is the runtime source of truth the agents read. Every run leaves a postmortem in [[pricing-runs/INDEX|Pricing Runs]]. Distinct from Sources & Insights (in-product engine).
+- [[solution-designs/social-eligibility|Social Eligibility]] — all social features (messaging/connections, group create + join, posting) require only a **registered** account (2026-08-17); customer/seller tiers gate commerce only. Messaging eligibility helpers deleted; mobile's seller/customer gate modals removed from social flows; the friend-request payment gate is gone.
+- [[solution-designs/saved-items|Saved items retired]] — saving listings/bids/lots retired 2026-08-29 (favorites later); `SavedItem` dropped 2026-08-30 in favour of a `PostLike` model + `POST /post/:id/like` (migration `20260830090000_post_likes` copies the likes over); `/saved-item*` stays as a compat shim over `PostLike` (410 for card targets).
+- [[solution-designs/system-messages|System messages]] — who a system row is *from* (actor or group avatar; the Nanza logo is gone, 2026-08-30), "@x did what" titles, and the decline convention: the decliner's row is deleted, the other side gets a fresh one (refunds stay, rewritten). New types `GROUP_DECLINED` / `ORDER_REFUND_ACCEPTED` / `ORDER_REFUND_DECLINED` + `SystemMessage.group` (migration `20260830100000_system_message_group_refund`, to run).
+- [[solution-designs/account-feeds|Account feeds]] — `/sell-feed` (owner's listings + lots) and `/trade-feed` (those + bids, viewer-filtered; built 2026-08-26 for the profile's Trades rail): one recency-merged, paginated list per account via a shared heads→merge→hydrate page builder.
+
+## Plans (in progress)
+
+Day-to-day implementation plans live alongside the solution designs in `solution-designs/` (in the
+vault, so they're visible in Obsidian — not in the repo's gitignored `.plans/`, which is retcd ired).
+When work lands, fold the plan's durable insight into its solution design and remove the plan.
+
+- [[solution-designs/tracked-package-payout-hold|Tracked Packages — payout hold & tracking reminder]] — **built 2026-09-14, uncommitted, pending QA (migration `20260914120000_order_tracking_reminders` to run)**: capture-on-accept already existed; the wallet hold leaks between accept and tracking-number entry (shipment still `CREATED`) and over-holds by tax + fee — fix the predicate/amount; add `Order.acceptedAt` + two once-only reminder stamps, a daily `trackingReminder` cron that, clock starting at accept, emails the seller at 48 h (`order.tracking.reminder.seller`, new nanza-email template) and posts an `ORDER_TRACKING_REMINDER` system message at 72 h; `IN_REVIEW` consolidated to user-requested + one automatic "undelivered 10 days after accept" rule (accepted-no-tracking flag deleted). Un-accepted 84 h cancel unchanged. Spans API + email + small mobile copy.
+- [[solution-designs/buyer-service-fee|Buyer Service Fee]] — **built 2026-09-11, uncommitted, pending QA (migration `20260911120000_order_service_fee` to run)**: move the 3% + $0.50 platform cut from the seller's payout to a visible buyer-paid **Service fee**; Stripe cannot exclude it from its own 2.9% + $0.30 (platform absorbs ~$0.10/order); one additive `Order.serviceFee` column (null = legacy seller-paid), `refund_application_fee` on refunds, fee on the tax-inclusive pre-fee total, waived on cash. Spans API + mobile + email + web copy.
+- [[solution-designs/offer-engine|Offer Engine & Trade Removal]] — **API built 2026-08-27, uncommitted (migration `20260827120000_offer_engine` still to run; mobile half next)**: trading dropped entirely (3 tables + enum, 410 stubs), offers v1 torn out, and offers rebuilt as a negotiation layer over orders for both listings and bids — listing offers invoice on send, bid offers invoice on the bidder's accept and auto-accept the order for the seller; drafts modeled but no UI; cart retired later, counters later. Offer-only listings carry `Listing.isOffer` (2026-08-29, migration `20260829120000_listing_is_offer`) and surface nowhere but their offer.
+- [[solution-designs/blocking-and-reporting|Blocking Visibility & Content Reporting]] — **built,
+  uncommitted (2026-08-23, Apple release blockers; migration still to run)**: blocking must hide posts/replies everywhere (home,
+  groups, profile tabs, tag pages) via a symmetric `notBlockedFilter` — no schema change; plus a
+  new `Report` model + reason enums, a mobile flag → "What are you reporting?" screen, and a
+  reported-post queue in nanza-admin (a new admin read mode on `GET /posts`). Spans API +
+  mobile + admin. See also [[solution-designs/apple-review-response|the Apple review response]].
+- [[solution-designs/affiliate-social-links|Affiliates: Banners & Social Links]] — **plan, API
+  half implemented (2026-08-15)**: admin-curated `SocialLinkType` catalog + one-URL-per-type
+  `SocialLink` rows on affiliate profiles and groups (replace-set PUTs, moderator/affiliate
+  gated); profile banner already existed. Admin + mobile halves next.
+- [[solution-designs/reference-item-chat-surfacing|Reference-Item Chat Surfacing]] — **plan
+  (2026-08-14, build tonight)**: posts that EMBED a listing/bid/entity/lot surface in that item's
+  chat, via the tag-union pattern (`referencedPostsFilter` mirroring `taggedTagValuePostsFilter`)
+  + a ContentItem `referenceId` index. API-only; mobile unchanged.
+- [[solution-designs/post-editing-and-drafts|Post Editing & the Single Draft]] — **plan (design
+  review)**: close PUT's gallery/image gaps for a composer edit mode; one persistent DRAFT-status
+  post per account (additive Status value, reads filtered). Planned 2026-08-14; mobile half in
+  nanza-mobile. NOT implemented.
+- [[solution-designs/open-posting-and-friend-visibility|Open Home Posting & Friend-Scoped Visibility]] —
+  **plan**: the BRAND affiliate create-gate becomes a read-side visibility rule — everyone posts to
+  the homepage feed; affiliates reach everyone, basic users reach self + accepted Connections. No
+  schema change. Planned 2026-08-14; mobile half (nav swap) in nanza-mobile.
+- [[solution-designs/post-carousel-and-tagging|Posts — Multi-Content Carousel & Open Tagging]] — **plan**:
+  5 content items per root post (`isPrimary` + swap endpoint), replies gain one attachment / lose
+  tag rows, 10 supported tags flat (parents+children) on every home incl. GROUP (tag-page union gains the group exclusion
+  filter). Planned 2026-08-11; mobile half in nanza-mobile.
+- [[solution-designs/tag-taxonomy-v3-is-child|Tag Taxonomy v3 — isChild]] — collapse `SecondaryTagValue` into `SupportedTagValue` via `isChild` + a `SupportedTagValueParent` self m:n; wipe dev secondary data; supersedes v2's two-model design. Planned 2026-08-04.
+- [[solution-designs/realtime-in-app-updates|Realtime in-app updates]]
+- [[solution-designs/idempotent-post-user|Idempotent POST /user]]
 
 ## Related
 

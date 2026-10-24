@@ -24,8 +24,12 @@ Top-level dirs under `src/`:
   (commented-out) screens: `Auth/` (SignIn/SignUp/ForgotPassword), `Cart/`, `Build/` (storefront
   builder), `UserProfile/`, `UserListings/`, `UserBids/`, `UserLists/`, `UserSaved/`,
   `EntityDetail/`, `ListingDetail/`, `UniversalDetail/`.
-- **`landing/`** — marketing site: `landing/index.tsx` + `landing/pages/` (About, Buy, Sell, Collect,
-  Pricing, Privacy, Terms, ContentPage) and `landing/components/` section blocks.
+- **`landing/`, `pages/`, `sections/`, `scene/`** — the public marketing site (rebuilt 2026-08, see
+  [[solution-designs/landing-replacement|Landing Replacement]]). `landing/index.tsx` is the
+  scroll-driven landing (Lenis + GSAP timeline, a lazy-loaded React-Three-Fiber phone scene in
+  `scene/`, DOM sections in `sections/`); `pages/pages.ts` is the single list that drives both the nav
+  links and the marketing routes, rendered by `pages/PageLayout.tsx`; `pages/legal/` holds the real
+  Privacy/Terms copy. `app/usePublicSite.ts` scopes the dark theme to these surfaces only.
 - **`components/`** — shared UI: layout shells (`Layout`, `AppShell`, `DetailLayout`, `TopNav`,
   `Sidebar/`, `Toolbar/`), `Tailwind/` primitives, and per-domain folders (`entity`, `listing`,
   `bid`, `list`, `cart`).
@@ -37,13 +41,18 @@ Top-level dirs under `src/`:
 - **`types/index.ts`** — re-exports DTOs from `@oakplatforms/types` (no local domain types).
 - **`helpers/`, `utils/`, `constants.ts`** — slugify, price formatting, cart math, store URLs,
   brand/condition config.
-- **Styling** — Tailwind (`tailwind.config.js`) plus CSS custom properties for the theme scale in
-  `src/index.css` / `src/styles/globals.css` (EuclidCircularB primary, Geist/Figtree secondary),
-  the same token palette used by mobile/admin.
+- **Styling** — Tailwind (`tailwind.config.js`; Euclid Circular B primary, Figtree secondary, Roobert
+  display) with `src/index.css` as the global sheet (Euclid `@font-face`, `body` defaults). The
+  marketing site's dark theme (`page`/`ink`/`surface`/`hairline` tokens, `src/styles/public-site.css`)
+  applies only while `<html>` carries `.public-site`, so share/detail screens stay light.
 
-**Routing:** flat route table in `AppLayout.tsx`. Static marketing paths out-rank the dynamic
-`/:referenceCode` share route; anything unmatched `Navigate`s to `/`. 6-char reference codes
-(`S/B/C/P/K/G/U` + five digits 2–9) are the core dynamic surface.
+**Routing:** flat route table in `AppLayout.tsx`. Sharing lives at **nine root-level type-scoped
+routes** `/<slug>/:referenceCode` (listing, bid, collection, product, bulk, group, profile, post,
+tag) → `ShareDetail` (share-route-migration, 2026-08 — the slug names the record type; older
+shapes, bare root codes and the interim `/share` prefix, are not honored, no redirect); anything
+unmatched `Navigate`s to `/`. These are the core dynamic surface; the reference code is an opaque
+token (lenient 4–12 alphanumeric check — still minted as 6 chars, five digits 2–9 + a type
+letter, but routing never decodes the letter).
 
 **Data/services → nanza-api:** all reads/writes go through `fetchData`, which attaches a Cognito JWT
 when signed in and otherwise a cached guest token. Base URL from `REACT_APP_API_BASE_URL`
@@ -54,7 +63,8 @@ when signed in and otherwise a cached guest token. Base URL from `REACT_APP_API_
 the guest-only stub; re-enabling restores the real wrapper + the commented auth routes.
 
 **Build/deploy:** `npm run build` (CRA) → `aws s3 sync` to an S3 bucket, fronted by CloudFront, via
-GitHub Actions (`.github/workflows/deploy-dev.yml`, `deploy-prod.yml`) using OIDC role assumption.
+the `nanza-web-app-<stage>` CodePipeline running the repo's `buildspec.yml` (see
+[[../_shared/architecture/deploy-pipelines|Deploy pipelines]]); `.github/workflows/` is retired.
 Universal Links / App Links assets ship under `public/.well-known/`.
 
 ## Deeper docs
@@ -62,6 +72,18 @@ Universal Links / App Links assets ship under `public/.well-known/`.
 - [[architecture|Architecture]] — entry, routing, services, auth flow, styling, build/deploy
 - [[fe_spec|Frontend Spec]] — engineering standards, non-negotiables, escalation process
 - [[../_shared/INDEX|Shared brain]] — cross-project architecture & decisions
+- [[../business/INDEX|Business]] — founder strategy, onboarding brief, connection map, investor relations (moved out of this folder 2026-09-24)
+
+## Plans (in progress)
+
+- [[solution-designs/landing-replacement|Landing Replacement]] — swap the whole marketing surface
+  (`src/landing/` + `LandingLayout` + content pages) for the scroll-driven front end built in the
+  temporary `nanza-web-app-update` repo (Lenis/GSAP timeline, R3F phone scene, generated `pages.ts`
+  routes); old landing routes/components deleted; share routes untouched. Drafted 2026-08-27.
+- [[solution-designs/share-route-migration|Share Route Migration]] — move the public share URL to
+  root-level type-scoped routes `/<typeSlug>/<code>` (listing/bid/collection/…) across web,
+  API/edge, and mobile; the slug picks the table, the code is an opaque token; clean cut, no
+  redirects (breaking change accepted).
 
 ## Plans (in progress)
 
@@ -112,5 +134,5 @@ Universal Links / App Links assets ship under `public/.well-known/`.
   redirecting home. Hand-kept robots.txt and sitemap. ogEdge untouched. Prerendering shelved in a
   git stash.
 - [[solution-designs/sharing|Sharing]] — the reference-code landing pages, the app-store redirect for
-  app-less mobile visitors, centralized store URLs + card headers, and the profile (`U`)
-  `?type=sell|bid` share views.
+  app-less mobile visitors, centralized store URLs + card headers, and the profile
+  (`/profile/<code>?type=sell|bid`) share views.

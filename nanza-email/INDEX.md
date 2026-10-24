@@ -7,15 +7,15 @@ Nanza's transactional email service. It is a single AWS Lambda (`nanza-email-<st
 Real source lives at `nanza-email/` (repo root); `documentation/` there is a symlink into this vault.
 
 - **`handler/`** — Lambda entrypoint. `index.ts` re-exports `handler` from `emailDispatcher.tsx`, a large `if (type === ...)` chain over `event.detail.type` that maps each event to a template + recipient.
-- **`templates/`** — one `.tsx` react-email template per email: `SellerOrderConfirmation`, `CustomerInvoiceConfirmation`, `OrderCancelled`, `OrderInTransit`, `OrderDelivered`, `OrderFailed`, the three `OrderRefund*` (Request / Declined / Accepted), `PasswordChange`, `SellerAccountVerified`, `SellerApplicationRejected`, `NewSellerNotification`.
+- **`templates/`** — one `.tsx` react-email template per email: `SellerOrderConfirmation`, `CustomerInvoiceConfirmation`, `BidOfferReceived`, `OrderCancelled`, `OrderInTransit`, `OrderDelivered`, `OrderFailed`, the three `OrderRefund*` (Request / Declined / Accepted), `PasswordChange`, `SellerAccountVerified`, `SellerApplicationRejected`, `NewSellerNotification`.
 - **`components/`** — shared email pieces: `LogoSection` (S3-hosted logo with cache-busting version param) and `OrderCard` (line-item / totals block).
 - **`styles/`** — `theme.ts` (hard-coded hex tokens, since email clients can't use CSS variables) and `index.ts` (the `styles` object + `@font-face` declarations, Figtree).
-- **`utils/`** — `sendEmail.ts` (the SES client + `SendEmailCommand` wrapper), `shipping.ts` (rate/quantity math for order emails), `formatPriceAsDollar.ts`.
+- **`utils/`** — `sendEmail.ts` (the SES client + `SendEmailCommand` wrapper), `shipping.ts` (rate/quantity math for order emails), `formatPriceAsDollar.ts`, `offerCopy.ts` (offer-aware headlines for the order templates).
 - **`services/api/`** — thin read-only clients (`Order`, `Invoice`, `Account`, `Seller`) over a shared `fetchData` that authenticates with a cached guest token against `API_BASE_URL`.
 - **`types/index.ts`** — re-exports DTOs (`OrderDto`, `InvoiceDto`, `AccountDto`, …) from `@oakplatforms/types`; no local domain types.
 - **`local/`** — offline preview harness (`preview.tsx` + `configs.ts` + generated `preview.html`) so templates can be rendered without deploying; run via `npm run preview`.
 - **`serverless.yml`** — defines the Lambda, its SES IAM permissions, the `SES_SOURCE_EMAIL` env var, and the EventBridge rule listing every event type it subscribes to.
-- **`.github/workflows/`** — `deploy-dev.yml` / `deploy-prod.yml` (branch-push deploys via GitHub OIDC + Serverless).
+- **`buildspec.yml`** — run by the `nanza-email-<stage>` CodePipeline (see [[../_shared/architecture/deploy-pipelines|Deploy pipelines]]) on manual release: CodeArtifact login, `npm ci`, SSM config, `serverless deploy`. `.github/workflows/` is the retired GitHub Actions version.
 
 ## How sending works (one line)
 

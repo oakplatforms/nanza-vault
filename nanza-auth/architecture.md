@@ -6,7 +6,7 @@ See [[INDEX]] for the file map and [[../_shared/INDEX|Shared brain]] for cross-p
 
 - **Runtime / framework:** Node.js 20, TypeScript, Serverless Framework v3 (`serverless.yml`).
 - **Region:** `us-east-1` (hardcoded in every SDK client and in `serverless.yml`).
-- **Package name:** `nanza-auth` (`package.json`). README calls it `oak-auth`; the Serverless `service:` is `nanza-auth`, though the README still describes the service as `tcgx-auth` — naming is inconsistent across the repo.
+- **Package name:** `nanza-auth` (`package.json`), matching the README and the Serverless `service:`. The older `oak-auth` / `tcgx-auth` names were removed 2026-09-29.
 
 ---
 
@@ -51,10 +51,10 @@ Net effect: a confirmed Cognito consumer gets a matching nanza-api account provi
 
 | Handler | Source | DetailType | Detail `type` |
 | --- | --- | --- | --- |
-| `forgotPasswordHandler.ts` | `tcgx` | `user.forgot-password` | `user.forgot-password` |
-| `changePasswordHandler.ts` | `tcgx` | `user.password-changed` | `user.password-changed` |
+| `forgotPasswordHandler.ts` | `nanza` | `user.forgot-password` | `user.forgot-password` |
+| `changePasswordHandler.ts` | `nanza` | `user.password-changed` | `user.password-changed` |
 
-The `Detail` payload carries `userId` (the `sub`) and `email`. Downstream consumers of the `tcgx` event source (outside this repo) react to these — e.g. sending a password-related email. Both files are typed as `PreTokenGenerationTriggerEvent`, which is almost certainly a copy-paste inheritance rather than an accurate reflection of the Cognito trigger they are meant to serve; the code only touches `event.request.userAttributes`, so it works regardless, but the typing is not authoritative about the real trigger.
+The `Detail` payload carries `userId` (the `sub`) and `email`. The source was `tcgx` until 2026-09-29; it is now `nanza`, the same source nanza-api uses. Note the mismatch that remains: nanza-email's rule subscribes to `user.password.changed` (dots), which nanza-api's `PUT /auth/password` emits, while this handler emits `user.password-changed` (hyphen). Since the handler is not wired in `serverless.yml`, nothing consumes its events today. Both files are typed as `PreTokenGenerationTriggerEvent`, which is almost certainly a copy-paste inheritance rather than an accurate reflection of the Cognito trigger they are meant to serve; the code only touches `event.request.userAttributes`, so it works regardless, but the typing is not authoritative about the real trigger.
 
 > **Wiring gap (verified):** `serverless.yml` only declares the two *provisioning* functions. `forgotPasswordHandler` and `changePasswordHandler` have **no `functions:` entry and are not deployed by this config**. They exist as source but are either wired elsewhere, invoked out-of-band, or currently dormant. Treat their deployment as unconfirmed until the Cognito → Lambda attachment is located.
 
@@ -114,14 +114,14 @@ No database, queue, or (notably) explicit `events:PutEvents` permission is grant
 
 ---
 
-## 7. Deploy (Serverless + GitHub Actions)
+## 7. Deploy (Serverless + AWS CodePipeline)
 
 - **Framework:** Serverless v3, `package: individually`, esbuild bundling (`bundle`, `minify`, `target: node20`).
-- **CI:** `.github/workflows/deploy-dev.yml` (push to `dev`) and `deploy-prod.yml` (push to `prod`). Both:
-  1. Checkout, Node 20, `npm ci`.
-  2. Authenticate to AWS via **OIDC** (`aws-actions/configure-aws-credentials@v4`, `role-to-assume: vars.AWS_ROLE_ARN_{DEV|PROD}`) — no static access keys.
-  3. Install Serverless globally, disable dashboard/telemetry.
-  4. `serverless deploy --stage {dev|prod} --verbose`, injecting the pool/client IDs, `DEFAULT_USERNAME` (`vars.USERNAME`), and `API_BASE_URL` from stage-specific GitHub Actions `vars`.
+- **CI:** the `nanza-auth-<stage>` CodePipeline defined in `nanza-pipelines` (see [[../_shared/architecture/deploy-pipelines|Deploy pipelines]]) runs the repo's `buildspec.yml` on a manual release after a push to `dev` / `prod`:
+  1. Node 20, `npm ci`.
+  2. Read the pool/client IDs, `DEFAULT_USERNAME`, and `API_BASE_URL` from SSM Parameter Store (`/nanza-auth/<stage>/…`).
+  3. `npx serverless deploy --stage {dev|prod} --verbose` under the CodeBuild service role (no OIDC, no static keys).
+- The GitHub Actions workflows under `.github/workflows/` are retired (2026-09-29).
 - **Discrepancy (verified):** `package.json` scripts reference `serverless.dev.yml` / `serverless.prod.yml` (`--config`), and the README mentions per-env configs, but only a single `serverless.yml` exists in the repo. The CI workflows do **not** use `--config`; they rely on `serverless.yml` + `--stage`. The package scripts are stale relative to the actual deploy path.
 
 ---

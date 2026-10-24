@@ -47,20 +47,27 @@ session. See [[solution-designs/join-sheet|Join sheet]].
 `src/app/AppLayout.tsx` is a single `<BrowserRouter>` with a flat `<Routes>` table, wrapped in
 `BrandFilterProvider` and `LayoutAnimationProvider`. Route groups:
 
-- **Marketing / landing** — `/` (`LandingPage`), `/about`, `/buy`, `/sell`, `/collect`, `/pricing`,
-  `/privacy-policy`, `/terms`, plus many `ContentPage` slugs (`/how-it-works/*`, per-TCG game pages
-  like `/pokemon`, `/magic-the-gathering`, legal pages). These are static and out-rank the dynamic
-  share route by React Router v6 specificity ranking.
+- **Marketing / landing** — `/` (`LandingPage`, `src/landing/index.tsx`) plus every path in
+  `src/pages/pages.ts`: the primary nav (`/create`, `/collect`, `/buy`, `/sell`, `/trade`, `/share`,
+  `/support`) and the footer set (`/fair-market`, `/refund-and-return-policy`, `/about`,
+  `/privacy-policy`, `/terms`). `AppLayout` generates these routes from that one list, so a nav
+  link and its route cannot disagree; `/privacy-policy` and `/terms` get their real copy from
+  `src/pages/legal/` via a small `LEGAL_BODIES` table, everything else renders `PageLayout`'s
+  headline + intro. The pre-2026-08 marketing routes (`/pricing`, `/how-it-works/*`, per-TCG game
+  pages, `/legal`, `/terms-of-use`, …) were retired with the landing rebuild and fall to the
+  catch-all. These are static; they don't compete with the share routes because each share route
+  sits under a fixed literal type slug, not a bare `/:code` catch-all.
 - **Help centre** — `/support` (the index) plus one route per how-to guide at
   `/support/<slug>`, generated from the `GUIDES` data in `src/pages/support/guides.ts`. The hub
   pages link guides by slug from `src/pages/topics/hubs.ts`. See [[solution-designs/help-centre]].
-- **Share landing** — `/:referenceCode` → `app/ShareDetail`. This is the **only live dynamic route**
-  and the core purpose of the deployed app.
-- **Profiles** — `/:username` and its tabs and detail screens → `app/ProfilePage`. See
-  [[solution-designs/profile-page]].
-- **Catch-all** — `path="*"` → `NotFound` (`src/pages/ErrorPages.tsx`), a noindexed not-found
-  page; an unknown username reaches the same page from `ProfileLayout`. It used to redirect home,
-  which search engines count as a soft 404. See [[solution-designs/seo]].
+- **Share landing** — nine root-level type-scoped routes `/<slug>/:referenceCode` (`listing`,
+  `bid`, `collection`, `product`, `bulk`, `group`, `profile`, `post`, `tag`) → `app/ShareDetail`
+  with a per-route `shareType` prop. These are the **only live dynamic routes** and the core
+  purpose of the deployed app (share-route-migration, 2026-08: this final shape superseded the
+  same-day interim `/share/:referenceCode`; old shapes — root-level bare codes and the `/share`
+  prefix — are deliberately not honored, no redirect).
+- **Catch-all** — `path="*"` → `<Navigate to="/" replace />`. Any bare username or unknown path
+  bounces home (there is no public profile in the live build).
 - **Dormant, commented-out** — auth (`/sign-in`, `/sign-up`, `/forgot-password`), cart
   (`/cart`, `/cart/confirmation`), storefront builder (`/build`, `/build/:storefrontId`),
   profile/user routes (`/:username`, `/:username/listings|bids|lists`), and the `SmartRouter`
@@ -69,23 +76,29 @@ session. See [[solution-designs/join-sheet|Join sheet]].
 
 ### Reference codes
 
-The share surface is driven by **6-character reference codes**: exactly five digits (2–9) and one
-type letter, validated by `isReferenceCode()` (duplicated in `ShareDetail/index.tsx` and
-`SmartRouter.tsx`, mirroring the backend contract). Type letters:
+The share surface is driven by type-scoped routes plus an **opaque reference code**: the URL slug
+names the record type, and the code is checked only leniently (4–12 alphanumeric — routing never
+decodes the type letter, though codes are still minted as five digits 2–9 + one letter). The old
+`isReferenceCode()` letter validation is gone from `ShareDetail`/`fetchByCode`; the slug↔type
+taxonomy lives in `src/helpers/shareTaxonomy.ts`, mirroring the API's
+`nanza-api/src/constants/shareTaxonomy.ts`. Slugs and cards:
 
-| Letter | Meaning | ShareDetail card |
-|--------|---------|------------------|
-| `S` | Listing | `FeedDetailCard` |
-| `B` | Bid | `FeedDetailCard` |
-| `P` | Product | `ProductDetailCard` |
-| `C` | List / collection | `ListDetailCard` |
-| `K` | Bulk listing | `BulkDetailCard` |
-| `G` | Group | `GroupDetailCard` |
-| `U` | Profile (`?type=sell\|bid`) | `ProfileDetailCard` |
+| Route slug | Backing record | ShareDetail card |
+|------------|----------------|------------------|
+| `/listing` | Listing | `FeedDetailCard` |
+| `/bid` | Bid | `FeedDetailCard` |
+| `/product` | Product (resolves to Entity) | `ProductDetailCard` |
+| `/collection` | List / collection | `ListDetailCard` |
+| `/bulk` | Bulk listing | `BulkDetailCard` |
+| `/group` | Group | `GroupDetailCard` |
+| `/profile` | Profile (`?type=sell\|bid`) | `ProfileDetailCard` |
+| `/post` | Post (root only) | `PostDetailCard` |
+| `/tag` | Supported tag value | `TagDetailCard` |
 
-`app/ShareDetail/index.tsx` fetches by code (`data/fetchByCode.ts`), maps the record into card props,
-and renders inside `ShareDetailShell`; invalid codes `Navigate` to `/`. `SmartRouter.tsx` (dormant)
-uses the same code check to split `/:a/:b` into a profile-reference view vs. a brand/entity slug view.
+`app/ShareDetail/index.tsx` takes the route's `shareType` prop, fetches by type + code
+(`data/fetchByCode.ts` → `GET /reference/{type}/{code}`), maps the record into card props, and
+renders inside `ShareDetailShell`; invalid codes `Navigate` to `/`. `SmartRouter.tsx` (dormant)
+keeps its own code check to split `/:a/:b` into a profile-reference view vs. a brand/entity slug view.
 
 ## Data / services layer (→ nanza-api)
 
@@ -141,13 +154,25 @@ uncomment the auth routes.
 
 ## Styling
 
-Tailwind CSS drives layout/utility styling. `tailwind.config.js` scans `src/{components,app,landing}`
-and extends the theme with the brand font families (`sans` → Euclid Circular B, `figtree` → Figtree)
-and a `fadeIn` animation. The full color scale and semantic tokens are defined as CSS custom
-properties in `src/styles/globals.css` and `src/index.css` (`--color-primary-*`, font-family vars),
-with `@font-face` declarations for Euclid Circular B, Geist, and Figtree — the **same token palette
-and font stack shared with nanza-mobile and nanza-admin**. Component styling is Tailwind class names
-(with `clsx` for conditionals), not a StyleSheet abstraction as in mobile.
+Tailwind CSS drives layout/utility styling. `tailwind.config.js` scans
+`src/{components,app,landing,pages,sections,scene}` and `src/*.tsx`, and extends the theme with the
+brand font families (`sans` → Euclid Circular B, `figtree` → Figtree, `roobert` → Roobert for
+display type), a `fadeIn` animation, and the marketing site's dark tokens (`page`, `ink`/`ink-muted`/
+`ink-faint`, `surface`, `hairline` — `src/theme.ts` mirrors the hexes for SVG/canvas use).
+`src/index.css` is the global sheet (`@tailwind`, Euclid `@font-face`, `body` defaults);
+`src/styles/public-site.css` (imported from `src/index.tsx`) carries the Roobert faces, Lenis
+classes, and the dark ground — every rule in it that would reach the whole document is scoped under
+`html.public-site`, a class `src/app/usePublicSite.ts` adds while a marketing route is mounted and
+removes on the way out, so share/detail screens never inherit it. Fonts are served from `src/fonts/`
+via relative `url()`s (CRA's css-loader rejects root-absolute paths). Component styling is Tailwind
+class names (with `clsx` for conditionals), not a StyleSheet abstraction as in mobile.
+
+The landing itself (see [[solution-designs/landing-replacement|Landing Replacement]]) is one
+scrubbed timeline: `scene/useScrollTimeline.ts` owns the single Lenis instance (driven off the GSAP
+ticker) and writes to a plain mutable `scene/motionState.ts` that the DOM sections and the
+React-Three-Fiber phone (`scene/PhoneCanvas.tsx`, `React.lazy` so `three`/drei ship as their own
+chunk) read every frame — no React state on the scroll path. `scene/useImmersive.ts` turns the 3D
+scene off (→ `sections/StaticPhone.tsx`) for reduced-motion, <768px, and no-WebGL.
 
 **The public marketing site has its own faces**, declared in `src/styles/public-site.css`
 alongside its dark tokens and reached through Tailwind families: **Roobert** (`font-roobert`)
@@ -161,25 +186,25 @@ to production.
 
 ## Build and deploy
 
-CRA build (`npm run build`) emits a static bundle to `build/`. `public/robots.txt` and
+CRA build (`npm run build`) emits a static bundle to `build/`, deployed by the
+`nanza-web-app-<stage>` CodePipeline defined in `nanza-pipelines` (see
+[[../_shared/architecture/deploy-pipelines|Deploy pipelines]]). GitHub Actions
+(`.github/workflows/`) is retired as of 2026-09-29. `public/robots.txt` and
 `public/sitemap.xml` are kept by hand ([[solution-designs/seo]]).
 
-The real pipeline is `buildspec.yml` (CodeBuild, values from SSM under `$PARAM_PREFIX`). The
-GitHub Actions workflows below have the same shape:
-
-- **`.github/workflows/deploy-dev.yml`** — triggers on push to `dev`. Node 20, `npm ci
-  --legacy-peer-deps` (auth to GitHub Packages for `@oakplatforms/types`), assumes an AWS role via
-  **OIDC** (`aws-actions/configure-aws-credentials`, no static keys), builds with `REACT_APP_*` env
-  from GitHub vars (API base URL, S3 image base, Cognito pool/client, Stripe key, GTM container), then
-  `aws s3 sync build/ s3://<S3_WEBAPP_BUCKET_DEV> --delete`. A follow-up step re-uploads
-  `.well-known/apple-app-site-association` with `Content-Type: application/json`.
-- **`.github/workflows/deploy-prod.yml`** — triggers on push to `prod`. Same shape (build env omits
-  Cognito/Stripe vars, matching the disabled state; carries `GTM_ID_PROD`), syncs to the prod bucket, fixes the AASA
-  content-type, and additionally runs a **CloudFront invalidation** (`create-invalidation … /*`).
+- **Trigger:** push to `dev` / `prod`, then a manual *Release change* on the pipeline.
+- **`buildspec.yml`** (one file, both stages): Node 20, `aws codeartifact login` for
+  `@oakplatforms/types`, `npm ci --legacy-peer-deps`, config from SSM Parameter Store
+  (`/nanza-web-app/<stage>/…`: API base URL, S3 image base, bucket; Cognito pool/client and
+  Stripe key where set, which today is dev only), `npm run build` with `CI=true`, then
+  `aws s3 sync build/ s3://<S3_WEBAPP_BUCKET> --delete`. A follow-up step re-uploads
+  `.well-known/apple-app-site-association` with `Content-Type: application/json`, and a
+  **CloudFront invalidation** (`create-invalidation … /*`) runs when `CLOUDFRONT_DIST_ID` is set
+  for the stage (prod today).
 
 **Hosting:** static site in **S3 behind CloudFront**. **Deep-link assets** ship from
-`public/.well-known/`: `apple-app-site-association` (iOS Universal Links, matching `/??????` — the
-6-char codes, appID `Y9X5CD9HAV.com.oakplatforms.nanza`) and `assetlinks.json` (Android App Links,
+`public/.well-known/`: `apple-app-site-association` (iOS Universal Links — one `"/<slug>/*"`
+component per share type, nine in all, appID `Y9X5CD9HAV.com.oakplatforms.nanza`) and `assetlinks.json` (Android App Links,
 `com.oakplatforms.nanza`). With those in place, users who already have the native app never see the
 web page — the OS opens the app; the [[plans/share-store-redirect|store redirect]] only fires for
 visitors without the app. Store URLs are centralized in `src/constants.ts` (`APP_STORE_URL`,

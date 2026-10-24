@@ -112,21 +112,19 @@ Domain shapes come from `@oakplatforms/types`, not hand-rolled interfaces.
 - `src/components/Tailwind/` is a Catalyst-style UI kit (~24 primitives: `Button`, `Input`, `Table`, `Dialog`, `Dropdown`, `Select`, `Listbox`, `Badge`, `Switch`, `RichTextEditor`, `Pagination`, …) built on `@headlessui/react` for accessible behavior, `@heroicons/react` for icons, and `forwardRef` for composition; all re-exported from `Tailwind/index.ts`. App-level composites (`SimpleTable`, `PaginationControls`, `SearchInput`, `ConfirmDialog`, `SimpleDialog`) wrap these.
 - Rich text uses `quill` (v2); animations use `framer-motion`.
 
-## Build & deploy (S3 + GitHub Actions OIDC)
+## Build & deploy (S3 + AWS CodePipeline)
 
-Deployment is static hosting on S3, driven by GitHub Actions — no access keys, OIDC-assumed roles (per the app's `CLAUDE.md`).
+Deployment is static hosting on S3, driven by the `nanza-admin-<stage>` CodePipeline defined in `nanza-pipelines` (see [[../_shared/architecture/deploy-pipelines|Deploy pipelines]]). GitHub Actions (`.github/workflows/`) is retired as of 2026-09-29.
 
-- Workflows: `.github/workflows/deploy-dev.yml` (push to `dev`) and `.github/workflows/deploy-prod.yml` (push to `prod`). A `stage` branch/environment follows the same pattern.
-- Each job: checkout → Node 20 with the `@oakplatforms` GitHub Packages registry (for `@oakplatforms/types`) → `npm ci` (`--legacy-peer-deps` on dev) → **assume AWS role via OIDC** (`aws-actions/configure-aws-credentials@v4`, `role-to-assume: vars.AWS_ROLE_ARN_<ENV>`, `id-token: write`).
-- **Cognito config is generated in-pipeline**: an inline step writes `src/aws-exports.js` from `vars.ADMIN_USER_POOL_ID_<ENV>` / `vars.ADMIN_USER_POOL_CLIENT_ID_<ENV>` (avoids `amplify pull` under OIDC).
-- Build: `npm run build` (CRA) with env `REACT_APP_API_BASE_URL` and `REACT_APP_S3_IMAGE_BASE_URL` from per-environment repo variables.
-- Publish: `aws s3 sync build/ s3://<vars.S3_ADMIN_BUCKET_<ENV>> --delete`.
+- Trigger: push to `dev` / `prod`, then a manual *Release change* on the pipeline (or `scripts/release.sh nanza-admin <stage>`).
+- The build (`buildspec.yml` in the repo): Node 20 → `aws codeartifact login` for `@oakplatforms/types` → `npm ci --legacy-peer-deps` → read config from SSM Parameter Store (`/nanza-admin/<stage>/…`) → `npm run build` (CRA, `CI=true`) with `REACT_APP_API_BASE_URL`, `REACT_APP_S3_IMAGE_BASE_URL`, and the Cognito pool/client/MFA values → `aws s3 sync build/ s3://<S3_ADMIN_BUCKET> --delete`.
+- CodeBuild runs under a service role with deploy rights; there is no OIDC and no long-lived key.
 
-Config values (`API_BASE_URL`, `S3_IMAGE_BASE_URL`, pool ids, bucket, role ARN) are GitHub Actions **repo variables**, suffixed by environment. Secret values are never committed; `aws-exports.js` and `.env` are regenerated per build.
+Config values (`API_BASE_URL`, `S3_IMAGE_BASE_URL`, pool ids, bucket) are SSM parameters per stage. Secret values are never committed; `.env` is regenerated per build.
 
 ## Notable characteristics / gotchas
 
-- The app still labels itself "TCGx 0.1" / "TCGX" in `Sidebar` and `SignIn`; the package is `oak-admin`. Branding predates the Nanza name.
+- The package is still `oak-admin`, and the generated `amplify/` config keeps the original `tcgxadmin` project and `tcgx-admin` user-pool names because they name deployed AWS resources. Everything user-facing says "Nanza" (renamed 2026-09-29; the platform was originally called TCGx).
 - Two nav definitions (`TopNavbar`, `Sidebar`) are maintained separately from the `AppLayout` route table, so links can drift ahead of routes (e.g. `/homepage`).
 - Writes refetch queries rather than invalidating the React Query cache; there is little use of `useMutation`.
 - `staleTime` is set per hook, but there is no shared `QueryClient` default config.

@@ -25,6 +25,7 @@ The `detail-type` list in the rule is the source of truth for what this service 
 
 - `invoice.confirmation.customer`
 - `order.confirmation.seller`
+- `offer.confirmation.customer` — a seller answered a bid with an offer (added 2026-08-28)
 - `order.canceled.customer`, `order.canceled.seller`
 - `order.transit.customer`
 - `order.delivered.customer`
@@ -56,6 +57,8 @@ A few branches are special:
 - **`seller.completed`** emails a hard-coded admin list (`skylar@`, `tahir@oakplatforms.com`) with `NewSellerNotification` — an internal "new seller pending verification" alert, not a customer email.
 - **`seller.application.rejected`** takes `sellerEmail`, `sellerName`, and `rejectionReason` straight off the event (no fetch needed).
 - Shared-template events (cancel, delivery-failed, failed) pass a `recipientType` prop so one template serves both customer and seller.
+- **Offer-aware wording (2026-08-28).** The seller-confirmation and cancel branches fetch `include=offer` and the templates reword themselves from `order.offer` (`utils/offerCopy.ts`): a pending listing offer renders `SellerOrderConfirmation` as "You've received an offer!"; a cancel whose offer is `DECLINED` / `CANCELED` / `EXPIRED` headlines the offer outcome instead of "your order has been cancelled". The buyer's `CustomerInvoiceConfirmation` is unchanged — nanza-api simply emits it on the seller's accept for offer orders. `BidOfferReceived` (the one new template) reuses `OrderCard` in its `summary="offer"` mode (no address / shipping / tax — the bidder hasn't checked out yet). Offer fields come through a local `OrderWithOffer` shim in `types/index.ts` until `@oakplatforms/types` ≥ 0.1.92 is picked up. **No order number on offer mails (2026-08-29):** the header's second line is `offerFromSubtitle(party)` — "Offer from @username" (the buyer on `SellerOrderConfirmation`'s listing-offer branch, the seller on `BidOfferReceived`), falling back to the full name and dropped entirely when there's nobody to name (`OrderCard` takes `orderNumberSubtitle: null` to hide the line). The order exists under the hood, but the reader shouldn't meet an order number until they accept. Design: [[../nanza-api/solution-designs/offer-engine|Offer Engine]].
+- **Payment failed on accept (2026-09-17).** `order.canceled.customer` may carry `paymentFailed: true` (the buyer's card was declined when the seller accepted). `OrderCancelled` then headlines "Your payment didn't go through" (subject "Payment Failed") ahead of any offer wording, with nanza-api's reason in the panel. The seller is not emailed for this case — they hear it in the app.
 
 The handler is intentionally sequential (`await` per send) and does minimal error handling — a failed fetch or send bubbles up and the Lambda invocation errors.
 
@@ -139,9 +142,9 @@ The Lambda's IAM role grants only `ses:SendEmail` and `ses:SendRawEmail` on `Res
 Serverless-based, one stack per stage.
 
 - **Scripts:** `npm run deploy:dev` / `deploy:prod` (`serverless deploy --stage …`); `npm run build` runs `tsc`.
-- **CI:** `.github/workflows/deploy-dev.yml` deploys on push to `dev`; `deploy-prod.yml` on push to `prod`. (README also mentions a `stage` branch → stage environment; only dev and prod workflows exist in the repo.)
-- **Auth:** GitHub **OIDC** assumes an AWS role (`AWS_ROLE_ARN_DEV` / `_PROD` repo vars) — no long-lived AWS keys. `@oakplatforms` packages install from GitHub Packages using the workflow `GITHUB_TOKEN`.
-- **Env in CI:** `API_BASE_URL`, `REACT_APP_S3_BASE_URL`, `SES_SOURCE_EMAIL` are injected from GitHub **Variables** (`vars.*`) at deploy time.
+- **CI:** the `nanza-email-<stage>` CodePipeline defined in `nanza-pipelines` (see [[../_shared/architecture/deploy-pipelines|Deploy pipelines]]) runs the repo's `buildspec.yml` on a manual release after a push to `dev` / `prod`. The GitHub Actions workflows in `.github/workflows/` are retired (2026-09-29).
+- **Auth:** CodeBuild runs under a service role with deploy rights — no OIDC, no long-lived keys. `@oakplatforms/types` installs from **CodeArtifact** after `aws codeartifact login` in the build.
+- **Env in CI:** `API_BASE_URL`, `REACT_APP_S3_BASE_URL`, `SES_SOURCE_EMAIL` are read from SSM Parameter Store (`/nanza-email/<stage>/…`) at deploy time.
 - The Serverless dashboard/telemetry is explicitly disabled in both workflows.
 
 Deploying replaces the Lambda **and** re-applies the EventBridge rule + permission from `serverless.yml`, so adding a new event type is a code + config change followed by a redeploy.
