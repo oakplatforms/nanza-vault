@@ -29,6 +29,19 @@ QueryClientProvider          # src/app/index.tsx — retry: no 4xx retry, 2x on 
 The `QueryClient` default options live inline in `app/index.tsx`: queries do **not** retry on 4xx
 (reads `error.status`), retry up to twice on network/5xx, and cache for 5 minutes.
 
+**Analytics** sits outside the provider stack. `src/index.tsx` calls `initAnalytics()`
+(`src/analytics.ts`) before the first render: Consent Mode defaults, the GTM container, a
+wrapper on `history.pushState` / `replaceState` for page views, and capture-phase listeners on
+`document` for clicks, keys and copies. It is attached at the end of the chain — nothing in the
+providers, routes or `fetchData` knows it exists. `AppLayout` renders `<ConsentBanner />` after
+`<Routes>`. Off unless `REACT_APP_GTM_ID` is set. See
+[[solution-designs/analytics|Analytics]].
+
+**Join sheet.** `AppLayout` also renders `<JoinSheet />` after `<Routes>`, so its
+time-on-site counter covers the whole visit. Pages opt in with `useJoinSheetPage` (profile
+and share pages today). It opens only on phone widths for signed-out visitors, once per
+session. See [[solution-designs/join-sheet|Join sheet]].
+
 ## Routing
 
 `src/app/AppLayout.tsx` is a single `<BrowserRouter>` with a flat `<Routes>` table, wrapped in
@@ -44,6 +57,9 @@ The `QueryClient` default options live inline in `app/index.tsx`: queries do **n
   pages, `/legal`, `/terms-of-use`, …) were retired with the landing rebuild and fall to the
   catch-all. These are static; they don't compete with the share routes because each share route
   sits under a fixed literal type slug, not a bare `/:code` catch-all.
+- **Help centre** — `/support` (the index) plus one route per how-to guide at
+  `/support/<slug>`, generated from the `GUIDES` data in `src/pages/support/guides.ts`. The hub
+  pages link guides by slug from `src/pages/topics/hubs.ts`. See [[solution-designs/help-centre]].
 - **Share landing** — nine root-level type-scoped routes `/<slug>/:referenceCode` (`listing`,
   `bid`, `collection`, `product`, `bulk`, `group`, `profile`, `post`, `tag`) → `app/ShareDetail`
   with a per-route `shareType` prop. These are the **only live dynamic routes** and the core
@@ -158,12 +174,23 @@ React-Three-Fiber phone (`scene/PhoneCanvas.tsx`, `React.lazy` so `three`/drei s
 chunk) read every frame — no React state on the scroll path. `scene/useImmersive.ts` turns the 3D
 scene off (→ `sections/StaticPhone.tsx`) for reduced-motion, <768px, and no-WebGL.
 
+**The public marketing site has its own faces**, declared in `src/styles/public-site.css`
+alongside its dark tokens and reached through Tailwind families: **Roobert** (`font-roobert`)
+for display type — headlines, section headings, numerals; **Saans** (`font-saans`) for the nav
+bar and nothing else (2026-09-20); **Euclid Circular B** (the default `sans`) for body copy,
+shared with the rest of the app. Only the weights actually set are declared — Roobert 400–700,
+Saans 400 and 500 — and Saans ships as woff2 rather than the otf/ttf the older faces use.
+⚠️ The Saans files are the **TRIAL** cut (`src/fonts/Saans/Saans-TRIAL-*`), licensed for
+evaluation, not for a deployed site; the licensed files have to replace them before this goes
+to production.
+
 ## Build and deploy
 
 CRA build (`npm run build`) emits a static bundle to `build/`, deployed by the
 `nanza-web-app-<stage>` CodePipeline defined in `nanza-pipelines` (see
 [[../_shared/architecture/deploy-pipelines|Deploy pipelines]]). GitHub Actions
-(`.github/workflows/`) is retired as of 2026-09-29.
+(`.github/workflows/`) is retired as of 2026-09-29. `public/robots.txt` and
+`public/sitemap.xml` are kept by hand ([[solution-designs/seo]]).
 
 - **Trigger:** push to `dev` / `prod`, then a manual *Release change* on the pipeline.
 - **`buildspec.yml`** (one file, both stages): Node 20, `aws codeartifact login` for

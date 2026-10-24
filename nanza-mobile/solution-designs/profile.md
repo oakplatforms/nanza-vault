@@ -7,11 +7,43 @@ tags: [nanza-mobile, solution-design, profile]
 ## Overview
 
 There are two profile surfaces: **`ProfileScreen`** (your own profile, editable) and
-**`UserProfileScreen`** (viewing someone else, read-only). Both present the same three tabs —
-**Listings**, **Bids**, and **Collections** — over a paginated feed. The design goal is
+**`UserProfileScreen`** (viewing someone else, read-only). The design goal is
 **read-only parity**: a visited profile should look and feel like your own, minus any editing
 affordances, so browsing another user is a first-class experience rather than a stripped-down
 one.
+
+**July 2026 partial release:** the own profile kept its pill-tab structure but the tabs were
+re-cut and their bodies rebuilt on the shared thumb cards (next section).
+`UserProfileScreen` still renders the older three-tab layout described under "How it works" —
+its parity pass onto the same treatment is the queued follow-up.
+
+## Own-profile tabs — thumb grids (July 2026)
+
+`ProfileScreen`'s tabs are **Collections · Listings · Bids · Saved · References** (Listings/
+References gated on seller access, Bids on customer access). Each tab keeps the established
+contract — a `forwardRef` body exposing `handleEndReached`, driven by the parent PageLayout's
+scroll — but renders `components/shelf/CardGrid` (2 columns, `initialCount = data.length` so
+pagination appends instead of Show-more collapsing) over its existing data hook:
+
+- **Collections** — `CollectionThumb` grid (banner cover or card mosaic, count pill,
+  fair-market value row); the `isPrimary` list pins first as a cosmetic **"My Library"**;
+  the create button follows the grid. Same paginated `fetchLists` infinite query as before.
+- **Listings** — `ListingThumb` + `BulkThumb` in feed order over `useUserSellFeed`. The old
+  in-card edit mode is replaced by the detail screens' owner Edit button (thumbs push
+  `ListingDetail`).
+- **Bids** — `BidThumb` (trading-card aspect) over `useUserBids`.
+- **Saved** — NEW tab replacing the header heart entry point: all three thumbs over
+  **`useSavedFeedItems`** (`screens/savedItems/data/`), the exact
+  `['savedItems','screen',accountId]` query SavedItemsScreen mounts — one shared fetch,
+  heart-toggle invalidations and optimistic removals included. SavedItemsScreen stays
+  registered.
+- **References** — the renamed Reviews tab, rendering `components/profile/ReviewRow`
+  (comments-card recipe: star row, relative timestamp, body, reviewer avatar → profile).
+- **Offers** moved off the profile to the Trade screen's pill tabs (`SellerOffers` paginates
+  itself via `CustomFlatList`'s optional `onEndReached`).
+
+Header actions took the darkCircle treatment (`inkDarkCircles`, `edit-2`/`share-3`/`gear-3`);
+the heart icon is gone.
 
 ## How it works
 

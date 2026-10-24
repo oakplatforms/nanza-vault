@@ -40,6 +40,14 @@ rules (no inline styles, no hardcoded colors/sizes, DTO-only types) live in
 - **`types/`** — `index.ts` re-exports DTOs from `@oakplatforms/types`; `navigation.ts` holds
   route param types; generated schemas live alongside.
 
+## Plans (in progress)
+
+- [[solution-designs/bid-detail-glass-sheet|BidScreen glass sheet]] — BidScreen (and, since 2026-09-15,
+  ListingScreen minus its photo hero) 1:1 with Figma
+  1213:213817: info button → linked title chevron, glass condition pill above the title, fair-market
+  pill, glass user row / stepper, blurred card backdrop; bid-only opt-in props, plus the app-wide CTA
+  bar inset/height. Implemented 2026-09-11; pending on-device QA.
+
 ## Solution designs
 
 Living designs of how each feature area works and why, in `solution-designs/`. Each file
@@ -86,7 +94,11 @@ tag, a `solution-design` tag, and its theme tag.
 - [[solution-designs/design-system|Design System]] — the two-layer colour token model (base scales →
   semantic aliases), the resolver/provider path, the image→`ink` / surface / border conventions,
   `well`→`surface` deprecation, the enforced typographic scale (slot spreads from
-  `typography.ts`, ESLint-banned font props), and the pending light/dark switch.
+  `typography.ts`, ESLint-banned font props), proportional sizing (402/362 reference frame,
+  fraction steps, `aspectRatio`-for-height, parent-owns-width — tokens stay exact), the
+  inline emoji in running text (`EmojiText`), the
+  floating header as the one chrome for back+title screens, the shared glass chrome (one recipe, no backdrop blur, no native
+  shadow, gradient-stroke rim-light), and the pending light/dark switch.
 - [[solution-designs/ui-fixes|UI / UX fixes]] — consistent "more" ellipsis sizing/color, the on-load
   "Update Available" bottom sheet, and the inbox drill-downs (conversation/offer/order, plus
   direct group opens) joining the vertical slide-up family.
@@ -105,6 +117,27 @@ tag, a `solution-design` tag, and its theme tag.
   chicklets, reply summary card, post cards with hearts-as-SavedItems, and the ordered content
   renderer incl. LISTING/BID/ENTITY reference cards. Design only; model in
   [[../nanza-api/solution-designs/posts|nanza-api Posts]] § Chat release.
+- [[solution-designs/forms|Forms]] — the stacked form language (outline fields, pill pickers,
+  help text), the keyboard-sticky action bar with gating + success confirm, and the app-wide
+  trailing-arc button loading.
+- [[solution-designs/detail-screens|Detail Screens & Thumbs]] — the ListingDetail/BidDetail
+  pinned-hero screens (lots included), the card-thumb system (`components/cards/`), the shelf
+  domain (`components/shelf/`: ShelfHeading, CardGrid, CardCarousel, the ShelfProps contract),
+  and the transitional home thumb grid.
+- [[solution-designs/auth|Auth]] — the interstitial/screens/sheets split, the two credential
+  paths (Cognito SDK for email+password, hosted-domain OAuth+PKCE for Apple/Google), the
+  self-gating username sheet, the App-Review terms notice, and the native legal screens.
+- [[solution-designs/semantic-token-migration|Semantic Token Migration]] — PENDING: convert the
+  ~475 pre-existing raw palette scale refs (`secondary['400']`, `primary['300']`, …) to their
+  semantic tokens, as a dedicated consistent pass (deferred from the Aug-2026 token audit).
+- [[solution-designs/post-attachments|Post attachments]] — the ENTITY card row on a post
+  (thumb + top-anchored identity block + bottom-anchored fair-market pill), its proportional
+  sizing, the "Card Gradient 1" tokens, and the reference-payload gap the number/price
+  placeholders stand in for.
+- [[solution-designs/analytics|Analytics]] — the typed Mixpanel catalog, the one `track()` gate,
+  the call-site pattern (service functions after their request, screens on mount), automatic
+  `surface` read from the navigation ref at track time, People properties, the social-signup
+  resolution, and why the S1 rules engine was dropped.
 - [[solution-designs/docs-infra|Documentation vault]] — the shared `nanza-vault`: relative symlinks,
   INDEX hierarchy, and how designs land here.
 

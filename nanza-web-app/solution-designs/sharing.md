@@ -58,7 +58,9 @@ server-side and tag values render from their own columns.
 fetches via `data/fetchByCode.ts` (→ `universalService.getByCode` →
 `GET /reference/{type}/{code}{params}` — the typed route that replaced the bare-code
 lookup), maps the record into card props, and renders inside `ShareDetailShell`. Invalid
-codes `Navigate` to `/`.
+codes `Navigate` to `/`. Share pages are `noindex`: phones, including Googlebot's
+smartphone crawler, are sent to a store. Their link previews still come only from ogEdge.
+See [[seo]].
 
 ### Store redirect for app-less mobile visitors
 

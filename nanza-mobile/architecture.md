@@ -36,6 +36,10 @@ Two app-lifecycle concerns live in `App.tsx`:
 - **Analytics lifecycle** — `initAnalytics`, `trackInstallOnce`, and `trackAppOpen` fire from
   `src/services/analytics/`; an `AppState` listener emits exactly one `app_open` per genuine
   foreground (see the comment in `App.tsx` about the iOS background→inactive→active dance).
+  Everything else analytics-side is a `track(EVENTS.X, props)` call at the owning service
+  function or screen mount; `AnalyticsBridge` identifies the user and registers the `surface`
+  getter that reads the exported `navigationRef` at track time (see
+  [[solution-designs/analytics|Analytics]]).
 
 The `QueryClient` defaults (in `App.tsx`) set `staleTime` 5 min, `gcTime` 10 min, `retry: 0`,
 `refetchOnWindowFocus: false`, `refetchOnMount: true`. Individual hooks override `staleTime`
@@ -54,11 +58,20 @@ registration, params, or order — escalate instead):
   `ScanCameraScreen`/`ScanReviewScreen`/`ScanItemsScreen`, the trade flow, order/offer
   detail, wallet, legal, etc.). It also wires cross-cutting pieces: `AlertProvider`,
   `ModalStackProvider` + `ModalStackRenderer`, and `UpdateGate` (the update-available gate).
+  The **auth flow lives here too** (Aug 2026): sign-up is root-stack screens (`SignUp`,
+  `SignUpConfirmCode`), not the modal step-machine it used to be — log in and the username
+  step stay sheets. See [[solution-designs/auth|Auth]].
 - **`BottomTabNavigator.tsx`** — the `createBottomTabNavigator` with the primary tabs (Home,
-  Messages, Trade/Lightning, Groups, Search, Profile). Several tabs wrap their screen in a
-  small per-tab `createStackNavigator` (e.g. `HomeStack` pushes `UserProfileScreen`). It also
-  consumes app state directly: `useShoppingCart`, `useSession`, `useInboxCount` (envelope
-  badge), and `useFetchBrands`, and renders `AuthModal` and `CartPreview`.
+  Groups, Trade/Lightning, Inbox, Search, Profile/You). Several tabs wrap their screen in a
+  small per-tab `createStackNavigator` (e.g. `HomeStack` pushes `UserProfileScreen`). The bar
+  itself is the custom **`FloatingTabBar`** (`components/global/FloatingTabBar`) passed via the
+  `tabBar` prop: an ink pill of four tabs + a separate You circle floating a fixed 24pt above
+  the viewport bottom (no safe-area math), with the jelly active pill, the Inbox unread badge
+  (`useInboxCount`), the compact `CartPreview` pill, one shared `RadialGlow` halo, and
+  `BAR_HIDDEN_ROUTES` for full-viewport form screens. The navigator keeps only
+  `headerShown/lazy` screenOptions, the Account tab's `tabPress` auth intercept, and
+  `AuthModal`; `useBottomPadding` reads `getFloatingNavGeometry` (layout.ts) for screen
+  clearance.
 - **`ProfileNavigator.tsx`** — the stack for the Profile tab.
 
 Deep linking is configured in `AppNavigator.tsx`: it imports `SHARE_BASE_URL` from `@env` and
@@ -186,6 +199,14 @@ Text styles are special-cased: `typography.ts` defines the app's typographic sca
 overrides — ESLint forbids raw font props anywhere else. See
 [[solution-designs/design-system|Design System]] for the model.
 
+Two buckets are **recipes other buckets spread**, not areas of the UI: `typography.ts` (above)
+and `glass.ts` (`glassSurface` / `glassCircle` / `glassPill`), which `headers.ts`,
+`postComposer.ts`, `searchFooter.ts` and `collectionSearch.ts` all compose so the translucent
+chrome can't drift apart. Anything a style bucket can't express — the glass rim's gradient
+falloff, the floating header's halo — is a `react-native-svg` overlay component in
+`components/global/` (`GlassRim`, `RadialGlow`) that mounts as an absolute,
+`pointerEvents="none"` child.
+
 ### How a component consumes styles
 
 ```typescript
@@ -203,9 +224,17 @@ inline — see `getPromoAndroidStyles` in `src/styles/components/layout.ts` for 
 computes sizes off live window height and is intentionally not static. The full before/after
 catalog (16 patterns) is in [[REFERENCE|Frontend Reference Guide]].
 
-Fonts: EuclidCircularB (primary), Geist (secondary), Figtree (prices/dollar sign, rendered
-+1 weight above the numeric portion — the `PriceText` rule). Font families and the price/
-dollar-sign convention are tabled in [[REFERENCE|Frontend Reference Guide]].
+That exception is load-bearing, because **layout geometry is proportional, not fixed**: tokens
+(`spacing`/`radius`/`icons`/type) are exact on every device, while container widths derive from
+`useWindowDimensions()` — semantic fraction steps in `components/cards/thumbSizes.ts`, computed
+column widths in `shelf/CardGrid`, and `aspectRatio` for height. Parents pass `width` down;
+children never size themselves. See [[solution-designs/design-system|Design System]] →
+*Proportional sizing*.
+
+Fonts: **Roobert only** (Regular / Medium / SemiBold / Bold) — weight is encoded in the
+family name per slot in `typography.ts`. The earlier multi-font setup (EuclidCircularB /
+Geist / Figtree) and the `PriceText` +1-weight dollar-sign rule are retired; see
+[[solution-designs/design-system|Design System]].
 
 ---
 
@@ -240,8 +269,9 @@ service files, preserving the `fetchData` call and the `/resource/...` path conv
 share-detail fetch) so that share cards for each reference type (`S`, `B`, `C`, `G`, `U`)
 receive the correct populated relations.
 
-Alongside `api/`, `src/services/` also has `analytics/` (event tracking + lifecycle) and
-`auth/` (Cognito session helpers).
+Alongside `api/`, `src/services/` also has `analytics/` (the event catalog, the one `track()`
+gate, and lifecycle — [[solution-designs/analytics|Analytics]]) and `auth/` (Cognito session
+helpers).
 
 ---
 
