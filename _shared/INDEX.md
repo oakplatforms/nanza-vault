@@ -5,6 +5,7 @@ Architecture and catalog level only. This is where we think about the system as 
 ## Architecture
 Decisions and designs that span more than one repo (auth/Cognito, data model, infra, shareability, messaging).
 - `architecture/` — one note per cross-cutting topic
+- [[architecture/mixpanel-playbook|Mixpanel playbook]] — how to set up and read the Nanza Mixpanel projects: the ids-plus-lookup-table model, Lexicon setup, the five boards, refresh, Dev vs Prod, and the measurement gaps
 
 ## Decisions
 ADR-style records: what we chose, why, and what we rejected.

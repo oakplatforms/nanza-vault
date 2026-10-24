@@ -22,7 +22,7 @@ for the same URLs.
 ### Reference-code landing — `/:referenceCode`
 
 `/:referenceCode` → `app/ShareDetail` is the only live dynamic route (static marketing
-paths out-rank it; anything unmatched `Navigate`s to `/`). A **6-character reference
+paths out-rank it; anything unmatched is the not-found page). A **6-character reference
 code** is exactly five digits (2–9) plus one type letter, validated by
 `isReferenceCode()`, which mirrors the backend contract (duplicated in
 `ShareDetail/index.tsx` and `SmartRouter.tsx`). Type letters and their cards:
@@ -39,7 +39,10 @@ code** is exactly five digits (2–9) plus one type letter, validated by
 
 `ShareDetail/index.tsx` validates the code, fetches it via `data/fetchByCode.ts`
 (→ `universalService.getByCode` → `GET /reference/{code}{params}`), maps the record into
-card props, and renders inside `ShareDetailShell`. Invalid codes `Navigate` to `/`.
+card props, and renders inside `ShareDetailShell`. Invalid codes show the site's not-found
+page. Share pages are `noindex`: phones, including Googlebot's smartphone crawler, are sent to a
+store, and each record's indexable page is on its owner's profile. Their link previews still
+come only from ogEdge. See [[seo]].
 
 ### Store redirect for app-less mobile visitors
 

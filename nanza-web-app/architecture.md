@@ -29,6 +29,19 @@ QueryClientProvider          # src/app/index.tsx — retry: no 4xx retry, 2x on 
 The `QueryClient` default options live inline in `app/index.tsx`: queries do **not** retry on 4xx
 (reads `error.status`), retry up to twice on network/5xx, and cache for 5 minutes.
 
+**Analytics** sits outside the provider stack. `src/index.tsx` calls `initAnalytics()`
+(`src/analytics.ts`) before the first render: Consent Mode defaults, the GTM container, a
+wrapper on `history.pushState` / `replaceState` for page views, and capture-phase listeners on
+`document` for clicks, keys and copies. It is attached at the end of the chain — nothing in the
+providers, routes or `fetchData` knows it exists. `AppLayout` renders `<ConsentBanner />` after
+`<Routes>`. Off unless `REACT_APP_GTM_ID` is set. See
+[[solution-designs/analytics|Analytics]].
+
+**Join sheet.** `AppLayout` also renders `<JoinSheet />` after `<Routes>`, so its
+time-on-site counter covers the whole visit. Pages opt in with `useJoinSheetPage` (profile
+and share pages today). It opens only on phone widths for signed-out visitors, once per
+session. See [[solution-designs/join-sheet|Join sheet]].
+
 ## Routing
 
 `src/app/AppLayout.tsx` is a single `<BrowserRouter>` with a flat `<Routes>` table, wrapped in
@@ -38,10 +51,16 @@ The `QueryClient` default options live inline in `app/index.tsx`: queries do **n
   `/privacy-policy`, `/terms`, plus many `ContentPage` slugs (`/how-it-works/*`, per-TCG game pages
   like `/pokemon`, `/magic-the-gathering`, legal pages). These are static and out-rank the dynamic
   share route by React Router v6 specificity ranking.
+- **Help centre** — `/support` (the index) plus one route per how-to guide at
+  `/support/<slug>`, generated from the `GUIDES` data in `src/pages/support/guides.ts`. The hub
+  pages link guides by slug from `src/pages/topics/hubs.ts`. See [[solution-designs/help-centre]].
 - **Share landing** — `/:referenceCode` → `app/ShareDetail`. This is the **only live dynamic route**
   and the core purpose of the deployed app.
-- **Catch-all** — `path="*"` → `<Navigate to="/" replace />`. Any bare username or unknown path
-  bounces home (there is no public profile in the live build).
+- **Profiles** — `/:username` and its tabs and detail screens → `app/ProfilePage`. See
+  [[solution-designs/profile-page]].
+- **Catch-all** — `path="*"` → `NotFound` (`src/pages/ErrorPages.tsx`), a noindexed not-found
+  page; an unknown username reaches the same page from `ProfileLayout`. It used to redirect home,
+  which search engines count as a soft 404. See [[solution-designs/seo]].
 - **Dormant, commented-out** — auth (`/sign-in`, `/sign-up`, `/forgot-password`), cart
   (`/cart`, `/cart/confirmation`), storefront builder (`/build`, `/build/:storefrontId`),
   profile/user routes (`/:username`, `/:username/listings|bids|lists`), and the `SmartRouter`
@@ -130,18 +149,32 @@ with `@font-face` declarations for Euclid Circular B, Geist, and Figtree — the
 and font stack shared with nanza-mobile and nanza-admin**. Component styling is Tailwind class names
 (with `clsx` for conditionals), not a StyleSheet abstraction as in mobile.
 
+**The public marketing site has its own faces**, declared in `src/styles/public-site.css`
+alongside its dark tokens and reached through Tailwind families: **Roobert** (`font-roobert`)
+for display type — headlines, section headings, numerals; **Saans** (`font-saans`) for the nav
+bar and nothing else (2026-09-20); **Euclid Circular B** (the default `sans`) for body copy,
+shared with the rest of the app. Only the weights actually set are declared — Roobert 400–700,
+Saans 400 and 500 — and Saans ships as woff2 rather than the otf/ttf the older faces use.
+⚠️ The Saans files are the **TRIAL** cut (`src/fonts/Saans/Saans-TRIAL-*`), licensed for
+evaluation, not for a deployed site; the licensed files have to replace them before this goes
+to production.
+
 ## Build and deploy
 
-CRA build (`npm run build`) emits a static bundle to `build/`, deployed by GitHub Actions:
+CRA build (`npm run build`) emits a static bundle to `build/`. `public/robots.txt` and
+`public/sitemap.xml` are kept by hand ([[solution-designs/seo]]).
+
+The real pipeline is `buildspec.yml` (CodeBuild, values from SSM under `$PARAM_PREFIX`). The
+GitHub Actions workflows below have the same shape:
 
 - **`.github/workflows/deploy-dev.yml`** — triggers on push to `dev`. Node 20, `npm ci
   --legacy-peer-deps` (auth to GitHub Packages for `@oakplatforms/types`), assumes an AWS role via
   **OIDC** (`aws-actions/configure-aws-credentials`, no static keys), builds with `REACT_APP_*` env
-  from GitHub vars (API base URL, S3 image base, Cognito pool/client, Stripe key), then
+  from GitHub vars (API base URL, S3 image base, Cognito pool/client, Stripe key, GTM container), then
   `aws s3 sync build/ s3://<S3_WEBAPP_BUCKET_DEV> --delete`. A follow-up step re-uploads
   `.well-known/apple-app-site-association` with `Content-Type: application/json`.
 - **`.github/workflows/deploy-prod.yml`** — triggers on push to `prod`. Same shape (build env omits
-  Cognito/Stripe vars, matching the disabled state), syncs to the prod bucket, fixes the AASA
+  Cognito/Stripe vars, matching the disabled state; carries `GTM_ID_PROD`), syncs to the prod bucket, fixes the AASA
   content-type, and additionally runs a **CloudFront invalidation** (`create-invalidation … /*`).
 
 **Hosting:** static site in **S3 behind CloudFront**. **Deep-link assets** ship from
