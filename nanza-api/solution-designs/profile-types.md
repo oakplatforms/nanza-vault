@@ -54,6 +54,17 @@ model Profile {
 [[posts|Posts]] gates **brand post** creation on `profile.type === 'AFFILIATE'` — the brand feed is
 read by everyone and written by affiliates only. That is the first real thing this enum controls.
 
+## Public-author gates beyond posts (2026-10-19)
+
+`PUBLIC_AUTHOR_PROFILE_TYPES` (`AFFILIATE` + `VERIFIED`, see
+[[verified-profiles-and-affiliate-rail|Verified Profiles]]) now also gates **card scanning**:
+`validateScanAccess` in `validation/scan.ts` 403s `POST /scan/cards` (both LISTING and
+COLLECTION modes) for any other profile, and mobile hides every camera entry point for them.
+To keep vetted sellers scanning for listings, `PUT /seller/admin-verify/:accountId` promotes a
+`BASIC` profile to `VERIFIED` in the same transaction as the seller flag (promotion only: an
+AFFILIATE keeps its type, and un-verifying a seller never demotes the profile). So a profile
+can become VERIFIED two ways — the admin profile-type picker, or seller verification.
+
 ## Later (affiliate phases, not designed yet)
 
 - Affiliate-only features hang off `profile.type === 'AFFILIATE'` checks (content/posts,

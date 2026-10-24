@@ -15,17 +15,18 @@ them — and the API resolves the matching listings/bids/bulk listings live at r
 
 The admin's job is authoring: a builder for creating and editing Query Lists. Its first home is the
 **Homepage** section — because the mobile/web homepage *is* the set of Query Lists flagged
-`isPrimary`, ordered by `index`. So "editing the homepage" in the admin literally means creating
-primary Query Lists and ordering them. The same builder will be reused elsewhere as Query Lists show
+`isVisible` (was `isPrimary` until 2026-10-23; the admin now reads and sends `isVisible` only),
+ordered by `index`. So "editing the homepage" in the admin literally means creating
+visible Query Lists and ordering them. The same builder will be reused elsewhere as Query Lists show
 up in more surfaces over time.
 
 ## How it works
 
 ### The Homepage section
 
-A new **Homepage** nav entry (the `/homepage` route is currently a stub) lists the `isPrimary` Query
+A new **Homepage** nav entry (the `/homepage` route is currently a stub) lists the `isVisible` Query
 Lists in `index` order, with drag-or-numeric reordering that writes `index`. Adding a row opens the
-builder with `isPrimary` preset. This is the operator's model of the homepage: an ordered stack of
+builder with `isVisible` preset. This is the operator's model of the homepage: an ordered stack of
 dynamic rows.
 
 Non-primary Query Lists (used by other surfaces later) are authored with the same builder but managed
@@ -58,8 +59,8 @@ existing `PUT /lists/batch` pattern).
 
 ## Key decisions & rationale
 
-- **Homepage = primary Query Lists.** Rather than a bespoke homepage model, the homepage is just the
-  `isPrimary` slice of Query Lists ordered by `index`. One concept, authored one way, reused
+- **Homepage = visible Query Lists.** Rather than a bespoke homepage model, the homepage is just the
+  `isVisible` slice of Query Lists ordered by `index`. One concept, authored one way, reused
   everywhere — the admin "Homepage" section is a filtered view over Query Lists, not a separate thing.
 - **Reuse the List editor shell.** Query Lists share List's presentational fields, so the builder
   reuses that UI and only adds the Types multi-select and the Criteria/combinator block — additive, not

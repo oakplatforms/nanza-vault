@@ -28,6 +28,17 @@ Everything about Nanza / Oak Platforms **as a company** rather than as a set of 
   licensor-backed TCGs in three tiers, investors, affiliates / vendors, and community members per game. Regroup
   internally before any reply. Draft 2026-09-28.
 
+## Affiliates
+
+- [[affiliate-agreement-v2|Affiliate Agreement v2]] — current text (2026-10-20): v1 plus a fourth $5 tier, ten
+  cards added to the referred user's collection, so a referred user can earn up to $20. Paste-ready; goes in
+  as a new agreement row if anyone accepted v1.
+- [[affiliate-agreement-v1|Affiliate Agreement v1]] — superseded by v2; the acknowledgement affiliates accept in the app before
+  their link unlocks (informal legal voice, 2026-10-17): what they get, the three $5 tiers (posts or replies /
+  offers to five people / listings), pilot caps ($15K, 10 affiliates, $5K each), payout by reviewed voucher,
+  ground rules, not a contract. Paste-ready for nanza-admin → Agreements; edit here first, then create a new
+  agreement row, since an accepted agreement's text is locked.
+
 ## Conventions
 
 - Files here are living documents; update in place rather than forking dated copies. Date material changes in a

@@ -38,9 +38,28 @@ rest of the app passes intent.
 - **Sell tab**: the scan entry point is a **camera icon** in the search row →
   `ScanCamera({ mode: 'listing' })`. The bottom button is **"Create Lot"** → the lot builder.
   (These two traded places: the camera used to be the bottom button and Create-Lot the search
-  icon.)
-- **Collect tab / collection detail**: a **camera icon** next to the filter icon in the search
-  row → `ScanCamera({ mode: 'collection' })`. Shown regardless of how many collections exist.
+  icon.) The lot builder's search row carries the same camera.
+- **Collection detail**: a **camera glass circle left of the bottom search pill** (the pill
+  reads **"Search to add"**) → `ScanCamera({ mode: 'collection', listId })`, so the quantity
+  step commits straight back into that collection. Own collection only. (Restored 2026-10-19 —
+  the entry point had been lost in the collection UI rework while the scan screens kept
+  supporting the mode. There is no "make a listing" step in the collection flow and never
+  was.)
+
+### Who can scan (2026-10-19)
+
+Scanning — **both modes** — is a **public-author feature**: only `AFFILIATE` and `VERIFIED`
+profiles (the API's `PUBLIC_AUTHOR_PROFILE_TYPES`). Enforced end to end:
+
+- **API**: `validateScanAccess(accountId)` in `validation/scan.ts` runs on `POST /scan/cards`
+  (and the probe endpoint) right after the account check and 403s everyone else, reading the
+  profile type live.
+- **Mobile**: every camera entry point (Sell search row, lot builder, collection detail) is
+  gated on `useIsPublicAuthor()` and simply absent for a BASIC profile — hidden rather than
+  shown and refused.
+- **Sellers**: admin-verifying a seller (`PUT /seller/admin-verify/:accountId`) also promotes a
+  `BASIC` profile to `VERIFIED` in the same transaction, so a vetted seller keeps scanning for
+  listings. Promotion only — an AFFILIATE keeps its type and un-verifying never demotes.
 
 ### Separate scan pools (per type)
 

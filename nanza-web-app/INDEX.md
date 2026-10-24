@@ -75,6 +75,7 @@ Universal Links / App Links assets ship under `public/.well-known/`.
 
 ## Plans (in progress)
 
+- [[../nanza-api/solution-designs/public-profile-page|Public Profile Page — `/:username`]] — **built 2026-10-08 (uncommitted, pending QA; design lives in the nanza-api vault folder)**: root-level `/:username` nested route family (Posts / Collections / Trades tabs, read-only post / collection / listing / bid screens) declared after the nine share routes; page data from `GET /user/:username/page`; not-found redirects home like the catch-all; dark marketing theme; no store redirect; no AASA entry; OG unfurl is phase 2.
 - [[solution-designs/landing-replacement|Landing Replacement]] — swap the whole marketing surface
   (`src/landing/` + `LandingLayout` + content pages) for the scroll-driven front end built in the
   temporary `nanza-web-app-update` repo (Lenis/GSAP timeline, R3F phone scene, generated `pages.ts`

@@ -46,7 +46,9 @@ View 1: Brand Tag (today's dialog)
   save. Simplest rule: creating a value saves it immediately (the dialog already creates values
   individually via `supportedTagValueService.create`), so every chip is clickable right away. This
   moves the dialog from "diff on save" toward "save as you go" for values; the brand-tag fields
-  (tag, isPrimary, index) keep the explicit Save button.
+  (tag, isPrimary, index) keep the explicit Save button. The supported-tag-value editor also has
+  a **Visible** checkbox since 2026-10-23 (`SupportedTagValue.isVisible`, default true) — an admin
+  hide/show flag independent of Primary, which keeps curating the Home carousel.
 - Detail views save via `PUT /supported-tag-value/:id` and the sub-tag-value CRUD routes;
   banner/thumbnail are multipart FormData like the existing brand/entity image uploads (service
   modules in `src/services/api/`). The image field is labelled **Thumbnail** in the UI.

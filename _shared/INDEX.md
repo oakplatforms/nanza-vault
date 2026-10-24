@@ -13,6 +13,11 @@ ADR-style records: what we chose, why, and what we rejected.
 - `decisions/`
 - [[decisions/aws-codepipeline-over-github-actions|AWS CodePipeline over GitHub Actions]] (2026-09-29) — GitHub restricted the org; deploys move into AWS, GitLab is stage 2.
 
+## Onboarding
+Human checklists for turning built code into a live integration — third-party dashboards, credentials, DNS, migrations, QA. One page per integration, numbered steps in dependency order, each with a **Done when** line, and a "what is already in place" header so the reader knows what the code already does.
+- `onboarding/`
+- [[onboarding/airbridge|Airbridge affiliate attribution]] — SDK tokens, the `go.nanza.app` custom domain, link-format check, migration, types 0.1.112, build, QA script (2026-10-16).
+
 ## Capabilities catalog
 A quick "what do we have to offer" view of skills and orchestration patterns. Intentionally **not one-to-one** with each repo's `.claude/` — add a summary here first, then decide which repos it graduates into.
 - [[capabilities/skills|Skills catalog]]

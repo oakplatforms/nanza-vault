@@ -48,7 +48,9 @@ gradient, a **privacy pill** top-left (renders "Private" only when `isPrivate`; 
 nothing), an **item count** top-right, and a connected info bar below carrying the
 **collection name** and the **fair-market value** (`entityListValue`, rendered with
 `PriceText` so the "$" uses Figtree per P0 rule #6 — same number shown as "Portfolio Value"
-on the profile, no recomputation).
+on the profile, no recomputation). **Hidden since 2026-10-11** behind `SHOW_FAIR_MARKET`
+(`src/constants/featureFlags.ts`), along with the collection thumb's value row and the share
+card's per-entry value and Total value metric — see the note in [[entity-screen]].
 
 Mosaic sizing uses a **fixed cell size, floating column count**: the cell (~52×73, gap 3)
 stays constant and `columns = floor(cardWidth / (cellWidth + gap))` is computed from the

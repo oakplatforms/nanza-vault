@@ -31,6 +31,7 @@ Each links to a project map (`INDEX`) with a structural overview, an `architectu
 - [[oak-cortex/INDEX|oak-cortex]] — Oak's intelligence engine: separate Postgres+Prisma DB, local-Claude loops enriching the canonical catalog (pricing first); prod is read-only to it.
 - [[nanza-auth/INDEX|nanza-auth]] — auth glue: Cognito user-pool trigger Lambdas, token & password flows.
 - `nanza-pipelines` — AWS CodePipeline/CodeBuild deploy pipelines for every repo above (no vault folder of its own; see [[_shared/architecture/deploy-pipelines|Deploy pipelines]]).
+- [[nanza-figma/INDEX|nanza-figma]] — Figma → code handoffs: one implementation prompt per redesigned frame, written by nanza-mobile's `figma-handoff` skill.
 - [[_shared/INDEX|_shared]] — cross-project architecture, decisions & the capabilities catalog.
 - [[business/INDEX|business]] — the company rather than the products: founder strategy, go-to-market and outreach, investor relations, corporate structure. Keep product folders technical; anything general goes here.
 
@@ -41,6 +42,7 @@ What the system has to offer, at a glance — summaries in `_shared/`, the runna
 - [[_shared/capabilities/skills|Skills catalog]] — `principal-engineer`, `deploy`, `prisma-migration`, `plan`, and which repos use them.
 - [[_shared/capabilities/orchestrations|Orchestration patterns]] — reusable multi-agent playbooks (e.g. the card-data migration pipeline).
 - [[_shared/glossary|Glossary]] — shared domain vocabulary.
+- [[_shared/onboarding/airbridge|Onboarding checklists]] — step-by-step human setup for third-party integrations (Airbridge first); index in [[_shared/INDEX|_shared]].
 
 ## Solution designs, not plans
 

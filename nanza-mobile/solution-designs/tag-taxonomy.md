@@ -81,6 +81,72 @@ Caveat: numeric tags (cost, power, life) sort alphabetically on the server, so t
 of cost are 0, 1, 10, 2, 3, 4 (the client re-sorts them numerically for display). An
 admin-set `index` on the values fixes the cut where it matters.
 
+## Facet order + the Trending section (2026-10-10)
+
+`sortBrandTags` (`screens/search/utils/sortBrandTags.ts`) is THE facet order — the search
+filter panel and the post composer's tag screen both list a brand's tags in it: **alphabetical
+by the tag's display name**. The curated per-brand-tag `index` no longer orders facets (it still
+orders the VALUES inside a tag). The search filter's **Set section slots into that alphabet at
+S** instead of sitting pinned above every facet — Set is not a brand tag (see
+[[../../nanza-api/solution-designs/sets-as-tags|Sets as Tags]] for the plan to make it one), so
+`Filter.tsx` builds `facetSections` itself: the facets plus a `{ label: 'Set' }` entry sorted
+together by label. The composer never shows Set.
+
+**Trending** sits above the facets on both screens and is not a facet: it is one chip grid of
+every value an admin flagged **`SupportedTagValue.isTrending`** across the brand's tags (nanza-api
+migration `20261010150000_supported_tag_value_is_trending`, types `0.1.110`), set on the value's
+detail page in nanza-admin next to Primary and Order; a flagged value's chip in the Tags table goes
+pink. With none flagged the section is absent and the screen opens on the first facet
+alphabetically. Each chip carries its own tag, so a tap is the same pick as the chip under its
+tag's section (selected in both). `/brand-tag-facets` merges flagged values into their tag's list
+past the first-page cut, the way it pins the composer's committed picks, so a trending value at
+#40 of 277 still reaches the section; the composer reads primaries only, so a trending value must
+be primary to show there, and its children are stripped so a selected parent opens its heroes
+under its own tag section only. The flag was briefly on `BrandTag` (commit `a2b882f`, migration
+`20261010120000_brand_tag_is_trending`) — the follow-up migration drops that column.
+
+## Tag search + the bottom bar on both pickers (2026-10-10)
+
+Both tag surfaces now carry the Search screen's bottom chrome and no header. The **filter
+screen** (`SearchFilterScreen`) lost its down-chevron header and its slide-up transition (it snaps
+in with no animation, like Search, and no dismiss gesture); its bottom bar is `SearchFooter` with
+the filter circle omitted — a glass pill + X, the X being the only dismiss — with the Clear / Apply
+row stacked in flow above the pill while there is something to act on
+(`filterOpenActionsInFlow`). The **composer's tag picker** (`TagPickerLayer`) lost the chevron
+circle and the `n/10` count; it draws the card picker's lower controls — Clear / Apply, then
+`CollectionSearchFooter` + X lifted by the measured keyboard pad. Neither pill autofocuses: the
+screens open on Trending + facets and the keyboard rises on tap.
+
+The pill is a **tag search**: `useSearchSupportedTagValues` (`screens/search/data/`) debounces the
+query 250 ms and reads `GET /supported-tag-values?brandId=&search=&include=brandTag.tag` (new
+`search` param, case-insensitive substring on displayName; the composer adds `isPrimary=true` and
+`include=children.child`). Hits are grouped client-side under their brand tag, shaped as
+`BrandTagFacetDto` with `_count` = the hits, and drawn with the same section components
+(`OpenTagSection` / `TagPickerSection`) so a hit for "war" is the Class section holding Warrior,
+with the same tap handler — a chip picked from a search is the same filter/pick as the one under
+its facet, still selected when the query clears. Empty query → Trending + facets; no hits → "No
+tags match your search."
+
+## Children everywhere, primaries only on Home (2026-10-11)
+
+- **The composer's tag picker offers every value.** The `isPrimary` gate (facets read
+  `valuesIsPrimary`, the section filters, the paging option) is gone: `SupportedTagValue.isPrimary`
+  now curates only the Home shelf (`HomeTagCarousel` / `useHomeReady`'s prefetch, `isPrimary=true`
+  + an `index`). Nothing else in nanza-mobile reads it for tag values.
+- **Tag search spans children — in the composer.** `GET /supported-tag-values?search=` returns
+  parents AND children (unless `isChild` is given); the hook asks for `parents.parent` and hoists a
+  child hit under its parent(s) in the group, so "hala" renders Class → Warrior → Hala, and the
+  composer passes `alwaysShowChildren` so those children sections are open up front.
+- **The search filter is parents-only (reverted 2026-10-11).** The filter briefly had the
+  composer's door rule too (facets with `includeChildren`, `OpenTagSection` paging
+  `children.child`, a selected parent opening its children) and its tag search hoisted child hits.
+  It came back off the same release: search can't narrow by a child value (entities carry the
+  parent's name under the tag in `EntityTag`, not the hero's), so picking Hala or Dorinthea just
+  returned no results. Now `Filter` reads plain facets, `OpenTagSection` has no children sections or
+  `alwaysShowChildren` prop, and `useSearchSupportedTagValues` takes `parentsOnly` — the filter sets
+  it, which sends `isChild=false` and skips the `parents.parent` include. Children stay a composer
+  concept until search can filter on them.
+
 ## Overview
 
 The taxonomy becomes browsable in the app: a circle-thumb rail on the homepage leads into a

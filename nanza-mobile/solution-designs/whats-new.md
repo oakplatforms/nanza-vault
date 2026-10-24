@@ -44,10 +44,13 @@ New screen.
 ## The "What's New" homepage section (mock landed 2026-08-04)
 
 - **Placement (2026-09-28): band 1 sits directly under Trending** in `HomeScreen`'s list
-  header, with Groups under it. Current order: Trending (untitled) → *What's new 1–3* → Groups →
-  *What's new 4–6* → Query List 1 → *What's new 7–9* → Query List 2 → Query List 3. (Originally
-  mocked between Trending and Top Picks; the affiliate circles that once opened the page are
-  gone.) Heading reads **"What's new"** (sentence case, standard
+  header, with Groups under it. Current order (2026-10-18): affiliate circles → Trending
+  (untitled) → *What's new 1–3* → Groups → *What's new 4–6* → *7–9* → … — **the feed is an
+  infinite scroll**: every loaded page of three is one untitled band row of the home list, and
+  nearing the bottom fetches the next three (see
+  [[app-load-performance|App-load performance]] § The feed goes infinite). The Query List
+  shelves that used to interleave the bands are retired from Home. (Originally mocked between
+  Trending and Top Picks.) Heading reads **"What's new"** (sentence case, standard
   section heading), with **"See all" far right of the heading row** (the standard `ActionPill`
   heading recipe, same as Top Picks).
 - **Content:** the brand's posts — `posts WHERE postableType='BRAND' AND postableId=:brandId`
@@ -61,8 +64,10 @@ New screen.
 - **Reference attachments render as the row tile** (mock, card 2): record image left, bold name
   + muted set/code right (*Runechant of Greed / IAR145*), **white price pill on the far right**
   (`$650.00`) — the entity search-row shape with the `thumbPricePill`, not the dark hero square.
-- **Three posts shown** in the preview; the section is a fixed preview like the home feed — no
-  in-place pagination.
+- **Three posts per band**; the homepage pages the feed three at a time
+  (`HOME_POSTS_PAGE_SIZE`, its own `['Posts','BRAND',id,viewer,3]` cache entry) and keeps
+  scrolling, so the whole feed is reachable in place since 2026-10-18. "See all" stays on band
+  1 as the direct route to the full-screen list.
 
 ## The What's New screen
 
@@ -100,9 +105,11 @@ brand posts carry no tags). What landed:
   context → tagless brand posts.
 - **Section**: `components/home/WhatsNewSection` — the shelf recipe (`carouselSection*` +
   `ShelfHeading` at the sm inset) titled "What's new", mounted in `HomeScreen`'s list header
-  after `HomeTagCarousel`. Renders nothing when the brand has no posts. `PostThread` gained
-  `previewCount` (cap at 3, suppress load-more); "See all" shows when `total > 3` and navigates
-  to `WhatsNew`. Replies go through an entry-less `JoinChatFooter` host, same as PostDetail.
+  after `HomeTagCarousel`, and once more per loaded page as a list row (`start=3,6,9…`,
+  untitled). Renders nothing when the brand has no posts or its window is past them.
+  `PostThread` gained `previewCount` / `previewStart` (window into the shared read, suppress
+  load-more) and `pageSize` (must match the host's read so the two dedupe); "See all" shows
+  when `total > 3` and navigates to `WhatsNew`. Replies go through an entry-less `JoinChatFooter` host, same as PostDetail.
   New `shelfBodyPadSm` class in `cards.ts` pads the bare thread at the grid gutter.
 - **Screen**: `screens/posts/WhatsNewScreen` + root-stack route `WhatsNew` (no params — reads
   `selectedBrandId` from the session), FeedGrid's push-over-tabs pattern and floating title

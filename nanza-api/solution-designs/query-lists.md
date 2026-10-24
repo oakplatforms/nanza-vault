@@ -105,6 +105,7 @@ model QueryList {
   description   String?
   isPrivate     Boolean? @default(false)
   isPrimary     Boolean? @default(false)
+  isVisible     Boolean  @default(false)
   index         Int?
   referenceCode String?  @unique
 
@@ -125,6 +126,7 @@ model QueryList {
   @@index([brandId])
   @@index([isPrivate])
   @@index([isPrimary])
+  @@index([isVisible])
   @@index([referenceCode])
 }
 ```
@@ -132,10 +134,15 @@ model QueryList {
 Notes:
 - `types` is a Postgres enum array (`QueryListType[]`) — the multi-select. Empty array is invalid
   (validation rejects it); at least one source must be chosen.
-- `isPrimary` copies `List.isPrimary` (indexed) — flags a Query List as a **homepage** row. The
-  homepage is exactly the set of `isPrimary` Query Lists.
+- `isVisible` (indexed) flags a Query List as a **homepage** row. The homepage is exactly the set
+  of `isVisible` Query Lists. It began life as `isPrimary` (copied from `List.isPrimary`); since
+  2026-10-23 `isVisible` is the flag and `isPrimary` a deprecated alias — the API accepts either on
+  the query string and body (`isVisible` wins), writes both columns, and `GET /query-lists/homepage`
+  reads `isVisible`. Migration `20261023120000_add_is_visible` backfilled it. Drop `isPrimary`
+  once no released client sends it. Rationale in
+  [[sets-and-tags-parity#Visibility flag — isVisible beside isPrimary (2026-10-23)|sets-and-tags-parity]].
 - `index` is the ordering/priority field (same field the rest of the system orders by). Consumers
-  sort the `isPrimary` set by `index` to decide which rows show and in what order on the homepage.
+  sort the `isVisible` set by `index` to decide which rows show and in what order on the homepage.
 - No `account` relation (unlike `List`): Query Lists are admin-authored marketplace configuration,
   not user-owned collections. No freemium cap applies.
 - No stored count/value derived fields on the root — a Query List's contents are inherently dynamic,
@@ -279,7 +286,7 @@ to reuse, so a new card field is added in one place.
 ## Admin surface (nanza-admin)
 
 The admin exposes Query List authoring under a **Homepage** section — because the homepage *is* the
-set of `isPrimary` Query Lists, ordered by `index`. Operators build the homepage by creating primary
+set of `isVisible` Query Lists, ordered by `index`. Operators build the homepage by creating visible
 Query Lists and ordering them. The builder reuses the List editor's shell (name, images, brand) plus
 two query-specific controls: a **Types** multi-select over `QueryListType`, and a **Criteria** row
 list (each row = field/operator/value + add/remove) with one `AND` / `OR` combinator dropdown above.

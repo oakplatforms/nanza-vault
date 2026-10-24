@@ -461,3 +461,35 @@ card shows a dash in the composer and a price once posted.
   core-RN touchable (which opens `PostDetail`) on both platforms, so tapping an entity in a home
   card opened the post. Listing / bid / lot hero tiles were already core-RN. The post detail now
   opens only from the rest of the card (header, text, empty areas).
+
+### Entity card: the bid tile's container as the thumb (2026-10-18)
+
+The ENTITY reference card in a post is still **the standard lockup** (`EntityLockupRow`,
+chrome `inline`: name / product number / set+tags line, fair-market pill behind
+`SHOW_FAIR_MARKET`) — but its 5:7 image thumb is replaced by the **bid (WTB) hero tile at thumb
+scale**, `src/components/posts/EntityHeroThumb.tsx`, passed through the lockup's custom
+`thumb` slot. Skylar's brief: mirror the web collection row's card-on-a-backdrop tile, "take
+the css and implementation from the bids/wtb card in the post", image and background only (no
+WTB chiclet, name, price or wanted count — all card info stays to the right), a bit bigger.
+
+- **Composes the hero's own classes, no parallel recipe**: `referenceHeroBackdrop` (the
+  `IMG_WIDTH.BLUR` bucket blown up at 61%, no RN `blurRadius` — the bid recipe, because card
+  art is an edge-to-edge scan and iOS `blurRadius` paints nothing for it), `referenceHeroWell`
+  (the gallery light, `HERO_WELL_ALPHA` 0.22 of `onWell`, now exported from the thumb file and
+  shared with the hero tile) and `referenceHeroCard` (the floating card). The frame's own
+  classes are `entityHeroThumb` / `entityHeroThumbArt` / `entityHeroBody` in `posts.ts`.
+- **Geometry**: frame `140/358` of the inline card's inner width by the height of a 164-wide hero tile
+  (~107pt, aspect ~1.31 — the 164 tile was the right size on device and only wanted to be less
+  wide, so the name gets more of its one line; a straight shrink to 148 was tried and walked
+  back), the floating card re-derived to keep the 164 tile's ~64pt width, radius
+  `xs` (the hero's `md` read heavy nested in the `md` card); card centred (the hero's symmetric
+  5.267% margins collapse to `center`), corner `xxs`. Text column centred on the tile
+  (`entityHeroBody`) rather than top-pinned as on the standard row — against a tile this tall
+  a top-pinned name left the column half empty.
+- **One branch for stacked row and rail tile.** The tile's fixed-aspect twin on the
+  `posts.ts entityRow*` classes is retired (only `entityRowFill` survives, for the link card);
+  in a rail slot the same card renders at natural height, hung from `galleryLeafTop`, with the
+  core-RN touchable filling the slot (`galleryLeafFill`) so the whole tile taps. `railChild`
+  is accepted but no longer changes anything. Search / trade / offer rows are untouched — only
+  the post's entity content item wears the tile.
+

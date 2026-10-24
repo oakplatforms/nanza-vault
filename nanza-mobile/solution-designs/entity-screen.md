@@ -16,6 +16,13 @@ surface of that weight (SupportedTagValueScreen, PostDetail, ListingDetail, BidD
 full-screen slide-up with the floating chevron-down + share header. The entity surface should read
 identically: shareable from the top, dismissed with a down arrow, and full-height.
 
+> **Fair market is hidden app-wide for now (2026-10-11).** Every fair-market surface — the
+> `FairMarketPill` on entity cards and detail headers, the bid/listing/scan form help rows, the
+> scan variant picker's price row, and the collection and share-card value overlays — is gated on
+> `SHOW_FAIR_MARKET` in `src/constants/featureFlags.ts`. It is `false` until fair market returns in a
+> later release; flipping it to `true` restores everything with no other change. The data
+> (`Product.price`, `entityListValue`) keeps flowing from the API; only the rendering is off.
+
 ## Where things stand today (mapped 2026-08-10)
 
 - `EntityModal` (`src/components/modals/EntityModal/index.tsx`, ~830 lines) renders inside a

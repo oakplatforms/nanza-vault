@@ -10,6 +10,46 @@ tags: [nanza-mobile, solution-design, plan, posts, tagging]
 > single-attachment v1 composer and revives tag selection (removed 2026-08-03) in a new form —
 > a multi-select tag screen instead of the old single-select `TagPickerLayer` + chicklets.
 
+## Fourth revision — picker order + reference tiles (2026-10-10, voice; implemented, uncommitted)
+
+Small, all nanza-mobile:
+
+- **Facets are alphabetical, with a Trending section above.** `sortBrandTags` (the ONE facet
+  order, shared by the composer's tag screen and the search filter — `Filter.tsx` now calls it
+  instead of its inline copy) sorts by the tag's display name. Above the facets both screens draw
+  a **Trending** chip grid of the values an admin flagged `SupportedTagValue.isTrending` (new
+  knob, later the same day; absent when none). The morning's "Set pinned first" went the same
+  evening: the filter's Set section now slots into the alphabet at S, and the composer has no Set
+  at all. The curated per-brand-tag `index` and the `brandTagConfig` attribute fallback are out
+  of the facet sort; values inside a tag were already alphabetical (`sortTagValues`). Skylar:
+  "it's just easier to find things that way." Detail in
+  [[tag-taxonomy#Facet order + the Trending section (2026-10-10)|Tag Taxonomy]].
+- **"Show more" on cards with 3+ content items (2026-10-11; expands in place since
+  2026-10-20).** A card still draws the first text run + the primary attachment only; when the
+  post holds three or more content items a pink "Show more" (same `action` run as the inline
+  #hashtags, `posts.ts showMoreText`) sits under the content. Tapping it fetches the whole post
+  by id (`usePostDetail`, the detail screen's own read and cache key, now with a lazy `enabled`
+  flag so feed rows never fire it unasked) and swaps the card's two-item render for the full
+  ordered tree at card size — the same `PostContentItems` tree the detail root draws, hashtags
+  trailing its last text block. No spinner: the label stays "Show more" until the tree lands
+  (taps in that window are ignored), then reads "Show less" and folds the card back. Tapping anywhere else on the
+  card still opens the detail (it used to be what "Show more" did too). Two or fewer items:
+  nothing. Detail root never shows it.
+- **Text cap is 500 per block (2026-10-11, was 300).** `MAX_BODY_GRAPHEMES` (api
+  `validation/post.ts`, also the `body` cap) and the composer's `MAX_POST_TEXT` both moved to 500
+  graphemes; the first block is capped the same as every other, and the composer's "add text"
+  button is how you continue past it (5 blocks max, unchanged).
+- **Card picker opens on Nanza.** `CardPickerLayer`'s toggle reads Nanza → My Collections and the
+  default tab is Nanza (was My Collections first and default).
+- **"N wanted" on bids.** `ItemThumb`'s bare count beside the price says "in stock" for a WTS
+  (listing, lot) and "wanted" for a WTB (bid) — `quantityLabel`, exported so the post tiles share
+  it.
+- **Reference tiles match the rail thumbs.** A listing, bid or lot attached to a post
+  (`PostContentItems` hero tile) now wears the WTS / WTB corner chiclet (`IntentTag` 'tile', the
+  thumb's own `thumbIntentCorner`) and the count beside the price (listing/bid `quantity`, lot
+  `totalQuantity`, above 1 only). The API already sent quantity on those references; no backend
+  change.
+
 ## Third revision — the tag screen regroups (2026-08-14, voice; implemented, uncommitted)
 
 - **Missing primaries fixed**: the flat fetch pulled the first 200 rows UNFILTERED and kept

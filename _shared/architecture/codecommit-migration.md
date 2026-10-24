@@ -20,18 +20,30 @@ Done:
   in `~/Projects/_codecommit-migration/`.
 - `nanza-mobile` added as a repo-only entry (`pipeline: false` in `repos.js`): repository created,
   39 branches mirrored and verified identical. No pipeline, as before.
+- `nanza-vault` added the same way (repo only): created, its single `dev` branch mirrored and
+  verified identical.
+- `nanza-pipelines` repo created (repo only, never on GitHub). It has no commits yet; Skylar makes
+  the first commit and pushes.
+- Dev stack deployed in `codecommit` mode by Skylar; `nanza-api-dev` released and **succeeded**.
+- GitHub is out of the pipelines code entirely: the `github` source mode and the `nanza-github`
+  connection are removed (shared stack redeployed, connection deleted). Modes are now `codecommit`
+  and `s3`.
+- `AUTO_TRIGGER` defaults to `true`: one EventBridge rule per pipeline starts it when the stage
+  branch moves. Takes effect on the next `npm run deploy:dev` / `deploy:prod`.
 - Step 6: `codecommit` is now the default `SOURCE_MODE` in `nanza-pipelines`; role permissions,
   optional EventBridge triggers, `release.sh`, and the README are updated. Dev template renders.
 
 Remaining, in order (run by Skylar; these were outside what Claude could execute):
 
-1. `cd ~/Projects/nanza-pipelines && npm run deploy:dev` — switches the six dev pipelines to the
-   CodeCommit source.
-2. `scripts/release.sh nanza-api dev` — the only repo whose `buildspec.yml` is already on `dev`.
-3. Step 5 below in each of the seven repos, `nanza-mobile` included (re-point `origin` to CodeCommit).
+1. `cd ~/Projects/nanza-pipelines && npm run deploy:dev` again — adds the on-push triggers.
+2. Step 5 below in each of the eight repos, `nanza-mobile` and `nanza-vault` included (re-point
+   `origin` to CodeCommit; the vault has only `dev`, so skip the `prod` line there).
+3. `nanza-pipelines`: `git remote add origin https://git-codecommit.us-east-1.amazonaws.com/v1/repos/nanza-pipelines`,
+   first commit, `git push -u origin dev`.
 4. Commit the pending `buildspec.yml` (and lockfile) changes in `nanza-auth`, `nanza-email`,
-   `nanza-admin`, `nanza-web-app`, `oak-web-app` and push to `dev`, then release each dev pipeline.
-5. Steps 8 and 9 once dev is green.
+   `nanza-admin`, `nanza-web-app`, `oak-web-app` and push to `dev`. With the triggers deployed the
+   push starts each dev pipeline.
+5. Step 8 (prod) once dev is green, then the GitHub OIDC cleanup below.
 
 SSM parameters are already in place for all six repos on dev, and `@oakplatforms/types` 0.1.105
 is in CodeArtifact.
@@ -83,11 +95,11 @@ The migration does not touch working trees, but these need committing before the
 ## Scope
 
 In: `nanza-api`, `nanza-auth`, `nanza-email`, `nanza-admin`, `nanza-web-app`, `oak-web-app`, and
-`nanza-mobile` (repo only, no pipeline; it is a production repo). `dev` and `prod` are the
-branches that matter. The mirror copies every branch and tag anyway, at
+`nanza-mobile` (repo only, no pipeline; it is a production repo), plus `nanza-vault` (repo only,
+this documentation). `dev` and `prod` are the branches that matter. The mirror copies every branch and tag anyway, at
 no extra cost, so nothing has to be chosen up front.
 
-Out for now: `nanza-vault`, `nanza-pipelines` (which has no remote yet), `oak-api`,
+Out for now: `nanza-pipelines` (which has no remote yet), `oak-api`,
 `oak-cortex-api`, and the `oneoff-*` repos. Same steps apply when they move.
 
 ## Plan
@@ -209,8 +221,43 @@ in each repo, release in the same order.
 
 ### 9. Clean up
 
-Remove the GitHub connection from the shared stack, delete the scratch mirrors, update
-[[deploy-pipelines|Deploy pipelines]] and the decision record to describe CodeCommit as the source.
+The GitHub connection is already gone from the shared stack. Left: delete the scratch mirrors in
+`~/Projects/_codecommit-migration/`, update [[deploy-pipelines|Deploy pipelines]] and the decision
+record to describe CodeCommit as the source, and remove the GitHub Actions OIDC integration from IAM.
+
+#### Removing the GitHub Actions OIDC integration (inventory 2026-09-30)
+
+None of it is CloudFormation-managed; it was created by hand. The pieces:
+
+- OIDC identity provider `arn:aws:iam::992382609315:oidc-provider/token.actions.githubusercontent.com`
+- Roles that trust it, all with `AdministratorAccess` attached:
+  `github-actions-nanza-api-dev`, `github-actions-nanza-api-prod` (inline `github-auth-policy-*`),
+  `github-actions-oak-api-dev`, `github-actions-oak-api-prod`, `github-actions-oak-cortex-dev`,
+  `github-actions-oneoff-api-dev`.
+
+Only the `nanza-api` pair belongs to a migrated repo. The `oak-api`, `oak-cortex`, and `oneoff-api`
+roles are the deploy path for repos that have not moved yet, so delete those when those repos
+move (or now, if their GitHub Actions deploys are considered dead). Deleting the provider kills
+every role's trust at once, so do it last.
+
+```bash
+# per role: detach managed policies, delete inline policies, delete the role
+for r in github-actions-nanza-api-dev github-actions-nanza-api-prod; do
+  for p in $(aws iam list-attached-role-policies --role-name $r --query 'AttachedPolicies[].PolicyArn' --output text); do
+    aws iam detach-role-policy --role-name $r --policy-arn $p; done
+  for p in $(aws iam list-role-policies --role-name $r --query 'PolicyNames' --output text); do
+    aws iam delete-role-policy --role-name $r --policy-name $p; done
+  aws iam delete-role --role-name $r
+done
+
+# last, once no role trusts it
+aws iam delete-open-id-connect-provider \
+  --open-id-connect-provider-arn arn:aws:iam::992382609315:oidc-provider/token.actions.githubusercontent.com
+```
+
+Also in the repos: delete `.github/workflows/`, and drop the `npm.pkg.github.com` lines and tokens
+from every `.npmrc` (the types package comes from CodeArtifact now). Revoke those GitHub tokens in
+GitHub if the account still allows it.
 
 ## Working with CodeCommit day to day
 

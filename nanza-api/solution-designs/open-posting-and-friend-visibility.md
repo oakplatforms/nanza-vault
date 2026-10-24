@@ -4,7 +4,8 @@ tags: [nanza-api, solution-design, plan, posts, connections]
 
 # Open Home Posting & Friend-Scoped Visibility — Plan
 
-> **Status: PLAN, 2026-08-14 (Skylar, voice session).** Api half of
+> **Status: PLAN, 2026-08-14 (Skylar, voice session); third pass 2026-10-09 (profile + detail
+> reads opened to everyone — see the end).** Api half of
 > [[../nanza-mobile/solution-designs/open-posting-and-nav-swap|the mobile plan]] (nav swap
 > + ungated composer entry). Revises [[posts|Posts]]' "BRAND posts require
 > `profile.type === 'AFFILIATE'`" — the first profile-types gate — into a read-side
@@ -145,3 +146,63 @@ see it" would be false the moment a link is shared. **Decision Skylar's.**
    the blocker (today the affiliate arm ignores connections entirely)?
 3. Performance: the affiliate arm joins `account.profile` per row — fine at current scale;
    if the feed grows, consider denormalizing `authorIsAffiliate` onto Post at write time.
+
+## Third pass — the gate is the FEED's, not the post's (2026-10-09, voice; implemented in api)
+
+Skylar, testing: "when someone's not an affiliate and I go to their profile I should still see
+their posts — they just shouldn't show on the home page." So the 2026-08-14 "hard privacy"
+posture is **retired except for link sharing**:
+
+- `GET /posts?accountId=` (the profile Posts tab, and the web profile page's counts in
+  `GET /user/:username/page`) returns BRAND roots for **every** author to **every** viewer.
+  Blocking still empties the tab.
+- `isRootPostViewable` no longer checks the author's type or the connection for BRAND —
+  any BRAND root opens for anyone (detail, thread, like, seen stamp). GROUP keeps the
+  members-only rule; blocking still 404s.
+- **Unchanged:** `brandVisibilityArms` — the home feed and the tag-page union still show a
+  BASIC author's brand posts only to themselves and accepted connections; guests get the
+  public-author arm (AFFILIATE + VERIFIED) only. That is now purely a *placement* rule.
+- **Unchanged, flagged:** the share-code mint and the public resolver still refuse a BASIC
+  author's brand post ("visible to friends only cannot be shared by link"). With the post
+  now openable by anyone that wording is stale, but the rule stands: **link sharing stays a
+  public-author (AFFILIATE / VERIFIED) perk for now (Skylar, 2026-10-09).** Revisit if asked.
+- Reminder confirmed the same day: the home feed's public-author arm is `AFFILIATE` **and**
+  `VERIFIED` (`PUBLIC_AUTHOR_PROFILE_TYPES`, 2026-10-08) — What's New shows both.
+
+## Fourth pass — turn-taking on What's new (2026-10-18, voice; implemented in api)
+
+Skylar: What's new is the one feed everyone sees, so even with only public authors reaching it,
+one affiliate could fill it alone. **Rule: the author of the brand's latest What's-new post
+cannot post the next one — at least one other person has to post in between.** A turn, not a
+rate limit: there is no clock.
+
+- `validateBrandPostTurn(postableType, postableId, accountId, { excludePostId? })` in
+  `validation/post.ts`. Runs only for `BRAND` homes and only when the author is a public
+  author (`PUBLIC_AUTHOR_PROFILE_TYPES`); a BASIC author's post reaches friends only, so it
+  neither takes a turn nor is gated. The "latest" is the brand's newest **root, ACTIVE,
+  non-featured** post by a public author — exactly what the feed shows. Replies are
+  conversation; a Short (`isFeatured`) belongs to the rail, not the feed; a draft takes its turn
+  when it **publishes** (`PUT /post/:id/publish` re-runs the check, excluding the draft's own row),
+  not when it was saved.
+- Wired into `POST /post` (root, non-draft, non-featured) and the publish route. Returns the
+  usual `400 { errorMessage }`; the composer already renders `errorMessage` verbatim through
+  `alert.error`, so the copy lives in the API as `BRAND_POST_TURN_MESSAGE`:
+  *"Your post is the latest in What's new. Once someone else has shared, you can post again."*
+  No mobile change needed.
+- Not gated: edits of the latest post (it is already the latest), GROUP / tag / set / listing
+  homes, and deleting-then-reposting (a deleted post leaves the feed, so the previous author's
+  turn ends — acceptable; the cost of spamming that way is your own post).
+
+## Fifth pass — guests see affiliates only (2026-10-23; implemented in api)
+
+Skylar: signed-out users should see **only affiliates** on What's new; signed-in users see
+affiliates, verified members, plus their own posts and their accepted connections'.
+
+- `brandVisibilityArms` now branches on the viewer: no viewer → one arm,
+  `GUEST_AUTHOR_PROFILE_TYPES` (`['AFFILIATE']`, new in `constants/profileTypes.ts`);
+  signed in → `PUBLIC_AUTHOR_PROFILE_TYPES` (AFFILIATE + VERIFIED) plus self + friends.
+- Because the arms are shared, the tag-page, set-page and item-chat unions scope the same
+  way for guests. Placement only: `GET /post/:id`, the profile Posts tab, the web profile page
+  and link shares (public-author perk) are untouched. The turn-taking rule still counts
+  VERIFIED authors, since their posts still reach every signed-in viewer.
+- No mobile change: the app renders the pre-scoped response. tsc + eslint clean, uncommitted.

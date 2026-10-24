@@ -28,6 +28,9 @@ Source lives entirely under `src/` (CRA convention). Entry is `src/index.tsx` �
 
 ## Plans
 
+- [[../nanza-api/solution-designs/agreements|Agreements (admin surface)]] — **built 2026-10-17, uncommitted**: `/agreements` page — Type / Name / Status / Acceptances / Created / Updated, Add New + edit dialog (Type, Title, Terms textarea, Status), Title + Terms disabled once anyone has accepted. `services/api/Agreement.ts`, needs `@oakplatforms/types ^0.1.115`. Canonical design in nanza-api.
+- [[../nanza-api/solution-designs/affiliate-vouchers|Affiliate Vouchers (admin surface)]] — **built 2026-10-17, uncommitted**: `/vouchers` page mirroring Posts — Created / Type / User / Affiliate / Amount / Status dropdown / Reviewed, filters by status (default Pending) and type, click an affiliate to narrow to their vouchers (the pay-run list). `services/api/Voucher.ts`, needs `@oakplatforms/types ^0.1.113`. Canonical design in nanza-api.
+
 - [[plans/products-price-sort-and-deep-link-pagination|Products price sort & deep-link pagination]] — server-side `sort=price_asc|price_desc` on `GET /entities` plus URL-driven page/brand/sort in the admin Products page. Planned, on hold.
 
 ## Related

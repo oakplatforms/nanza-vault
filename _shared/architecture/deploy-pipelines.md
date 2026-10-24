@@ -57,8 +57,19 @@ at `/<repo>/<stage>/<NAME>` (for example `/nanza-api/dev/ADMIN_USER_POOL_ID`). E
 reads the ones it needs with `aws ssm get-parameter` in `pre_build` and fails fast when a required
 one is missing. Optional ones (web app's Cognito and Stripe on prod, CloudFront on dev) are simply
 absent. `nanza-pipelines/params/params.env.example` lists every parameter as
-`<repo>/<stage>/<NAME>=`; fill a gitignored copy and `scripts/put-params.sh` writes them all in one
-run (or a `<repo> [<stage>]` subset).
+`<repo>/<stage>/<NAME>=`; fill a gitignored copy and `scripts/put-params.sh --all` seeds them all
+once; day to day, `scripts/put-params.sh <repo> <stage> <NAME>` pushes exactly one.
+
+**The app-version prompt is one of these parameters.** `GET /app-version` returns
+`LATEST_APP_VERSION`, baked into the api Lambda env at deploy from
+`/nanza-api/<stage>/LATEST_APP_VERSION` (it was `vars.LATEST_APP_VERSION_<STAGE>` in the GitHub
+days). Per release (decided 2026-10-11, no dedicated script): edit the
+`nanza-api/prod/LATEST_APP_VERSION=` line in `params/params.env`, run
+`scripts/put-params.sh nanza-api prod LATEST_APP_VERSION`, then Release change on
+`nanza-api-prod`. `params.env` is the source of truth — a console-only edit is overwritten the next
+time that parameter is pushed. `put-params.sh` writes **one named parameter per run** (2026-10-11;
+it used to write every matching line, which could clobber all of a repo's config from a stale
+local file); `--all` is the bootstrap-only exception.
 
 Database credentials keep coming from Secrets Manager (`nanza-credentials-<stage>`) inside the
 build, as before. The CodeBuild role has the same broad rights the OIDC role had
@@ -82,6 +93,13 @@ so the registry moved to **AWS CodeArtifact** (domain `oakplatforms`, repository
   first api pipeline run.
 - Consumer lockfiles still resolve to the GitHub tarball URLs until each repo re-installs the
   package after the registry switch (`npm install @oakplatforms/types@latest`).
+- Consumer pipelines (`nanza-email`, `nanza-admin`, `nanza-web-app`) always build against the
+  newest published types: the buildspec runs `npm install @oakplatforms/types@latest --no-save`
+  right after `npm ci` (added 2026-10-10). The lockfile pin only matters for local dev, so nobody
+  has to bump a version to pick up an api model change. Trade-off: a types change can break a
+  consumer build with no commit in that repo (wanted in dev), and prod builds also take latest,
+  which is published from the dev api; types are compile-time only, so that is a type-check risk,
+  not a runtime one. `nanza-mobile` has no pipeline and still installs from its lockfile.
 
 ## Stage 2: GitLab
 

@@ -37,16 +37,96 @@ posts). Cutting the affiliate request also drops one round trip from the cold st
   expensive read on the page, and it was stretching the cold start. `WhatsNewSection` now owns
   the request — it mounts once the page is up and calls `usePosts` itself — so the three bands
   appear as the posts land. (Was the fourth of three gates; now the third of two.) The one-cache-entry rule still holds (every band and PostThread
-  share the `['Posts','BRAND',id,viewer]` key); only *when* it fires changed.
+  share the `['Posts','BRAND',id,viewer]` key); only *when* it fires changed. *(Superseded
+  2026-10-18: the read is three posts, then infinite scroll — see below.)*
 - **Query List shelves** stay behind `deferredActive` (after interactions), as before.
+  *(Retired from Home 2026-10-18 — see below.)*
 - **Groups shelf shows for guests.** `GroupBannerCarousel` had hidden itself for signed-out
   viewers since 2026-08-30; it now renders for everyone so the page reads the same in both
   states, and guest tiles open the group detail like anyone else's (with no Join pill on the
   tile or the detail) — see [[groups|Groups]].
 
+## Affiliates back in the gate (2026-10-08)
+
+The affiliate circles returned to the top of Home on 2026-10-08 (see
+[[../nanza-api/solution-designs/affiliate-rail-latest-post-and-seen|Affiliate Rail]]), and with
+them their one request — now `GET /profiles/affiliates/latest-posts` — rejoined `useHomeReady`.
+The gate is **three requests** again: affiliates, Trending, Groups. Posts and the Query List
+shelves stay off it.
+
+## The feed goes infinite; Query Lists leave Home (2026-10-18)
+
+Skylar's call, from a request audit of the home page: **the page should never load a post it is
+not about to show.** Two changes, both in `HomeScreen`:
+
+- **`/posts` asks for THREE, not nine.** `usePosts` / `postsQueryOptions` take a `pageSize`
+  (default still 9) and the size is now **part of the query key** —
+  `['Posts', type, id, viewer, pageSize]` — so the homepage pages at
+  `HOME_POSTS_PAGE_SIZE = 3` (exported from `WhatsNewSection`) in its own cache entry while the
+  What's New screen, tag/set pages and detail threads keep theirs at 9. Invalidations match on
+  the `['Posts', type, id]` prefix and reach every size. Every reader of the home entry passes the
+  same size (the bands via `PostThread`'s new `pageSize` prop, HomeScreen's own paging hook,
+  `HomeViewerSwap`'s sign-in prefetch) — the one-cache-entry rule now holds *per surface*.
+- **The page is an infinite scroll.** The FlatList's rows are the feed's loaded pages after the
+  first, each rendered as an untitled 3-post band (`WhatsNewSection start=3,6,9…`, keyed by the
+  index of its first post), and `onEndReached` (threshold one viewport) calls `fetchNextPage` for
+  the next three. Band 1 (titled, with "See all") stays in the list header over Groups. The
+  shape is now **circles → Trending → What's new 1–3 → Groups → 4–6 → 7–9 → … → spinner while
+  the next page is in flight → legal footer**. Stacked bands keep the 8pt post-to-post seam
+  (the band's 2pt bottom margin plus the thread's 6pt bottom padding), so the rows read as one
+  feed. Virtualised at band granularity.
+- **The Query List shelves and `/query-lists/homepage` are gone from Home.** `QueryListShelf`,
+  `QueryListShelves`, `useHomepageQueryLists`, `queryListService.getHomepage` and the
+  `HomepageQueryList` type are deleted; `FeedGridScreen` still pages query-list results
+  through `getResults`. The API endpoint stays (no mobile callers). The home page's cold start
+  is therefore the three gate requests plus one 3-post read — nothing else fires until the
+  reader scrolls.
+- **`isSwitchingBrand` is now derived from the feed.** It used to ride the query-lists read
+  (brand-tagged response); it is now "the brand whose feed has loaded" (a ref set when the
+  home posts entry reports `isFetched && !isLoading`) differing from `selectedBrandId`. Unset
+  on the cold open, so the first `/posts` landing after the paint never blanks the shelves; a
+  brand visited earlier reports fetched from cache and shows at once.
+- **`PostDetailScreen` no longer mounts `usePosts`** to find the tapped card's thread copy —
+  with the homepage on its own key that read fetched a 9-post page of its own. It uses
+  `useCachedPost`, a read-only `getQueriesData` lookup across every size's entry for the
+  thread.
+
+## The sign-in swap (2026-10-10)
+
+The cold-start gate opened the page whole, but **signing in (or out) undid it**: the live viewer
+flips the moment the session lands, and every viewer-keyed read — the affiliate rail
+(`viewerHasSeen`), Groups (memberships), the `/posts` behind the three What's new bands — gets a
+brand-new empty cache entry at once. Each section collapsed to nothing and popped back as its own
+request returned, so the page re-assembled itself shelf by shelf under the reader.
+
+**Fix: a committed viewer that lags the live one.** `contexts/CommittedViewerContext` exposes
+`useViewerAccountId()` / `useViewerKey()` — the live session by default (so nothing changes
+anywhere else), overridable by a provider. `screens/home/data/HomeViewerSwap` wraps HomeScreen
+and provides it:
+
+1. On the cold start it commits the session's viewer as soon as auth is determined (no
+   prefetch — `useHomeReady` is already holding the page).
+2. When the live viewer later changes, the sections keep rendering the committed (old) viewer's
+   cached data while the provider **prefetches the new viewer's three reads** into the cache —
+   `affiliateRailQueryOptions`, `homeGroupsQueryOptions`, `postsQueryOptions`, the exact option
+   objects the sections spread, so the entries are the ones they will read.
+3. Once all three have settled (settled, not succeeded — same posture as the gate), the
+   committed viewer advances and every section switches key in the same render, onto warm
+   cache. One swap, no collapse, no stagger. A brand switch or a second session change mid-flight
+   cancels and restarts the wait.
+
+`usePosts` and `useHomeReady` read the viewer from the context too, so under Home the gate and
+the bands follow the committed viewer; `PostDetailScreen`, `WhatsNewScreen` and the rest sit
+outside the provider and keep the live viewer. The affiliate ring also keys on the committed
+viewer, so a guest's rows never show a member's pink ring during the swap. Trending and the Query
+List shelves are not viewer-scoped and never move.
+
 ## What loads now (and what moved)
 
 ### 1. Home feed: `/feed` is retired on the frontend
+> *Historical (2026-08-14 → 2026-10-18): the Query List shelves described here left Home on
+> 2026-10-18 — see "The feed goes infinite" above. `FeedGridScreen` still pages query-list
+> results.*
 - Top Picks and its `/feed` request (limit 20) are **gone from HomeScreen**. The homepage is now
   groups → tags → What's-new band 1 → **Query List 1** (in Top Picks' old slot) → band 2 →
   Query List 2 → band 3 → Query List 3.
@@ -73,6 +153,8 @@ posts). Cutting the affiliate request also drops one round trip from the cold st
 ### 2. Posts: limit 9, two items per card, detail fetches the tree
 - `usePosts` PAGE_SIZE is **9** — the three 3-post What's-new bands, no over-fetch. One value per
   `['Posts', type, id]` key: every consumer shares the cache, so the size can't vary per caller.
+  *(2026-10-18: the size is now a `pageSize` argument and part of the key; Home pages at 3, the
+  default stays 9 — see "The feed goes infinite" above.)*
 - The API list read returns only the **first text run + primary attachment** per post (see the
   nanza-api Posts design for the trim mechanics and why it's not `take: 2`).
 - **PostDetailScreen now fetches `GET /post/:id`** (`usePostDetail`, key `['PostDetail', id]`)
@@ -119,8 +201,11 @@ posts). Cutting the affiliate request also drops one round trip from the cold st
 - Opening the cart now shows a spinner on first open (the full orders are on the wire) instead of
   rendering instantly from an always-loaded cache. Deliberate: every session paid the old cost,
   few sessions open the cart.
-- A brand with more than three query lists shows only the first three on Home; "See all" pages the
-  full list per shelf. The admin-side ordering (`index`) decides which three.
+- ~~A brand with more than three query lists shows only the first three on Home~~ — moot since
+  2026-10-18: query lists no longer render on Home.
+- The home feed pages three posts per scroll (2026-10-18), so a reader who scrolls far makes
+  many small `/posts` requests rather than a few large ones. Deliberate: the cold start pays for
+  exactly three, and the later pages ride the scroll.
 - `refreshCurrentUser` still refetches the whole session shape from ~20 call sites. Next candidate
   if the session call is still hot: a targeted `refreshLists()` for the four collection-create
   call sites.

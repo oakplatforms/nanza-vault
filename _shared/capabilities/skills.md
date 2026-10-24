@@ -7,6 +7,8 @@ A quick view of the skills we have to offer across repos. Summaries only — the
 | `principal-engineer` | Principal-level engineering standards & architecture principles to apply when designing/reviewing. Canonical across backends. | nanza-api, nanza-admin, nanza-web-app |
 | `deploy` | Deploy workflow for the service. | nanza-api, nanza-admin, nanza-web-app |
 | `prisma-migration` | Guardrails/steps for running Prisma migrations. | nanza-api, nanza-admin, nanza-web-app |
+| `figma-sync` | Code → Figma: token sync, screen capture, the local Nanza Design Sync plugin. | nanza-mobile, nanza-web-app |
+| `figma-handoff` | Figma → code: frame link + change list → one measured implementation prompt in `nanza-vault/nanza-figma/handoffs/`. | nanza-mobile |
 | `plan` (command) | Structured pre-code implementation plan with confidence scoring; reads CLAUDE.md + project INDEX/REFERENCE. | nanza-mobile, nanza-email |
 
 **Note:** `principal-engineer` is currently copy-pasted identically across three repos. Candidate for a canonical version documented here, synced out to repos.
