@@ -75,6 +75,7 @@ Universal Links / App Links assets ship under `public/.well-known/`.
 
 ## Plans (in progress)
 
+- [[solution-designs/brand-kit|Brand Kit — `/brand-kit`]] — **built 2026-10-24 (uncommitted)**: unlinked, noindex press/brand page (logos, sting placeholders, slides, color, one-liners, FAQs); assets in `public/brand-assets/` from `scripts/build-brand-assets.py`; new logo (#ED3594 mark) now in the nav.
 - [[../nanza-api/solution-designs/public-profile-page|Public Profile Page — `/:username`]] — **built 2026-10-08 (uncommitted, pending QA; design lives in the nanza-api vault folder)**: root-level `/:username` nested route family (Posts / Collections / Trades tabs, read-only post / collection / listing / bid screens) declared after the nine share routes; page data from `GET /user/:username/page`; not-found redirects home like the catch-all; dark marketing theme; no store redirect; no AASA entry; OG unfurl is phase 2.
 - [[solution-designs/landing-replacement|Landing Replacement]] — swap the whole marketing surface
   (`src/landing/` + `LandingLayout` + content pages) for the scroll-driven front end built in the

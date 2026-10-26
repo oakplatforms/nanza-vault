@@ -30,3 +30,7 @@ implementing session sees them.
 |------|---------|--------|--------|
 | 2026-10-23 | [[handoffs/2026-10-23-makeoffer-listing-card\|Make Offer — listing card]] | MakeOffer | built |
 | 2026-10-24 | [[handoffs/2026-10-24-entity-tabs-market\|Entity — tabs + Market charts]] | Entity | open |
+| 2026-10-25 | [[handoffs/2026-10-25-entity-card-styles\|Entity cards — restyle]] | EntityLockupRow (search, trade, posts, offers) | open |
+| 2026-10-25 | [[handoffs/2026-10-25-collection-card-styles\|Collection cards — restyle + market value]] | CollectionThumb | open |
+| 2026-10-25 | [[handoffs/2026-10-25-bid-listing-tiles\|Bid & listing tiles — restyle]] | ItemThumb (grids, carousels) | open |
+| 2026-10-25 | [[handoffs/2026-10-25-makeoffer-screen-restyle\|Make Offer — screen restyle]] | MakeOffer | open |
