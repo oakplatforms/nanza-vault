@@ -43,4 +43,4 @@ Everything about Nanza / Oak Platforms **as a company** rather than as a set of 
 
 - Files here are living documents; update in place rather than forking dated copies. Date material changes in a
   short changelog at the bottom of the file (see the founder questionnaire).
-- Cross-project *technical* decisions still go in [[../_shared/INDEX|_shared]]; this folder is for the business.
+- Cross-project *technical* decisions still go in [[_shared/INDEX|_shared]]; this folder is for the business.

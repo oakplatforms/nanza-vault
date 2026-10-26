@@ -33,7 +33,7 @@ Each links to a project map (`INDEX`) with a structural overview, an `architectu
 - `nanza-pipelines` — AWS CodePipeline/CodeBuild deploy pipelines for every repo above (no vault folder of its own; see [[_shared/architecture/deploy-pipelines|Deploy pipelines]]).
 - [[nanza-figma/INDEX|nanza-figma]] — Figma → code handoffs: one implementation prompt per redesigned frame, written by nanza-mobile's `figma-handoff` skill.
 - [[_shared/INDEX|_shared]] — cross-project architecture, decisions & the capabilities catalog.
-- [[business/INDEX|business]] — the company rather than the products: founder strategy, go-to-market and outreach, investor relations, corporate structure. Keep product folders technical; anything general goes here.
+- [[_shared/business/INDEX|business]] — the company rather than the products: founder strategy, go-to-market and outreach, investor relations, corporate structure. Keep product folders technical; anything general goes here.
 
 ## Capabilities
 

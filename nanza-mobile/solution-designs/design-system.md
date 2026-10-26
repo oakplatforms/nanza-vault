@@ -152,6 +152,34 @@ idempotent. The plan is to extend the same script with radius/spacing/colour she
   reaches all ~900 migrated sites (proven by the Bold→SemiBold ramp swap landing as a
   two-file commit).
 
+## In-page tabs — the segmented capsule is the standard (2026-10-25)
+
+Two tab vocabularies, deliberately:
+
+- **Inside a page** (section switchers: the entity screen's Details · Market · Trades · Chat,
+  the inbox's All · Offers · Friends · Groups · Refunds, Group members' Active · Requests, and
+  eventually the profile) → **`SegmentedTabs`** (`src/components/global/SegmentedTabs/`), styled
+  by `tabs.ts` `segmentedTabs*`. One 44pt capsule — `background` fill, `glassBorder` hairline,
+  3 inner padding — holding equal-width flex-1 segments; the active one sits on the `glassActive`
+  fill in `textSecondary`, the rest in `secondaryText`, labels in the `pill` slot. An optional
+  `count` renders as a 20pt ink circle beside the label (the inbox's All). **Four segments
+  share the track; more than four and the track scrolls horizontally inside the capsule** at
+  the four-up width with a sliver of the fifth peeking (Skylar, 2026-10-25: five across read
+  too small) — the active segment is scrolled into view when it changes. Figma
+  `proposed.rangeTrack`; first built for the entity screen (2026-10-24, as `EntityTabs` in
+  `market.ts`), promoted to the shared component when Messages adopted it (Skylar, 2026-10-25:
+  "we want to make sure this is the standard now").
+- **Search screens** keep the **bigger self-sizing outline pills** (`tabs.ts` `textTabItemSm`,
+  the `TabPillsRow` strip) — those are filters over a result set, not sections of one page.
+
+The component is pure: the host owns placement (the entity screen's `entityTabsInline` in
+`market.ts`, the inbox's `tabsAndSearchSection` in `messages.ts`, both at the 20 `base` inset so
+the capsule is one width everywhere). **Not sticky** anywhere for now (Skylar, 2026-10-25: too
+many elements; maybe later — see [[entity-screen]]). The Trade screen's tabs are the one
+in-page strip still on the old outline pills; they are slated for their own pass. The Messages
+strip's scrolling outline pills (`messages.ts` `tab` / `tabActive` / `tabCountBadge` …) were
+deleted with the switch rather than left as a second pattern.
+
 ## Haptics (August 2026)
 
 Touch feedback is a **thin wrapper over `react-native-haptic-feedback`** in

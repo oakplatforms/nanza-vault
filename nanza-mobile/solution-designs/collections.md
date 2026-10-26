@@ -9,7 +9,8 @@ tags: [nanza-mobile, solution-design, collections]
 A **Collection** is a user-owned list of trading cards (a `List` of `type === 'COLLECTION'`)
 with per-entity quantities. Unlike listings (things for sale) or bids (things wanted),
 a collection is a personal inventory — "what I own" — carrying a live **portfolio value**
-(`entityListValue`), an **item count** (`entityListCount`), a **privacy** flag, and
+(`entityListValue`), an **item count** (`entityListCount`), a **show-value** switch
+(`isValueVisible` — every collection is public; only its value can be kept from others), and
 optional **thumbnail** / **banner** imagery. Collections are the home of the "Collect"
 experience: search-to-add, scan-to-add, and per-card quantity editing.
 
@@ -44,13 +45,14 @@ a settings form. The same items-first pattern was later mirrored for Lots (see [
 
 The collection card mirrors the **OG collection share graphic**: a full-bleed mosaic of the
 collection's card images (`entityList[].entity.image` via `getImage`) with a dark bottom
-gradient, a **privacy pill** top-left (renders "Private" only when `isPrivate`; public shows
-nothing), an **item count** top-right, and a connected info bar below carrying the
+gradient, an **item count** top-right, and a connected info bar below carrying the
 **collection name** and the **fair-market value** (`entityListValue`, rendered with
 `PriceText` so the "$" uses Figtree per P0 rule #6 — same number shown as "Portfolio Value"
-on the profile, no recomputation). **Hidden since 2026-10-11** behind `SHOW_FAIR_MARKET`
-(`src/constants/featureFlags.ts`), along with the collection thumb's value row and the share
-card's per-entry value and Total value metric — see the note in [[entity-screen]].
+on the profile, no recomputation). Hidden 2026-10-11 → restored 2026-10-24 behind
+`SHOW_FAIR_MARKET` (`src/constants/featureFlags.ts`), along with the collection thumb's value
+row and the share card's per-entry value and Total value metric. The FAIRMARKET graphic beside
+these values is now the plain "Market price" label (`MarketPriceLabel`, overlay tone),
+baseline-aligned with the amount — see the note in [[entity-screen]].
 
 Mosaic sizing uses a **fixed cell size, floating column count**: the cell (~52×73, gap 3)
 stays constant and `columns = floor(cardWidth / (cellWidth + gap))` is computed from the
@@ -105,10 +107,35 @@ Scan (mode=collection)
 
 `CreateCollection` uses an **inline bordered-row** form (the same layout as Create/Edit Bid):
 a **Title** row, a **Thumbnail** row and a **Banner** row (each "Add thumbnail"/"Add banner"
-with preview + remove), and a **Visibility** row. The two image rows map to the `thumbnail`
+with preview + remove), and a **Show value** toggle. The two image rows map to the `thumbnail`
 and `banner` fields (the old single `logo` row was dropped from the UI). `Group`'s create form
 was later rebuilt to match this same inline style (Title, Thumbnail, Banner, taller
 Description; no visibility since groups are always private).
+
+> **Update 2026-10-25 — private collections retired; "show value" added (Skylar, voice).**
+> Every collection is public now. The Public · Private pills are gone from the form; `List.isPrivate`
+> stays in the schema and is still **accepted and stored** by `POST`/`PUT /list` so an older app
+> build that sends it keeps working — it just means nothing: the API no longer filters, blocks the
+> share link, gates `GET /list/:id`, the entities page or `GET /list/collection/:accountId` on it,
+> post references no longer tombstone a private collection, and mobile's "Private" meta labels
+> (collection picker, add-to-collection row) and the viewer-side `isPrivate` filters
+> (`ProfileSections`, `ProfileSeeAllScreen`) are gone. Skylar is flipping the stored rows to
+> `false` by hand for tidiness. In its place, one setting on **every** collection, My Library
+> included: **`List.isValueVisible`** (`Boolean @default(true)`, migration
+> `20261025120000_list_is_value_visible`, types `0.1.131`). Off means anyone but the owner gets
+> `entityListValue: null` — the count still goes out — from every read that carries a list
+> (`GET /lists`, `GET /list/:id`, the entities page envelope, profile `account.lists`, the share /
+> universal routes); the owner always sees the number. The account **portfolio total** on
+> `GET /list/collection/:accountId` is now **My Library's** count and value (`computePortfolioTotals`
+> — the library mirrors every binder, so summing all collections double counted) and is nulled
+> for others when My Library hides its value; each binder's own value follows its own toggle, so a
+> hidden library and a shown 18-card binder can coexist. Mobile: the form's `ToggleField`
+> ("Show this collection's value to others", `styleVariant="form"`) is the only field My Library
+> offers, so the **edit pencil is back on My Library's detail screen** (`canEdit = isOwn`);
+> `CollectionThumb` skips the value row when the value is `null`; the private-share prompt is
+> gone. Web: `UniversalDetail` and the share `ListDetailCard` skip the Total value stat on `null`.
+> Default **shown** so nothing changes for existing collections. Field name follows the `isVisible`
+> convention (sets-and-tags-parity, 2026-10-23).
 
 The **"Add to collection" affordance** is a standard full-width `Button` (plus icon + label,
 `variant="secondary"`, `size="xxl"`, `fullWidth`) placed at the **end of the collections list
@@ -127,6 +154,17 @@ add/edit/save/delete and no edit menu; **share is allowed** because these collec
 public. Deliberately **not** built by threading a `readOnly` flag through the editable
 `CollectTab` — a thin dedicated screen keeps the live editable flow untouched.
 
+> **Update 2026-10-25 — read-only is now the one `CollectionDetailScreen` with `accountId`.**
+> The screen derives `isOwn` from the route's `accountId` vs the viewer and gates every edit
+> affordance on it. Someone else's collection: the footer pill reads plain **"Search"** (own:
+> "Search to add"), and the in-place `CollectionSearchOverlay` opens on
+> **their collection only** — the Nanza · My Collection toggle is not rendered and the Nanza
+> catalog tab does not exist for them (Skylar: "it should only show their collection to search
+> through"). Count circles on their cards (grid + search rows) are greyed and non-interactive
+> but the **number is white**, the same as the live badge — the grey-on-grey count was
+> unreadable. The no-banner header block takes `insets.top` from the screen on top of its
+> fixed row + gap, so the title clears the floating buttons on every device.
+
 ### One collection endpoint, scoped by `listId`
 
 Every **read-only** collection read — the profile Collections tab (`UserCollection`), the
@@ -144,14 +182,14 @@ one code path, and search/tag filters work on every collection.
 ### Portfolio totals are account-wide, per-collection counts are per-list
 
 The collection endpoint's envelope `entityListCount`/`entityListValue` are the **account-wide
-portfolio totals** — summed across *all* public collections (`computePublicPortfolioTotals`),
-independent of which `listId` is being paginated. So:
+portfolio totals** — since 2026-10-25 **My Library's own count and value**
+(`computePortfolioTotals`; the library is the master inventory, so summing every collection
+double counted), independent of which `listId` is being paginated, and `null` for non-owners
+when My Library's `isValueVisible` is off. So:
 
-- **Profile header "Collected / Portfolio Value"** must be the account-wide total. Both
-  `UserProfileScreen` (another user, public collections only) and the own `ProfileScreen`
-  (includes private collections) compute it by **summing the per-list `entityListCount`/
-  `entityListValue` across the collection list DTOs they already hold** — mirroring the backend
-  sum. Reading a single list DTO (the old bug) showed only the primary's numbers.
+- **Profile header "Collected / Portfolio Value"** must be the account-wide total — My Library's
+  numbers. (Before 2026-10-25 the screens summed the per-list DTO values across all public
+  collections; with two-way library sync that double counts, so the primary's DTO is the total.)
 - **Per-tab "N collected"** on `UserCollection` is a *per-collection* count, so it reads the
   **active list's DTO** value, **not** the envelope total (which would repeat the account-wide
   number on every tab).

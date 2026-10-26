@@ -2,7 +2,7 @@
 
 The admin console (`oak-admin`) is a React 18 + TypeScript single-page app scaffolded with Create React App (`react-scripts` 5). It is the operations back office for the Nanza marketplace: staff sign in with Cognito and manage the catalog and order pipeline against the shared `nanza-api`. There is no server of its own — it is static assets on S3 talking to the API over HTTPS.
 
-Back to [[INDEX|the project map]] · cross-project context in [[../_shared/INDEX|Shared brain]].
+Back to [[nanza-admin/INDEX|the project map]] · cross-project context in [[../_shared/INDEX|Shared brain]].
 
 ## Entry & bootstrapping
 
@@ -131,5 +131,5 @@ Config values (`API_BASE_URL`, `S3_IMAGE_BASE_URL`, pool ids, bucket) are SSM pa
 
 ## Related
 
-- [[INDEX|nanza-admin map]]
+- [[nanza-admin/INDEX|nanza-admin map]]
 - [[../_shared/INDEX|Shared brain]] — Cognito, data model, and infra decisions that span repos.

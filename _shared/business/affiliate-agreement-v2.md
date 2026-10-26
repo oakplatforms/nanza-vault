@@ -7,8 +7,8 @@ status: draft
 
 Supersedes [[affiliate-agreement-v1|v1]] (2026-10-20): adds the fourth $5 tier — ten cards added
 to the referred user's collection — so a referred user can earn the affiliate up to $20. Design:
-[[../nanza-api/solution-designs/affiliate-vouchers|Affiliate Vouchers]] and
-[[../nanza-api/solution-designs/agreements|Agreements]]. Same voice as v1: informal legal, a cool
+[[affiliate-vouchers|Affiliate Vouchers]] and
+[[agreements|Agreements]]. Same voice as v1: informal legal, a cool
 lawyer, an acknowledgement between both parties rather than a binding contract.
 
 Paste the Title and Body into nanza-admin → Agreements → Add New (type AFFILIATE). The body is plain

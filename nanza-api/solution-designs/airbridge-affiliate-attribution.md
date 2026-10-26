@@ -228,6 +228,93 @@ added 2026-10-16, pod installed) over a disabled `TextField` showing the URL, ex
 treatment. Shown only when `isAffiliate`. The profile share circle went back to the plain profile
 URL for everyone.
 
+## Round 2 (plan, 2026-10-25 — Skylar, voice): land on Create account; short per-affiliate links
+
+Two asks. Neither is built yet; both are small.
+
+### 1. The deep link lands on Create account, not the affiliate's profile
+
+**Today:** the link's `deeplink_url` is `nanza.app/<username>?ref=<accountId>`; on open the app
+parks the `ref` and `AttributionBridge.openAffiliateLanding` pushes `UserProfile` for the
+affiliate. A new user then has to find their own way to sign-up.
+
+**Change (mobile only, no link change, no Airbridge change):** in `AttributionBridge`'s deep-link
+handler, after parking the `ref`, branch on the session —
+
+| Session when the link opens | Lands on |
+|---|---|
+| guest (`isSignedIn === false`, or no account yet) | **`SignUp`** (the credentials screen; `navigation.navigate('SignUp')` — no `returnTo`: sign-in always lands Home since 2026-10-23) |
+| signed in | **Home** (Skylar, 2026-10-25: the ref is void for an existing account, the link is for new ones). `openAffiliateLanding` and its profile lookup go away. |
+
+The web fallback is untouched: a visitor without the app still hits `nanza.app/<username>` and
+its Join button → the tracking link → store. The pending `ref` + claim after sign-up work exactly
+as before — the only change is which screen the guest sees first. If the session is still
+resolving when the link arrives (cold start), `navigateWhenReady` already retries; the branch
+reads `isSignedIn` at navigate time, not at receipt. The `?ref=` link stays
+`nanza.app/<username>` so one URL serves app and web.
+
+### 2. Short per-affiliate links — `go.nanza.app/<username>`
+
+**Today:** ~134 characters, `go.nanza.app/@nanza/affiliate?sub_id=…&deeplink_url=…`. Fine in a
+Copy field, ugly on a web page or a bio.
+
+**Finding (2026-10-25, Airbridge docs):** Airbridge creates a **short link** alongside every
+dashboard tracking link, the short link can use the **custom domain** (`go.nanza.app`, already
+configured), and the **short link ID** (the path) is **ours to choose** — "if you enter `appname`
+as the short link ID, your short link will be `https://custom_domain/appname`". Custom domain +
+short link ID are available on every plan. There is also a Tracking Link Generation API for bulk
+minting. That is exactly the earlier "one registered short link per affiliate" idea, no redirector
+of our own needed and `go.nanza.app` stays Airbridge's.
+
+**Design:**
+
+- **One dashboard short link per affiliate, short link ID = the affiliate's username**, wrapping
+  the same long link the API mints (`channel affiliate`, `sub_id=<accountId>`,
+  `deeplink_url=nanza.app/<username>?ref=<accountId>`). Result: **`https://go.nanza.app/<username>`**.
+  Ten affiliates → ten links, created by hand in the dashboard (Tracking Link → Create, custom
+  channel `affiliate`, paste the long link's parameters, set the short link ID). The Tracking Link
+  API is the upgrade path when the count grows; not now.
+- **Nothing stored, no flag** (Skylar, 2026-10-25). Neither link is persisted today — the long
+  one is computed per request by `buildAffiliateLink` from username + account id — and the short
+  one is just as deterministic (`https://go.nanza.app/<username>`). Registering the short link
+  in the dashboard (Step 9) becomes **part of promoting a profile to AFFILIATE**, so "is an
+  affiliate" and "has a short link" are the same fact: `GET /profile/:id/affiliate-link` and
+  `affiliateLink` on `GET /user/:username/page` return the **short form for every affiliate**.
+  Mobile Settings and the web Join button show whatever the API returns — no client change. The
+  long form stays in code (`buildAffiliateTrackingLink`) as what the admin pastes into the
+  dashboard when registering. Cost: an affiliate promoted before Step 9 is done has a Settings URL
+  that 404s on Airbridge until it is — acceptable at ten affiliates with the step on the
+  checklist. A `hasShortLink` flag was considered and dropped as redundant.
+- **Username changes** break the slug: the registered short link keeps the old username path.
+  Affiliate usernames are effectively fixed (the public profile URL has the same constraint);
+  note it in the onboarding step. `sub_id` / `ref` (account id) keep attribution stable either way.
+- **Why not our own redirector** (`nanza.app/<username>/join` → 302 to the long link, or taking
+  `go.nanza.app` back onto API Gateway and moving Airbridge to `link.nanza.app`): more infra for
+  the same result, and a 302 hop before Airbridge costs nothing but adds a thing to run. Airbridge
+  already does it. Revisit only if the dashboard limits short links per plan.
+
+### Build order (when approved)
+
+1. **Mobile** (½ day): `AttributionBridge` guest → `SignUp`, signed in → Home; drop
+   `openAffiliateLanding` + the profile lookup. QA on a fresh install with a tracking link (Step 7
+   of the onboarding page) should end on the Create account screen.
+2. ✅ **API** (2026-10-25, uncommitted): `buildAffiliateLink(username)` returns the short form;
+   the long builder is `buildAffiliateTrackingLink(username, accountId)`.
+   `GET /profile/:id/affiliate-link` returns `{ url: short, trackingUrl: long }`; `affiliateLink`
+   on `GET /user/:username/page` is the short form. Mobile Settings and the web Join button pick
+   up the short link with no client change. No schema change. nanza-admin showing `trackingUrl`
+   beside the type picker is still to do (until then, mint it from the endpoint as an admin).
+3. **Vault**: fold this section into "The link"; Step 9 moves into the AFFILIATE promotion steps.
+
+### Open questions
+
+1. ~~Signed-in user: profile or Home?~~ **Home** (Skylar, 2026-10-25).
+2. Confirm in the dashboard that a short link ID on the custom domain accepts usernames as-is
+   (lowercase letters, digits, `_`, `.`) — Skylar is trying one.
+3. ~~Admin hands it over, or the app shows it?~~ **The app shows it** from the Settings copy field
+   for every affiliate — no flag; registering the short link is part of making someone an
+   affiliate (Skylar, 2026-10-25).
+
 ## Next: vouchers
 
 What the affiliate earns once the referred account is active is

@@ -46,7 +46,8 @@ is a separate admin hide/show flag (default true, filter only; nothing hides on 
   across both arrays; on PUT the omitted array is read from the row so the cap is checked against
   what the post ends up with), `taggedSetPostsFilter`, `type=SET` read union, `SET` added to the
   author-feed homes, `postInclude.sets` (slim: id / name / displayName / shortName).
-- Search: set `displayName` / `shortName` contains + `code` equals arms on `GET /search`.
+- Search: set `displayName` / `shortName` contains + `code` equals arms on `GET /search` —
+  **retracted 2026-10-25** (see Part 3); sets are reached through the filter's `setId=`.
 - Share: `set` slug in `shareTaxonomy`, resolver case, OG card (tag value template), meta,
   ogEdge regex, reserved username.
 
@@ -88,7 +89,8 @@ Four decisions (Skylar, 2026-10-17):
    **home** — a set detail page with its own chat, mirroring the tag value page — so tapping
    `#Outbreak` on a post lands on the set page, not the search filter.
 3. **Global search matches sets.** Typing "outbreak" into search returns the **cards** in that
-   set (not the set row itself), alongside the usual name / number matches.
+   set (not the set row itself), alongside the usual name / number matches. **Retracted
+   2026-10-25** — see Part 3.
 
 ## Part 1 — image parity
 
@@ -295,6 +297,14 @@ The OG card reuses the tag value template with the set's banner/thumbnail.
 - The Sets detail page (Part 1) is the curation surface; question 3 decides which flags it gets.
 
 ## Part 3 — global search by set
+
+> **Retracted 2026-10-25 (Skylar, voice).** The set arms are out of `GET /search` again: a card
+> search is cards only (`displayName` / `name` / `product.number`). Matching set names drowned
+> the card you typed — "Hala" returned every card in the *Hala armory deck*, so the Hala hero
+> card itself was lost in the set's cards. To browse a set, filter by it (`setId=`, the filter
+> screen's Set chips) and search within. The filter screen's own set search and the composer's
+> set picker (below) are unchanged. The rest of this section is the original design, kept for
+> the record.
 
 `GET /search` entity `where.OR` (the `searchTerm` branch in `src/routers/search.ts`) gains two
 arms:

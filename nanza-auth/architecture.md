@@ -2,7 +2,7 @@
 
 A small, stateless AWS Lambda service that sits between **Amazon Cognito**, **nanza-api**, **AWS Secrets Manager**, and **EventBridge**. It owns no data store. Its job is to react to Cognito user-pool lifecycle events and to authentication flows, and to keep the platform's user records in sync.
 
-See [[INDEX]] for the file map and [[../_shared/INDEX|Shared brain]] for cross-project decisions.
+See [[nanza-auth/INDEX]] for the file map and [[../_shared/INDEX|Shared brain]] for cross-project decisions.
 
 - **Runtime / framework:** Node.js 20, TypeScript, Serverless Framework v3 (`serverless.yml`).
 - **Region:** `us-east-1` (hardcoded in every SDK client and in `serverless.yml`).

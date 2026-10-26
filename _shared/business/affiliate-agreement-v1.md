@@ -6,7 +6,7 @@ status: draft
 # Affiliate Agreement v1 — "Nanza Affiliate Link — Our Understanding"
 
 The text affiliates accept in the app before their affiliate link unlocks (design:
-[[../nanza-api/solution-designs/agreements|Agreements]]). Written 2026-10-17, rescoped 2026-10-19
+[[agreements|Agreements]]). Written 2026-10-17, rescoped 2026-10-19
 to cover the affiliate link only: no pilot budget, cohort size, go-live date, landing page or
 October content asks. Those live in the pilot brief, not in the text people accept. Voice:
 informal legal, a cool lawyer, an acknowledgement between both parties rather than a binding

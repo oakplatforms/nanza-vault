@@ -3,7 +3,7 @@
 How nanza-mobile is wired together end to end: app entry, navigation, the data/state layer,
 the styling system, the services/api layer, and how types flow in from `@oakplatforms/types`.
 This is the structural companion to [[REFERENCE|Frontend Reference Guide]] (which holds the
-style rules, token tables, and pattern catalog) and [[INDEX|the project map]]. Every claim
+style rules, token tables, and pattern catalog) and [[nanza-mobile/INDEX|the project map]]. Every claim
 below is grounded in a real file path under `src/`.
 
 ---
@@ -268,6 +268,6 @@ Two kinds of local types are legitimate and stay in-repo:
 
 ## See also
 
-- [[INDEX|Project map]] — structure + plans by theme
+- [[nanza-mobile/INDEX|Project map]] — structure + plans by theme
 - [[REFERENCE|Frontend Reference Guide]] — style rules, token tables, pattern catalog
 - [[../_shared/INDEX|Shared brain]] — cross-project architecture & catalog

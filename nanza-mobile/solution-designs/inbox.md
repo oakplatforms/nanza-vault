@@ -14,6 +14,11 @@ own** (Skylar, 2026-08-29): they arrive in **All** as pending intro threads, and
 tab surfaces them as one row. Refunds is the one order event that needs answering — requested
 (to the seller), accepted / declined (to the buyer) — so it earns a tab only when it exists.
 
+The strip is the shared **`SegmentedTabs`** capsule since 2026-10-25 (the entity screen's
+in-page tab design, now the standard — [[design-system#In-page tabs — the segmented capsule is the standard (2026-10-25)|design-system]]): five equal segments across the 20 inset, All's
+unread total as an ink count circle beside its label. The scrolling outline-pill strip it
+replaced is deleted; `GroupMembersScreen`'s Active / Requests row moved with it.
+
 | Tab | Source | Rows |
 |---|---|---|
 | All | `GET /message-feed` | conversations (incl. pending intros) + every system message, newest first; the only tab with a numeric unread count |

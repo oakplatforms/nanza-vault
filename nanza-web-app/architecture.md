@@ -1,6 +1,6 @@
 # nanza-web-app — Architecture
 
-Deeper architecture notes for the Nanza web app. See [[INDEX]] for the map and
+Deeper architecture notes for the Nanza web app. See [[nanza-web-app/INDEX]] for the map and
 [[../_shared/INDEX|Shared brain]] for cross-repo decisions (auth, data model, shareability).
 
 ## What it is

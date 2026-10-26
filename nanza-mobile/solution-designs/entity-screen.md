@@ -10,18 +10,46 @@ tags: [nanza-mobile, solution-design, plan, entity]
 
 ## Why
 
+> **Tabs (2026-10-25): the section switcher is the shared `SegmentedTabs` and it is NOT
+> sticky.** The capsule first built here as `EntityTabs` (handoff
+> `nanza-figma/handoffs/2026-10-24-entity-tabs-market.md`) moved to
+> `src/components/global/SegmentedTabs/` + `tabs.ts` `segmentedTabs*` when it became the
+> in-page standard (Messages adopted it the same day; see [[design-system]]). The handoff's Q3
+> "sticky — yes" is reversed for now (Skylar: "too many elements, maybe later"): the pinned copy
+> under the floating header, its scroll-derived show/hide (`useAnimatedReaction` on the hero
+> height + sheet pull + cap + measured bar y) and the viewport-tall pane floor that kept a short
+> tab from unpinning all came out of `EntityScreen`. Only `market.ts` `entityTabsInline`
+> (32 below the title block, 20 inset) remains for placement. If sticky returns, the handoff
+> still records the geometry.
+
 The entity experience has outgrown the 80% bottom sheet: it already carries a hero image, title,
 fair-market pricing, CTAs, description, tags, and a listings/bids feed grid. Every other detail
 surface of that weight (SupportedTagValueScreen, PostDetail, ListingDetail, BidDetail) is a
 full-screen slide-up with the floating chevron-down + share header. The entity surface should read
 identically: shareable from the top, dismissed with a down arrow, and full-height.
 
-> **Fair market is hidden app-wide for now (2026-10-11).** Every fair-market surface — the
-> `FairMarketPill` on entity cards and detail headers, the bid/listing/scan form help rows, the
-> scan variant picker's price row, and the collection and share-card value overlays — is gated on
-> `SHOW_FAIR_MARKET` in `src/constants/featureFlags.ts`. It is `false` until fair market returns in a
-> later release; flipping it to `true` restores everything with no other change. The data
-> (`Product.price`, `entityListValue`) keeps flowing from the API; only the rendering is off.
+> **Market price is back (2026-10-24), and it is called "Market price".** It was hidden app-wide
+> for the 2026-10-11 release behind `SHOW_FAIR_MARKET` in `src/constants/featureFlags.ts`; the
+> flag is now `true` and stays as the one switch for every surface — the `FairMarketPill` on
+> entity cards and detail headers (search cards, add-to-collection rows), the bid/listing form
+> help rows, and the collection and share-card value overlays. **Not the entity screen**: its
+> price row keeps only Sell Now / Buy Now (right-aligned behind an empty left occupant); the
+> Market tab's headline is this screen's market price now (Skylar, 2026-10-24).
+> On the way back the **FAIRMARKET wordmark SVG was retired**: every surface now draws the
+> plain words "Market price" through one shared `MarketPriceLabel` (`src/components/global/`,
+> styled in `entity.ts` as `marketPriceLabel` + muted/overlay tones — `microRegular`, the
+> Market tab's `smallRegular` voice a step down). Unpriced entities show an en dash beside
+> the label, never `$0.00`; the pill still renders so rows don't shift. Internal names
+> (`FairMarketPill`, `fairMarket` props, `SHOW_FAIR_MARKET`) were kept to avoid a repo-wide
+> rename; only the user-facing word changed (Skylar). **One more point of air above every
+> market price** (Skylar, 2026-10-24: "they are all pretty tight"): the lockup body's bottom
+> inset is `gap` (9) under a `sm+min` (10) top so space-between hands the extra point to the
+> set-line→pill gap (a margin on the pill would only eat the slack); the form help row's
+> marginTop went 9→10; the collection thumb footer gap, grid-card value margin and share-card
+> label→amount gap each gained a point; the scan tile row and scan modal pill carry a 1pt top
+> margin. The post card's `entityHeroBody` centres the body (no space-between slack), so it
+> carries an explicit `gap: xs` between the set line and the pill. Mixed line heights beside
+> the label are aligned on `baseline`, never nudged.
 
 ## Where things stand today (mapped 2026-08-10)
 
@@ -76,7 +104,7 @@ existing content blocks in order:
    full card and collapses it back — ported from the sheet's drag-zone spacer to the screen's
    scroll header space. No fullscreen `ImageViewer`.
 2. **Title row** — `DetailTitleBlock` only — **the ellipsis "more" button dies** (see header).
-3. **Price row** — FairMarket price, Sell Now / Buy Now tiles with `scrollToFeedItem`, unchanged.
+3. **Price row** — Sell Now / Buy Now tiles with `scrollToFeedItem`; the market-price pill was dropped from this row 2026-10-24 (the Market tab carries the price).
 4. **CTA pills** — Place bid / Sell → `CreateBid` / `CreateListing`, unchanged.
 5. **Description + `EntityTags`** with the ShowMore expand/collapse, unchanged.
 6. **Feed grid** — the merged listings+bids 2-column grid, unchanged (keep the `feedReady`

@@ -71,7 +71,7 @@ Universal Links / App Links assets ship under `public/.well-known/`.
 - [[architecture|Architecture]] — entry, routing, services, auth flow, styling, build/deploy
 - [[fe_spec|Frontend Spec]] — engineering standards, non-negotiables, escalation process
 - [[../_shared/INDEX|Shared brain]] — cross-project architecture & decisions
-- [[../business/INDEX|Business]] — founder strategy, onboarding brief, connection map, investor relations (moved out of this folder 2026-09-24)
+- [[_shared/business/INDEX|Business]] — founder strategy, onboarding brief, connection map, investor relations (moved out of this folder 2026-09-24)
 
 ## Plans (in progress)
 

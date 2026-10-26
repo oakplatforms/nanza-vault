@@ -1,6 +1,6 @@
 ---
 tags: [nanza-figma, handoff, nanza-mobile, entity, market, charts]
-status: open
+status: built
 date: 2026-10-24
 figma: https://www.figma.com/design/7c3Zz4nDUOutQG1BsnRRAw/Nanza?node-id=2751-65639
 fileKey: 7c3Zz4nDUOutQG1BsnRRAw
@@ -150,17 +150,69 @@ Coverage: about 10% of FAB entities don't map to the TCG API, and the API only k
 - **D4. Entity → TCG API mapping.** One entity per printing (oak-cortex's `tcgapi_card_map`). Which side resolves it?
 - **D5. Haptics.** No library is installed. Is adding one (e.g. `react-native-haptic-feedback`) OK? If not, ship the scrub without haptics.
 
+## Dev status (2026-10-24, Skylar + Claude) — read before running the prompt
+
+The prerequisite is met and D1–D5 are decided. The prompt refines what exists; it does not
+re-decide these or rebuild the pieces listed here.
+
+**Built in nanza-mobile (uncommitted):**
+- `src/components/entity/EntityTabs/` — the segmented tab row (not yet sticky).
+- `src/components/entity/EntityMarketTab/` — the Market tab: price block, chips, `LineChart` +
+  `BarChart` from `react-native-gifted-charts`, 1W/1M/3M pills, 2×2 stat grid, messages.
+- `src/screens/entity/EntityScreen/data/fetchEntityMarket.ts` — `useFetchEntityMarket`.
+- `src/styles/components/market.ts` — the style bucket for both (nothing in `modals.ts`).
+- `src/utils/dateHelpers.ts` — `formatShortDate` / `formatShortDateRange`.
+- `EntityScreen` renders one tab's content at a time; Place bid / Sell sit at the top of the
+  Trade tab; `JoinChatFooter` + `DetailChatSection` mount only on Chat.
+
+**Decisions that override the handoff text above:**
+- **Tab order: Details · Market · Trade · Chat, opening on Details** (Skylar, later on
+  2026-10-24; supersedes Q1's "Chat"). The label is **"Trade"**, singular, and so are the
+  shelf heading and See-all title.
+- **Market is hidden for signed-out users** (guests see Details · Trade · Chat), and
+  `GET /entity/:id/market` is 401 for guests. "Tabs never hide" applies to signed-in users.
+- **Range toggle makes no request.** One fetch at `range=quarter`; 1W / 1M / 3M are sliced on
+  the device (`sliceDays`). Switching pills must stay instant with no spinner or layout jump.
+- **Top price = TCG `marketPrice`** (consistent with the chart and the scrub readout), with
+  "Prices from TCG API · updated {fetchedAt}". Our stored ×0.90 price stays on the Fair Market
+  pill elsewhere; `Product.externalPricedAt` exists but the Market tab doesn't use it.
+- **Stat grid** (as the handoff says): Low / Peak are all-time (`stats.low/peak`), At release
+  is `stats.atRelease` (first price on/after `Product.releaseDate`, null → "–"). Chart Low /
+  Peak markers are range-bound and computed from the sliced `history`.
+
+**D1–D5:**
+- D1 — nanza-api proxies: `GET /entity/:id/market?range=` → `MarketDto` from
+  `@oakplatforms/types` (`shared.ts`, **0.1.127**, publish pending). Fields: `available`,
+  `range`, `printing`, `marketPrice`, `lowPrice`, `medianPrice`, `change24h/7d/30d`, `asOf`,
+  `fetchedAt`, `stats { peak, low, atRelease, avgSalesPrice {price, from, to}, totalVolume,
+  salesThrough }`, `history [{ date, marketPrice, lowPrice, avgSalesPrice, salesVolume }]`.
+  `available: false` carries a diagnostic `reason` (not for display). Nothing of TCG API's is
+  stored; matching is by set name + product number at request time.
+- D2 — `react-native-gifted-charts@^1.4.81` is installed (no native code). Synced two-chart
+  scrubbing and the pulsing custom dot are the unproven parts: use `pointerConfig` /
+  `customDataPoint` if they hold up, otherwise say so in the plan and fall back to
+  `react-native-svg` for the chart layer.
+- D3 — `['entityMarket', entityId, 'quarter']`, `STALE_TIME.LIVE`, `enabled` only while Market
+  is the active tab.
+- D4 — resolved API-side: the endpoint resolves our product by card-name search + collector number (set listing only as a fallback), so our set names don't have to match theirs.
+- D5 — no haptics library; ship the scrub without haptics.
+
+**Also already done, don't redo:** the trade fetches (public listings/bids + the user's own
+listing/bid) only fire once the Trade tab is open (`tradeReady`).
+
 ## Prompt
 ```text
 Implement the entity screen tabs + Market tab from Figma. Plan first, then build.
 
-PREREQUISITE: the dev team has already put the market data on the entity screen (plain text).
-Find that hook/query and its DTO and build on them. Don't add fetching, and don't define local
-domain types (P0 #11). If the data or its type isn't there, STOP and ask.
+PREREQUISITE (met): the market data is on the screen already. Build on
+useFetchEntityMarket, EntityTabs, EntityMarketTab and styles/components/market.ts — refine
+them, don't rebuild them. Don't add fetching, and don't define local domain types (P0 #11):
+MarketDto comes from @oakplatforms/types.
 
 Read this handoff first: nanza-vault/nanza-figma/handoffs/2026-10-24-entity-tabs-market.md.
-Its Measurements, Data mapping and Open questions (all answered, plus D1–D5 for the dev team)
-are the spec. Confirm numbers with get_metadata / get_design_context on:
+Its Measurements, Data mapping and Open questions are the spec, and the "Dev status" section
+OVERRIDES them where they differ (tab order and labels, guest handling, top price, no-request
+range toggle, D1–D5). Confirm numbers with get_metadata / get_design_context on:
 - Market tab  2751:65639 (price block 2754:66306, chart card 2776:89658, tab bar 2754:66352)
 - Chat tab    2758:88229 (footer 2783:122346)
 - Trades tab  2758:88920 (empty copy 2768:89643, button 2889:127015)
@@ -172,20 +224,23 @@ hidden layers (proposed.detailTabs underline variant, proposed.printingPill, "fi
 SCOPE: entity screen only. The title block, hero, header behavior, chat thread layout and the
 Trades thumbs are unchanged (title spacing was checked and matches the code).
 
-1. Tabs. Segmented bar (Chat · Market · Trades · Details), 32 below the title block, sticky
-   under the floating header, Chat active on open. DRY-check Tabs / TabPillsRow / tabs.ts first.
+1. Tabs. Segmented bar (Details · Market · Trade · Chat), 32 below the title block, sticky
+   under the floating header, Details active on open. Market hidden for guests. Refine
+   EntityTabs (src/components/entity/EntityTabs) to the Figma spec.
 2. Chat tab: DetailChatSection as today. JoinChatFooter fixed ONLY while Chat is active.
    Label "Start the chat" at 0 posts (SetScreen chatEntryLabel pattern), else default.
-3. Trades tab: 2-column ListingThumb/BidThumb grid (today's expanded-feed grid, no carousel,
+3. Trade tab: 2-column ListingThumb/BidThumb grid (today's expanded-feed grid, no carousel,
    no heading). Empty → Figma copy block. Interim CTAs: the existing Place bid → CreateBid and
-   Sell → CreateListing pair, Trades tab only (under the empty copy / above the grid). They
-   replace Figma's single "Trade" button until the buy/sell trade screen exists.
+   Sell → CreateListing pair, Trade tab only (under the empty copy / above the grid). They
+   replace Figma's single "Trade" button until the buy/sell trade screen exists. Keep the
+   tradeReady gate (no trade requests until this tab opens).
 4. Details tab: description + set row + primary tag rows + attribute tags, styled as today,
    always fully expanded. Delete the ShowMore / collapsible / measurer path.
-5. Market tab, top: price block, 3 fixed change chips (24H/7D/30D, not range-bound),
-   attribution line with the FETCH time. Exact numbers in the Measurements table.
-6. Market tab, charts: line chart + daily volume bars driven by a 1W/1M/3M toggle (1M
-   default). Line + fill color by the selected range's change (≥0 positive, <0 negative).
+5. Market tab, top: price block (MarketDto.marketPrice), 3 fixed change chips (24H/7D/30D,
+   not range-bound; null → "0%" gray), attribution line with MarketDto.fetchedAt. Exact
+   numbers in the Measurements table.
+6. Market tab, charts: line chart + daily volume bars driven by the 1W/1M/3M toggle (1M
+   default) that slices the ONE quarter fetch on-device — no request per pill. Line + fill color by the selected range's change (≥0 positive, <0 negative).
    Latest dot pulses (reanimated, about 2s, off under Reduce Motion). Low/Peak markers within the
    range, labels with a `background` outline/shadow. Bars: dim by default, brighter in the
    avg-sale window, brightest under the scrub; max bar labeled. Tap-and-hold scrubs BOTH charts
@@ -193,8 +248,8 @@ Trades thumbs are unchanged (title spacing was checked and matches the code).
    price follows the finger, snapping back on release. Haptics only if D5 is approved.
    Chart library per D2. If gifted-charts can't do synced scrub + custom dots cleanly,
    say so in the plan with confidence scores rather than forcing it.
-7. Market tab, stat grid: At release / Avg sale price / Low / Peak per the Data mapping
-   table, NOT range-bound, "–" when missing.
+7. Market tab, stat grid: At release / Avg sale price / Low / Peak straight from
+   MarketDto.stats (already all-time / release-keyed), "–" when null.
 8. Empty states: tier (a) no history → charts + toggle become "Not enough sales to chart
    yet", At release/Low/Peak "–"; tier (b) no data → Trades-style empty block.
 9. Header: replace the `cards-2` circle icon with the new icon (export SVG from 2798:123555,
@@ -222,8 +277,8 @@ Traps:
   pinned (don't jump the scroll to the top of the hero).
 - Keep the feedReady / InteractionManager deferral for chat + trades fetches. Charts can mount
   lazily on first Market visit.
-- scrollToFeedItem / Sell Now–Buy Now (SHOW_FAIR_MARKET, off) now targets the Trades tab.
-  Switch tab first, then scroll, or flag it if not worth keeping.
+- scrollToFeedItem / Sell Now–Buy Now (SHOW_FAIR_MARKET, off) already switches to the Trade
+  tab, then scrolls. Keep that working with the sticky bar.
 - Fixed footer + sticky bar + scrub gesture versus the vertical dismiss gesture and the
   ScrollView: the scrub must claim the touch only after a long-press so scrolling still works.
 - Figma's active range pill is smaller (33×26) than the inactive hit areas. Keep ≥44 hit
@@ -238,3 +293,27 @@ sizes, theme tokens + typography slots only; query freshness rules for any new k
 
 ## Log
 - 2026-10-24 — handoff written; questions 1–15 answered by Skylar; D1–D5 left for the dev team
+- 2026-10-24 (late) — hold-to-scrub is **off by flag** (`MARKET_CHART_SCRUB = false` in
+  `featureFlags.ts`): the charts are plain pictures until it's QA'd. The UI-thread crash it
+  hit (`clamp` / `dayAtX` called from the pan worklet) is fixed, so flipping the flag to true
+  turns the finished scrub back on.
+- 2026-10-24 (later still) — tab label is **"Trades"** again (plural; Skylar). Every pane's
+  loading state is the small system spinner (`PaneSpinner`, ~30 under the bar), never the
+  Lottie logo; the chat thread already used it.
+- 2026-10-24 (later) — headline price reverted to our `Product.price` + "updated <refresh date>"
+  (Skylar: collections and listings use that number; the Market tab must match). The big price
+  no longer follows the scrub; the bubbles carry the day's values. API cut to two TCG calls per
+  open (search + history; changes computed from history).
+- 2026-10-24 — **built** (Claude, nanza-mobile, uncommitted, pending device QA). Chart layer is
+  hand-rolled `react-native-svg` (gifted-charts removed): one x scale drives the curve + gradient,
+  the bars, the hairlines, the pulse dot and the Low/Peak labels, so the hold-to-scrub syncs both
+  charts exactly. Sticky bar = a pinned copy under the header (safe-top + 54), driven by a
+  reanimated reaction over scroll y + the hero's animated height; tab switches while pinned
+  scroll to the pin point. New: `positive`/`negative` token aliases, `smallRegular` slot,
+  `add-to-collection` / `triangle-up` / `triangle-down` icons, `formatFetchTimeUtc`. Deviations
+  to confirm on device: tab segments 36 tall (the 4 token) for Figma's 35; range pills keep a
+  44 hit height via hitSlop; no haptics (D5).
+- 2026-10-24 — dev review (Claude + Skylar): prerequisite built (API proxy + MarketDto 0.1.127 +
+  mobile tabs/Market tab on gifted-charts), D1–D5 decided, Dev status section + prompt amended
+  (tab order Details · Market · Trade · Chat, guests, no-request range toggle, top price = TCG
+  marketPrice, stats from the API). Ready to run.

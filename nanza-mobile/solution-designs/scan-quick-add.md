@@ -39,7 +39,11 @@ Skylar, 2026-10-23 (voice):
 5. **Add commits immediately**, then the modal closes and the **camera stays open** for the
    next card. No review screen, no pending pool for collections.
 6. **"You have N"** shows in the modal when the match is already in that collection.
-7. **Price comes back later.** `SHOW_FAIR_MARKET` stays `false`; the modal leaves a line for it.
+7. **Price is in (2026-10-24).** `SHOW_FAIR_MARKET` was `false` at build and flipped to `true`
+   on 2026-10-24 (label now "Market price"). The match tile draws amount + "Market price"
+   under the name (`scanVariantCardPriceRow`, baseline-aligned); the modal page draws the
+   standard `FairMarketPill` under its subtitle (`scanAddCardPill`, centred). En dash when
+   unpriced.
 
 From the architect review (Fable, 2026-10-23), adopted by Skylar:
 
@@ -123,7 +127,7 @@ plus `created` and `maxQuantity`.
 - **New `ScanAddModal`** (`components/modals/`), built on `Modal` + `ProductCardList` +
   `QuantityStepper`, not on `QuantityModal`.
   - A horizontal paging list of the scan's matches. Each page: card image, name,
-    number • set, **"You have N"** when `ownedQuantity > 0`, and a reserved price line.
+    number • set, **"You have N"** when `ownedQuantity > 0`, and the market-price pill.
   - One stepper (min 1, max 99) that **resets to 1 when you swipe to another page**.
   - **Add** (or **Update** for a card already held) →
     `entityListService.batchUpdateByEntity({ accountId, entityId, items: [{ listId, quantity }] })`.
@@ -156,7 +160,6 @@ stays (collections use it).
 ## Out of scope / later
 
 - Premium / paid scan packs that raise the 300 cap.
-- Fair-market price in the modal (turn on with `SHOW_FAIR_MARKET`).
 - The listings + bids redesign, including whether scanning comes back to listings.
 - Scanning several cards in one shot.
 

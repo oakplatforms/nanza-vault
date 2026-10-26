@@ -2,7 +2,7 @@
 
 Transactional email for Nanza. One AWS Lambda, event-driven, renders [react-email](https://react.email) templates and sends them through Amazon SES. It is deliberately small — a dispatcher, a set of templates, and a SES helper — so this note stays proportional to the repo.
 
-See the [[INDEX]] for the file-by-file map. For cross-project concerns see the [[../_shared/INDEX|shared brain]].
+See the [[nanza-email/INDEX]] for the file-by-file map. For cross-project concerns see the [[../_shared/INDEX|shared brain]].
 
 ---
 

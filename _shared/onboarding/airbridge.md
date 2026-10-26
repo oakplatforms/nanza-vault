@@ -185,6 +185,43 @@ had the app (or delete the app and clear Safari/Chrome site data).
 3. Vault: once live, fold the design into `nanza-api/solution-designs/profile-types.md` ("Affiliate
    attribution" section) and retire the plan file; keep this onboarding page as the ops record.
 
+## Step 9 — Short link per affiliate (`go.nanza.app/<username>`) — planned 2026-10-25
+
+Part of making a profile `AFFILIATE` — do it in the same sitting, since the app shows
+`go.nanza.app/<username>` to every affiliate and the link 404s until it is registered. The
+username must be final (a short link ID can't follow a username change). Dashboard flow per
+Airbridge's "Creating tracking links on the dashboard" guide (checked 2026-10-25):
+
+1. Have the affiliate's **Account.id** and **username** to hand (nanza-admin profile editor; the
+   long tracking link shown there carries both as `sub_id` and inside `deeplink_url`).
+2. Airbridge dashboard → **Tracking Link → Link Generation → Custom Channels**.
+3. **Campaign Optimization Parameters → Advertiser → Channel:** `affiliate` (the existing
+   channel; pick it, don't type a new name — new names create new channels).
+4. **Publisher → Sub-Publisher:** the affiliate's `Account.id`. This is the `sub_id` the API link
+   uses; leave Campaign / Ad Group / Ad Creative empty.
+5. **Redirection → Destination: App (Deep Link).** **Deep Link:**
+   `https://nanza.app/<username>?ref=<Account.id>` — the same value the long link carries. The
+   field wants a deep link that starts with a scheme registered under **Tracking Link → Deep
+   Links**; `nanza.app` universal links are registered there with the `nanza://` schemes. If the
+   field rejects the https form, enter `nanza://<username>?ref=<Account.id>` — the app reads the
+   `ref` and the single path segment either way. Encode nothing but the `?`/`=`/`&`.
+   **Fallback Path:** leave the defaults (App Store / Play listing from App Info; desktop → the
+   Airpage or `https://nanza.app/<username>`).
+6. **Events for Attribution:** All Events.
+7. **Customization Options → Custom domain:** `go.nanza.app` (already added, Step 2).
+   **Short link ID:** the affiliate's **username**, exactly as in the app. The field only appears
+   once a custom domain is selected. Airbridge documents no character rule for the ID — the first
+   one you make is the test for `_` and `.` in usernames (open question 2).
+8. **Create tracking link.** Airbridge returns the long link, the short link
+   `https://go.nanza.app/<username>`, a social preview and a QR code. Optionally set the social
+   share preview (image / title / description) for the affiliate's page.
+9. Open `https://go.nanza.app/<username>` on a phone without the app → store; with the app →
+   opens (fresh install → Create account, per the round-2 plan). Their Settings copy field and
+   the web Join button already show this URL — check it now resolves.
+
+**Done when:** the short link opens the app and the account signed up through it carries
+`Account.affiliateId`. Design: round 2 in the attribution design page.
+
 ## Not in this round
 
 - Mixpanel ↔ Airbridge wiring, the Airbridge **Web SDK** on `nanza.app` pages, NFC / QR / ad

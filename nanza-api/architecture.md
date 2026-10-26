@@ -9,7 +9,7 @@ packaged as AWS Lambdas behind API Gateway (HTTP API v2) via the Serverless Fram
 "fat" Express app serves the whole REST surface; a handful of purpose-built Lambdas handle
 auth, OG/share previews, webhooks, and scheduled jobs.
 
-See also: [[INDEX|Project map]] · [[../_shared/INDEX|Shared brain]] · [[../_shared/capabilities/orchestrations|Orchestration patterns]]
+See also: [[nanza-api/INDEX|Project map]] · [[../_shared/INDEX|Shared brain]] · [[../_shared/capabilities/orchestrations|Orchestration patterns]]
 
 ---
 
@@ -211,7 +211,7 @@ webhook Lambdas hold `events:PutEvents` permission and dispatch via `utils/event
 (e.g. after a Stripe seller-account update completes onboarding).
 
 > Push notifications (FCM) were prototyped and **removed** — there is no `services/fcm.ts` and
-> no push Lambda. See the "Infra & push" plans in [[INDEX]].
+> no push Lambda. See the "Infra & push" plans in [[nanza-api/INDEX]].
 
 ---
 

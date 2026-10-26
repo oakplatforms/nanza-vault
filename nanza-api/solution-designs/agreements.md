@@ -195,4 +195,4 @@ the `_count`.
 
 ## v1 agreement copy
 
-The text affiliates accept lives in the vault at [[../../business/affiliate-agreement-v1|Affiliate Agreement v1]] (title + plain-text body, paste-ready for nanza-admin). Edit it there; an accepted agreement's text is locked in the app, so a change means a new agreement row.
+The text affiliates accept lives in the vault at [[affiliate-agreement-v1|Affiliate Agreement v1]] (title + plain-text body, paste-ready for nanza-admin). Edit it there; an accepted agreement's text is locked in the app, so a change means a new agreement row.
