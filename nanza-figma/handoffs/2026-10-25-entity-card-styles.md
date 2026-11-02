@@ -1,6 +1,6 @@
 ---
 tags: [nanza-figma, handoff, nanza-mobile, entity, cards]
-status: open
+status: built
 date: 2026-10-25
 figma: https://www.figma.com/design/7c3Zz4nDUOutQG1BsnRRAw/Nanza?node-id=3002-147837
 fileKey: 7c3Zz4nDUOutQG1BsnRRAw
@@ -144,3 +144,4 @@ handoff's status to built and add a Log line.
 
 ## Log
 - 2026-10-25 — handoff written; Q1–5 answered by Skylar
+- 2026-10-26 — built (voice session, plan `nanza-mobile/solution-designs/card-restyle-2026-10-25`): EntityLockupRow renders EntityHeroThumb as its default thumb (entity.ts lockupHero*, 135.06×88 at the 8 inset / 110.5×72 at `inset="page"` / 122×80 at `inset="line"`), tileLabel name + new metaSm meta, FairMarketPill restyled (glassBorder, 11/11 + 9/10 slots) app-wide, price TAG + right column (`priceTag` / `quantityLabel`) on TradeListItem, add badge overlayText + centred, posts' inline card re-derived on the shared tile. Listing-photo blur = 3. tsc + lint clean; pending device QA.

@@ -14,7 +14,7 @@ Do the steps in order — each one unblocks the next. Tick the "Done when" line 
 ## What is already in place
 
 - **API:** `Account.affiliateId`, `PUT /user/affiliate` (claim, first touch wins, 7-day window),
-  `GET /profile/:id/affiliate-link` (mints `https://go.nanza.app/@nanza/affiliate?sub_id=<accountId>&deeplink_url=https://nanza.app/<username>?ref=<accountId>` — no campaign, no fallbacks; Airbridge uses the App Info store URLs as fallback).
+  `GET /profile/:id/affiliate-link` (mints `https://go.nanza.app/@nanza/affiliate?sub_id=<accountId>&deeplink_url=nanza://home/<username>?ref=<accountId>` — no campaign, no fallbacks; Airbridge uses the App Info store URLs as fallback; deep link form changed 2026-10-28, see Step 9.5).
 - **Mobile:** Airbridge React Native SDK, native init on both platforms, `go.nanza.app` app links,
   `AttributionBridge` (parks the link's `ref`, claims after sign-up, mirrors identity into
   Airbridge), affiliate own-profile share uses the tracking link.
@@ -162,9 +162,13 @@ had the app (or delete the app and clear Safari/Chrome site data).
    clipboard (2026-10-16; the profile share circle shares the plain profile URL). On the web,
    `nanza.app/<username>` shows a **Join** button that opens this link on a phone.
 2. **No app:** open the link → store page (fallback). Install (TestFlight / internal track).
-3. **First open:** the app should land on the **affiliate's profile**, not Home (deferred deep
-   link → `AttributionBridge` → `UserProfile`). If it lands on Home, the ref is still parked —
-   continue.
+3. **First open:** the app should land on **Home with the "Ready to join in?" sheet open in
+   its affiliate form** — the affiliate's avatar on top, their name in the body (deferred deep link → `AttributionBridge` →
+   `joinPrompt` → TopHeader's AuthModal; since 2026-10-27 — before that it pushed the affiliate's
+   profile). "Create account" goes to sign-up; "Keep browsing" closes it. A signed-in user opening
+   the link stays on Home with no sheet, by design. If a guest lands on Home with no sheet, read
+   the Metro console for `ATTRIBUTION_URL` — it prints the URL the bridge received and whether a
+   `ref` parsed; the ref may still be parked — continue.
 4. **Sign up** (email or Apple/Google). Within a few seconds of the session loading,
    `Account.affiliateId` on the new account should equal the affiliate's `Account.id`
    (DBeaver, or `GET /user/<authId>` → `account.affiliateId`).
@@ -200,11 +204,14 @@ Airbridge's "Creating tracking links on the dashboard" guide (checked 2026-10-25
 4. **Publisher → Sub-Publisher:** the affiliate's `Account.id`. This is the `sub_id` the API link
    uses; leave Campaign / Ad Group / Ad Creative empty.
 5. **Redirection → Destination: App (Deep Link).** **Deep Link:**
-   `https://nanza.app/<username>?ref=<Account.id>` — the same value the long link carries. The
-   field wants a deep link that starts with a scheme registered under **Tracking Link → Deep
-   Links**; `nanza.app` universal links are registered there with the `nanza://` schemes. If the
-   field rejects the https form, enter `nanza://<username>?ref=<Account.id>` — the app reads the
-   `ref` and the single path segment either way. Encode nothing but the `?`/`=`/`&`.
+   `nanza://home/<username>?ref=<Account.id>` — scheme form, username as a **path segment**
+   under the `home` host. **Not** `nanza://<username>?ref=…` (the username as the host): the app
+   then reads the `ref` but not the username, so the join sheet opens generic without the avatar
+   (iOS, prod 2026-10-28), and Android has no activity for a `logan` host, so Airbridge's page
+   falls back to the web profile in Chrome instead of opening the app. `home` is a registered
+   `nanza://` host in the Android manifest, matches no React Navigation route (the app stays on
+   Home), and `AttributionBridge` reads `/<username>` + `?ref=`. The API's long link carries the
+   same value (`buildAffiliateDeeplink`). Encode nothing but the `?`/`=`/`&`.
    **Fallback Path:** leave the defaults (App Store / Play listing from App Info; desktop → the
    Airpage or `https://nanza.app/<username>`).
 6. **Events for Attribution:** All Events.

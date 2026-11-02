@@ -95,3 +95,4 @@ House rules (CLAUDE.md): plan first with confidence scores per item; proportiona
 - 2026-10-23 — QA: backdrop wasn't blurred (the BLUR-bucket upscale is only ~3× at this tile size). Listing photos now get RN blurRadius 16 (Figma's blur-[16px], same as the post's listing hero) through a new `EntityHeroThumb.backdropBlurRadius` prop; bid lines (entity catalogue scans) keep the upscale, because blurRadius paints blank on iOS for those.
 - 2026-10-23 — same request re-sent without "do not change"; that defaults to "anything else on this screen", so the prompt is unchanged
 - 2026-10-25 — partly superseded by [[2026-10-25-makeoffer-screen-restyle]] ("Remove" label, price box = thumb width, entity-card line thumb)
+- 2026-10-26 — superseded by [[2026-10-25-makeoffer-screen-restyle]] on the "Remove" label, the price-box width (now the thumb's 122) and the line thumb (the lockup's shared zoom tile); built with it.

@@ -205,3 +205,5 @@ written. The `PostSeen` model, migration and rail endpoint are unchanged.
    the move-to-end was the thing that got dropped).
 4. Fold into the solution designs (posts.md Seen section; whats-new.md line 49 is already
    stale; groups.md ring meaning; verified-profiles plan status), delete this plan.
+
+- 2026-10-26 (voice, Android QA) — Home rail circles intermittently ignored taps until the user scrolled or tapped elsewhere. `CircleThumb` sat as a core-RN `TouchableOpacity` inside `CardCarousel`'s RNGH horizontal FlatList, which loses native gesture arbitration (the SearchEntityRow / EntityLockupRow precedent). It now uses RNGH's `TouchableOpacity`, so tap and drag arbitrate in one gesture system. Also hosts TagThumb / TagCarousel (nanza-mobile).

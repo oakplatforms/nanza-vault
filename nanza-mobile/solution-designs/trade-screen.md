@@ -50,5 +50,5 @@ stale deep link can never land on a tab with no pill. The lot-creation flows nav
 ## Related
 
 - [[../INDEX|nanza-mobile]]
-- [[profile|Profile]] — the Trades rail that shows the same bids/listings/lots publicly
+- [[profile|Profile]] — the Trades grid (a rail until 2026-10-27) that shows the same bids/listings/lots publicly
 - [[bulk|Bulk / Lots]] — the Create-lot flow the Listings pill launches

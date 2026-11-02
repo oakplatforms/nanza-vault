@@ -173,3 +173,5 @@ stays (collections use it).
 3. Deploy API to dev, QA on device, then prod (run the one-off delete there too).
 4. Vault: fold into [[scan]] + [[collections]] (fix the stale 50/24h limit and the
    `CollectScanTargetScreen` mention while there), then delete this plan.
+
+- 2026-10-26 (voice, QA) — ScanAddModal opened on the FIRST match whatever tile was tapped, then paged 2, 3, 4: the open effect's `scrollTo` ran in the same commit that mounted the pager, before its content laid out, so the native view clamped it to page one while `index` said ten. The pager now takes a mount-time `contentOffset` (`initialIndex * pageWidth`) and remounts per open (`key` on visible + initialIndex), so the placement is deterministic on both platforms; the effect only resets index + quantity. `scrollRef` removed.

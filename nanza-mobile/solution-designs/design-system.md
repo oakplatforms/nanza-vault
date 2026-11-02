@@ -255,3 +255,5 @@ now `pointerEvents="box-none"` while the keyboard is closed (taps fall through t
 the CTA, a child, keeps its own) and `auto` while it's open, where a tap on the band still
 dismisses the keyboard in one go. Screens still reserve `useActionBarPadding()` so the last
 field can scroll fully clear; this only fixes the case where it hasn't yet.
+
+- 2026-10-26 (typed) — `SegmentedTabs` press feedback: a `Pressable` with a pressed state replaces the TouchableOpacity (its 0.85 fade on an unfilled segment was invisible). Finger down on an inactive segment lifts the label to the active colour (`segmentedTabTextActive`, one shade lighter) and draws the active glass fill (`segmentedTabPressed`); both drop on release as the active state takes over. The bottom nav already had its press scale (TabItem).

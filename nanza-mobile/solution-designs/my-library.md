@@ -4,6 +4,8 @@ tags: [nanza-mobile, nanza-api, solution-design, plan, collections]
 
 # My Library — the locked primary collection (Plan)
 
+> **Renamed 2026-10-27 (Skylar, twice):** the primary collection is minted as **"Binder"** (`displayName`), internal `name` **`binder`** — no longer "My Library" (it was "Library" for an hour the same day). API `PRIMARY_LIST_NAME` / `PRIMARY_LIST_SLUG` (validation/list.ts). The same day the user-facing word **collection → binder** everywhere in mobile and web (labels, "Add to binder", the profile tab, support guides); identifiers, routes and the API are untouched. Existing rows need a one-off SQL update (`UPDATE "List" SET "displayName" = 'Binder', name = 'binder' WHERE "isPrimary" = true`). The design below still says "My Library" where it describes the feature; read it as "Binder".
+
 > **2026-10-25:** My Library's detail screen shows the edit pencil again — the form holds one field, the **Show value** toggle (`List.isValueVisible`, see [[collections]]); name, banner and delete stay locked. "Never private" is moot: private collections were retired the same day.
 >
 > **Status: built 2026-10-24 (night), both halves; two-way library sync built 2026-10-24 (evening, uncommitted), pending QA.**

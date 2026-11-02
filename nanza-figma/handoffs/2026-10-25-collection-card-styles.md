@@ -1,6 +1,6 @@
 ---
 tags: [nanza-figma, handoff, nanza-mobile, collections, cards]
-status: open
+status: built
 date: 2026-10-25
 figma: https://www.figma.com/design/7c3Zz4nDUOutQG1BsnRRAw/Nanza?node-id=3007-148439
 fileKey: 7c3Zz4nDUOutQG1BsnRRAw
@@ -89,3 +89,4 @@ finishing. When done, set this handoff's status to built and add a Log line.
 
 ## Log
 - 2026-10-25 — handoff written; Q1–2 answered by Skylar
+- 2026-10-26 — built (voice session): CollectionThumb keeps 189:240 with radius 16 + top glassBorder (`collectionThumbCard`), count tag surface / 6×8 / tileCount at 12 / 12, name tileLabel textSecondary, FairMarketPill `label="Market value"` + `hidden` (eye-off) replaces the value row; `–` when no data. Pending device QA.

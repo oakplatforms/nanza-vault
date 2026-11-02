@@ -230,28 +230,72 @@ URL for everyone.
 
 ## Round 2 (plan, 2026-10-25 — Skylar, voice): land on Create account; short per-affiliate links
 
-Two asks. Neither is built yet; both are small.
+Two asks, both small. Both built (API 2026-10-25, mobile 2026-10-27), uncommitted; QA pending.
 
-### 1. The deep link lands on Create account, not the affiliate's profile
+### 1. The deep link lands on Home and prompts the join sheet, affiliate-flavoured
 
-**Today:** the link's `deeplink_url` is `nanza.app/<username>?ref=<accountId>`; on open the app
-parks the `ref` and `AttributionBridge.openAffiliateLanding` pushes `UserProfile` for the
-affiliate. A new user then has to find their own way to sign-up.
+**Today (before 2026-10-27):** the link's `deeplink_url` is `nanza.app/<username>?ref=<accountId>`;
+on open the app parked the `ref` and pushed `UserProfile` for the affiliate. A new user then had
+to find their own way to sign-up.
 
-**Change (mobile only, no link change, no Airbridge change):** in `AttributionBridge`'s deep-link
-handler, after parking the `ref`, branch on the session —
+**Decided 2026-10-27 (Skylar), after two quicker variants were tried and dropped the same day
+(a direct push to `SignUp`; the plain "Ready to join in?" sheet):**
 
 | Session when the link opens | Lands on |
 |---|---|
-| guest (`isSignedIn === false`, or no account yet) | **`SignUp`** (the credentials screen; `navigation.navigate('SignUp')` — no `returnTo`: sign-in always lands Home since 2026-10-23) |
-| signed in | **Home** (Skylar, 2026-10-25: the ref is void for an existing account, the link is for new ones). `openAffiliateLanding` and its profile lookup go away. |
+| guest (`isSignedIn === false`) | **Home**, with the **"Ready to join in?" sheet (AuthModal) opened in its affiliate variant**: the affiliate's avatar (48px) on top, the standard headline "Ready to join in?" (the web JoinSheet's "See more from <name>" headline was tried and dropped the same day), body "Create an account to see more from `<name>` and the rest of the FaB community." (no "or keep exploring" tail in this state) — `<name>` = `getProfileName` (displayName, else username). Same two buttons + "Already have an account?". |
+| signed in | **Home**, nothing shown (the ref is void for an existing account; the link is for new ones). |
+| guest, not through a link | unchanged — "Explore more" opens the plain sheet with the original copy. |
 
-The web fallback is untouched: a visitor without the app still hits `nanza.app/<username>` and
-its Join button → the tracking link → store. The pending `ref` + claim after sign-up work exactly
-as before — the only change is which screen the guest sees first. If the session is still
-resolving when the link arrives (cold start), `navigateWhenReady` already retries; the branch
-reads `isSignedIn` at navigate time, not at receipt. The `?ref=` link stays
-`nanza.app/<username>` so one URL serves app and web.
+**Which URL the app actually receives (found 2026-10-27):** with the app installed, iOS/Android
+open it straight from the universal / app link, so the bridge gets the **raw short link
+`https://go.nanza.app/<username>`** — no `ref`, because Airbridge's redirect never ran. The
+first version only reacted to `?ref=`, which is why an installed guest saw nothing. The parser
+(`services/attribution/pendingAffiliate.ts`) now accepts three shapes:
+
+| URL received | ref (Account.id) | username |
+|---|---|---|
+| `https://go.nanza.app/<username>` (short link, OS → app) | **resolved** from `GET /profile/username/<username>` → `accountId` (best-effort; a failed lookup parks nothing, the sheet still opens) | path segment |
+| `https://go.nanza.app/@nanza/affiliate?sub_id=<id>&deeplink_url=…` (long link, kept as a fallback — Skylar, 2026-10-27) | `sub_id`, else `ref` inside `deeplink_url` | single segment of `deeplink_url` |
+| `nanza://home/<username>?ref=<id>` (the registered deep link — direct resolve and the deferred link after install; **form fixed 2026-10-28**) | `ref` | path segment (`home` is the host) |
+| `https://nanza.app/<username>?ref=<id>` (older form, still parsed) | `ref` | path segment |
+
+**Prod finding 2026-10-28 (fresh-install path, Skylar):** the dashboard short links were
+registered with `nanza://<username>?ref=<id>` — username as the HOST. The shipped parser got the
+`ref` (attribution worked) but no username, so iOS opened the generic sheet without the avatar;
+on Android there is no activity for a `<username>` host, so Airbridge's page fell back to the web
+profile `nanza.app/<username>` in Chrome instead of opening the app. **Fix without an app
+release:** re-register each short link's Deep Link as `nanza://home/<username>?ref=<id>` — the
+username becomes a path segment the shipped parser already reads, `home` is a registered
+`nanza://` host in the Android manifest, and it matches no React Navigation route so the app stays
+on Home. The API's long link now mints the same value (`buildAffiliateDeeplink`, no `WEB_BASE_URL`).
+Onboarding Step 9.5 has the exact field.
+
+`go.nanza.app` is used for nothing but affiliate links, so a single-segment path on that host IS
+an affiliate link. It is not in React Navigation's `prefixes`, so the navigator ignores it and
+Home stays the landing. Share links (`nanza.app/<slug>/<code>`) have two segments and no ref, so
+they never match.
+
+**How it is wired (mobile only, no link / Airbridge / API change):**
+- `AttributionBridge` parks the account id (from the link, or resolved from the short link's
+  username), keeps the username, and once `isSignedIn` resolves
+  to `false` calls `requestJoinPrompt(username)` — a tiny external store
+  (`services/attribution/joinPrompt.ts`, `useSyncExternalStore`; one writer, one reader, no
+  provider). No timer and no `navigationRef.isReady()` check: the request waits until a consumer
+  exists, which is what the earlier direct-push version got wrong on a cold start (URL and
+  session both resolve before the navigator mounts, the effect bailed once and never re-ran).
+- `TopHeader` (on Home and the other three tab screens; only the **focused** one consumes, so
+  one sheet) reads the request, looks the affiliate up with `GET /profile/username/<username>`
+  (react-query, `['Profile','username',<username>]`), and opens its existing `AuthModal` with
+  `affiliate={profile}` once the lookup has answered (a failed lookup or a link without a username
+  → the plain sheet). On a cold start it also waits for `isSplashComplete` (new on
+  `AppReadyContext`, set by `AppRoot` when the splash has finished lifting — `isAppReady` fires
+  earlier, it is what lets the splash START its exit), so the sheet rises over the painted
+  homepage rather than under the splash (Skylar, 2026-10-27). "Explore more" always opens the
+  plain sheet.
+- `AuthModal` grew an optional `affiliate` prop (`AuthModalAffiliate`); without it the sheet is
+  byte-for-byte what it was. `authScreens.interstitialAvatar` is the one new style.
+- The pending `ref` + claim after sign-up are untouched; only what the guest sees first changed.
 
 ### 2. Short per-affiliate links — `go.nanza.app/<username>`
 
@@ -295,9 +339,12 @@ of our own needed and `go.nanza.app` stays Airbridge's.
 
 ### Build order (when approved)
 
-1. **Mobile** (½ day): `AttributionBridge` guest → `SignUp`, signed in → Home; drop
-   `openAffiliateLanding` + the profile lookup. QA on a fresh install with a tracking link (Step 7
-   of the onboarding page) should end on the Create account screen.
+1. ✅ **Mobile** (2026-10-27, uncommitted): the affiliate join sheet as described in §1
+   (`AttributionBridge` → `joinPrompt` store → `TopHeader` → `AuthModal affiliate` prop).
+   `openAffiliateLanding` and the `UserProfile` push are gone. Why it landed on Home with nothing
+   before: nothing ever navigated anywhere but the profile push, so a guest fell through to the
+   navigator's default route. QA on a fresh install with a tracking link (Step 7 of the
+   onboarding page) should end on Home with the affiliate's sheet open.
 2. ✅ **API** (2026-10-25, uncommitted): `buildAffiliateLink(username)` returns the short form;
    the long builder is `buildAffiliateTrackingLink(username, accountId)`.
    `GET /profile/:id/affiliate-link` returns `{ url: short, trackingUrl: long }`; `affiliateLink`

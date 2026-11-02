@@ -1,6 +1,6 @@
 ---
 tags: [nanza-figma, handoff, nanza-mobile, offers]
-status: open
+status: built
 date: 2026-10-25
 figma: https://www.figma.com/design/7c3Zz4nDUOutQG1BsnRRAw/Nanza?node-id=2995-147203
 fileKey: 7c3Zz4nDUOutQG1BsnRRAw
@@ -136,3 +136,5 @@ add a Log line, and add a "superseded by" note to the 2026-10-23 handoff's Log.
 
 ## Log
 - 2026-10-25 — handoff written; Q1–5 answered by Skylar
+- 2026-10-26 — built (voice session): line cards on the lockup's `line` inset in a `lineGroup` (24 + surface hairline); OfferTermsRow `variant="line"` (thumb-wide 42 price box, "Remove" via `onRemove`, QuantityStepper `tone="surface"`; no count text, per the mock); Add more = outline xxl with `addMoreButton` (1.7 glassBorder, r28); checkout rows on the page (24×20, surface hairlines, tileLabel / rowValue), "Shipping options", every panel on RadioField rows (method + options too) — RadioField is white-ring/white-dot app-wide (ReportPostScreen follows); summary 26/28 rows; agree row 16 box white-when-checked under a hairline; expiry 30/10; Submit in a fixed footer over EdgeFade; shared `buttonXxlActionDisabled` = surface + border label. Logic untouched. Pending device QA.
+- 2026-10-26 (device QA) — item 7 revised: Submit is NOT fixed; it sits in the flow under the expiry note (Skylar: the fixed footer was too far down). The shared inactive style stands.

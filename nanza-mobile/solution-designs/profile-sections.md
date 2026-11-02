@@ -14,6 +14,11 @@ tags: [nanza-mobile, solution-design, profile, plan]
 > `'trades'` replaces `'listings'` / `'bids'`. Written up in [[profile|Profile]] → "The
 > Trades rail".
 >
+> **Later delta (2026-10-27):** the Trades rail became a **2×2 grid** (the Trade screen's
+> `TradeFeedThumb`, preview 4, See-all chevron over four → full-screen grid) and the public
+> profile's Collections gate (`hasCollectionContent`) was retired — an empty My Library tile
+> renders on viewed profiles too. Both in [[profile|Profile]].
+>
 > **Deltas from the plan, decided live during the build (Skylar):**
 > - **Friends row on the OWN profile** — the GroupDetail member-row recipe under the
 >   hero: facepile of up to 4 AVATARED accepted connections + the full "N friends" count

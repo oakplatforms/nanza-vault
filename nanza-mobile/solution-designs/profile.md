@@ -13,6 +13,20 @@ There are two profile surfaces: **`ProfileScreen`** (your own profile, editable)
 affordances, so browsing another user is a first-class experience rather than a stripped-down
 one.
 
+> **Current layout (2026-11-01): tabs again.** Both profiles show **Binders · Posts · Trades ·
+> Refs** on the inbox's `SegmentedTabs` capsule (`components/profile/ProfileTabs`), opening on
+> Binders. Each tab is the full list, paged 20 at a time off the page scroll
+> (`useProfileTabs` → `PageLayout.onEndReached`); a tab fetches on first open, except Refs,
+> whose first page feeds the tab's count badge (the inbox All-count slot). The stacked
+> preview sections, their See-all chevrons and their "Add new" pills are gone
+> (`ProfileSections` deleted; `ProfileSeeAll` stays registered but nothing opens it).
+> Own-profile create entries live in the panes: a trailing gray **Add new binder** tile
+> (→ CreateCollection), an inline **Post a new update** pill (JoinChatFooter, brand feed),
+> and a white **Trade** button (→ TradeSearch → CreateTrade WTS/WTB, the Trade tab's flow).
+> A viewed profile shows the same tabs without those three. **Refs** are the existing
+> `Review` rows (`GET /reviews?sellerId`) — only buyers review sellers, written from the
+> order flow; no seller, no refs. `ReviewRow` was restored from git. Sections below are history.
+
 ## How it works
 
 ### Listings & Bids tabs — count + share header
@@ -93,6 +107,15 @@ always sees their entry points: Listings/Bids show whenever access allows (the s
 and bids first-page hooks remain as prefetch), Collections and Saved always show, and only
 Posts/References stay count-gated.
 
+> **Collections gate retired (2026-10-27, Skylar).** A viewed profile whose owner has only
+> the default primary collection, and it empty, no longer gets the "No public collections"
+> placeholder: the Collections grid renders with the **empty My Library tile** (count 0,
+> blank mosaic), pinned first exactly as on the own profile. An empty library is the
+> invitation — for the owner to start collecting and for the viewer to see there is a
+> library to fill. `hasCollectionContent` is gone from `ProfileSections`; both profiles
+> and `ProfileSeeAllScreen` order primary-first with one code path, and the only
+> remaining empty copy is "No collections yet" (for an account with no lists at all).
+
 Post cards on profiles wear the **full footer** (reply / heart / share) — the same dress as the
 homepage — and **no card anywhere carries a delete or edit icon**. Tapping a card (or its reply
 glyph, which has no composer to open here) pushes the post's `PostDetail`, whose top nav owns
@@ -157,7 +180,17 @@ hardcoded size, and repointing `collectionCountHeaderTight.marginBottom` at it.
   `profile.referenceCode`; if it's absent for a given profile, the share action is hidden rather
   than shipping a broken link.
 
-### The Trades rail (2026-08-26)
+### The Trades section (2026-08-26; grid since 2026-10-27)
+
+> **2026-10-27 (Skylar): the rail became a 2×2 grid.** The profile's Trades section now
+> renders the Trade screen's two-column grid — the same `TradeFeedThumb` tile at CardGrid's
+> column width (`renderGridSection`, inset `page`), capped at **four** on the profile
+> (`TRADE_FEED_PREVIEW_COUNT` 6 → 4, so CardGrid's Show-more never appears). When the total
+> exceeds four the heading grows the See-all chevron, which opens `ProfileSeeAll`
+> (`'trades'`) — a full-screen two-column grid of every trade, the Posts experience.
+> `ProfileSeeAllScreen` switched to the same tile. The **group detail keeps its Trades
+> carousel**; `ProfileSections` no longer imports `CardCarousel`. Everything below about
+> data, visibility and the tile dress still holds — only the layout changed.
 
 The separate **Listings** and **Bids** sections are gone from both profiles. In their place
 sits ONE horizontal rail titled **Trades** (plain "Trades" on the own profile too — Skylar
@@ -169,8 +202,8 @@ Trades → Saved Items (own only).
 - **Data:** `GET /trade-feed?accountId=&page=&limit=` (nanza-api, next to `/sell-feed`), a
   discriminated union `{ kind: 'listing' | 'bulk' | 'bid', … }` typed as `TradeFeedItem` in
   `types/index.ts`. Hooks live in `UserProfileScreen/data/fetchUserTradeFeed.ts`:
-  `useUserTradeFeedPreview` (6 items, the rail) and `useUserTradeFeed` (20/page, the See-all
-  grid via `ProfileSeeAll` section `'trades'`). The query-key prefix is `['UserTradeFeed',
+  `useUserTradeFeedPreview` (4 items since 2026-10-27, the 2×2; 6 for the old rail) and
+  `useUserTradeFeed` (20/page, the See-all grid via `ProfileSeeAll` section `'trades'`). The query-key prefix is `['UserTradeFeed',
   accountId]`; every listing/lot/bid create/edit/delete site invalidates it alongside
   `UserSellFeed` / `AccountBids`, so the rail refreshes without a manual pull.
 - **Visibility is the server's call:** the owner sees everything; anyone else gets the same

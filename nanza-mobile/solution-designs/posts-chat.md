@@ -493,3 +493,6 @@ WTB chiclet, name, price or wanted count — all card info stays to the right), 
   is accepted but no longer changes anything. Search / trade / offer rows are untouched — only
   the post's entity content item wears the tile.
 
+
+## Log
+- 2026-10-26 (voice) — Composer attach circles RIDE THE KEYBOARD again (reverses the 2026-08-12 call that parked them at the screen bottom under the keys): the pinned cluster (tag chips line + icon row) moved inside the `KeyboardAvoidingView` as its last child, so iOS lifts it with the frame (the row drops its safe-area share while the keys are up, `useKeyboardHeight().visible`), and on Android (frozen window) the icon row pads by `androidKeyboardPad + insets.bottom`, the link field's formula. Same for replies and root posts; the draft body shrinks by the row while typing.

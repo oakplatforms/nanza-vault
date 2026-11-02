@@ -45,6 +45,7 @@ reason.
 - Messaging: `useInboxCount` + `useConnections` fire for any signed-in account;
   `ConnectButton` (dead code — no callers) and `useProfileConnect` dropped their
   SELLER/CUSTOMER eligibility checks.
+- **2026-11-01:** the gate had survived in `useTradeUserList` (the add-friend on search People, group People and Friends lists) — removed; search showed "you need a payment method" while the profile button worked.
 - Payment gate removed from the friend-request flow in `useProfileConnect`,
   `useMessageUser`, and `ActionModal/Feed` (the `PaymentGateSheetContent` connect
   arm); the component itself survives for buy flows.

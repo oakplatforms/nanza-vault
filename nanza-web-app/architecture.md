@@ -53,7 +53,7 @@ The `QueryClient` default options live inline in `app/index.tsx`: queries do **n
 - **Catch-all** — `path="*"` → `<Navigate to="/" replace />`. Any bare username or unknown path
   bounces home (there is no public profile in the live build).
 - **Dormant, commented-out** — auth (`/sign-in`, `/sign-up`, `/forgot-password`), cart
-  (`/cart`, `/cart/confirmation`), storefront builder (`/build`, `/build/:storefrontId`),
+  (`/cart`, `/cart/confirmation`),
   profile/user routes (`/:username`, `/:username/listings|bids|lists`), and the `SmartRouter`
   disambiguation route (`/:param1/:param2`). These are preserved as comment blocks, not deleted, so
   the marketplace can be restored.
@@ -100,14 +100,13 @@ Every network call funnels through **`src/services/api/index.ts` → `fetchData(
 
 `services/api/` has ~16 resource modules — one per domain object (`Listing.ts`, `Bid.ts`, `Entity.ts`,
 `EntityList.ts`, `List.ts`, `Order.ts`, `Invoice.ts`, `Customer.ts`, `Profile.ts`, `User.ts`,
-`Brand.ts`, `Storefront.ts`, `Universal.ts`, `ShippingMethod.ts`, `Auth.ts`). Each exposes a small
+`Universal.ts`, `ShippingMethod.ts`, `Auth.ts`). Each exposes a small
 object of async methods that call `fetchData` with the REST path (e.g. `userService.get(id, params)`
 → `GET /user/{id}{params}`; `authService.checkForUser(email)` → `GET /auth/check-for-user?email=`).
 The dev proxy (`"proxy": "https://api-dev.nanza.app"` in `package.json`) routes local calls to the
 dev API.
 
-React Query hooks live next to their screens (e.g. `app/Build/data/useStorefronts.ts`,
-`app/BidDetail/data/fetchBid.ts`, `contexts/data/fetchCartOrders.ts`), keyed by resource and unwrapping
+React Query hooks live next to their screens (e.g. `app/BidDetail/data/fetchBid.ts`, `contexts/data/fetchCartOrders.ts`), keyed by resource and unwrapping
 the API's `{ data, page, total }` pagination envelope where present.
 
 ## Auth flow (Cognito)

@@ -184,3 +184,8 @@ The inbox main screen itself is untouched — it stays a tab main under the bar.
 - [[../INDEX|nanza-mobile]]
 - [[../architecture|Architecture]]
 - [[../REFERENCE|Frontend Reference]]
+
+## Scroll / crash notes, Android (2026-10-26)
+
+- **Crash on activity relaunch (the "freeze" after switching to three-button navigation).** Moto logcat, 2026-10-25 and 2026-10-26: `FATAL EXCEPTION … Unable to start activity … Fragment$InstantiationException: Unable to instantiate fragment com.swmansion.rnscreens.ScreenFragment … IllegalStateException: Screen fragments should never be restored` out of `handleRelaunchActivity`. Android recreated `MainActivity` on the configuration change and the FragmentManager tried to restore the saved ScreenFragments, which react-native-screens forbids (issue #17). Fix: `MainActivity.onCreate(savedInstanceState)` calls `super.onCreate(null)` — the library's documented requirement, which this activity had never carried. RN rebuilds the tree from JS on relaunch regardless. Needs a native rebuild. The app has NO crash reporter (no Sentry / Crashlytics); device logs come from `adb logcat` on the attached Moto.
+- **Follow-up (agreed 2026-10-26):** add a crash / JS-error reporter (Sentry) after this release — plan in the vault first.

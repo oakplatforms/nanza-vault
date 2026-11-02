@@ -1,6 +1,6 @@
 ---
 tags: [nanza-figma, handoff, nanza-mobile, cards, listings, bids]
-status: open
+status: built
 date: 2026-10-25
 figma: https://www.figma.com/design/7c3Zz4nDUOutQG1BsnRRAw/Nanza?node-id=3007-148846
 fileKey: 7c3Zz4nDUOutQG1BsnRRAw
@@ -125,3 +125,5 @@ finishing. When done, set this handoff's status to built and add a Log line.
 
 ## Log
 - 2026-10-25 — handoff written; Q1–3 answered by Skylar
+- 2026-10-26 — built (voice session): ItemThumb square (`thumbCardTile`, radius 20, 1.33 top glassBorder), zoom backdrop (294×190 box, blur 3 on listings with their own photo via `backdropBlur`), centred 5:7 art, ThumbShade `tile` (shadeBottomDeep + top tint), tileLabel 2-line name, price tag + tileQuantity; IntentTag colours swapped app-wide (WTB mint / WTS primary.400) with the tile dress; `tile` step 186/362 default for ListingThumb / BidThumb / BulkThumb; CardGrid gap 8 → 12. `aspect` prop kept, ignored. Pending device QA.
+- 2026-10-26 (device QA) — Q1 reversed: WTB stays pink, WTS stays mint (Skylar: a green tag reads as "I'm selling this"); only the tag's dress (radius, padding, Bold 11) comes from Figma.

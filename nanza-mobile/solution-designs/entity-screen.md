@@ -191,3 +191,6 @@ existing content blocks in order:
    action sheet is removed. Plus **always** opens the existing multi-collection screen, even
    with one collection (the inline plus/minus stepper and dropdown go away).
 3. Route name stays `Entity`.
+
+## Log
+- 2026-10-26 (voice) — Details tab: the set row, the primary tag rows and the attribute tag rows render in ONE `entityModalInlineDetailsTags` block (they were two sibling blocks, so the parent gutter plus the second block's top padding opened a gap after the last primary row). Rows now run at the group's own rhythm end to end.

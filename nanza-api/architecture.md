@@ -62,8 +62,8 @@ Everything runs under `src/`. Entry points live in `lambdas/`.
   own client: `order.ts` (accept / cancel-pending / collection sync), `offer.ts` +
   `offerStatus.ts` (the offer engine over orders), `collection.ts` (quantity-aware
   collection moves), `resolver.ts` / `referenceResolver.ts` (derived pricing + share-code
-  resolution), `og/` (share-image rendering), `anthropic.ts` (Claude client for the storefront
-  builder), `transcribe.ts` (voice → text), `scan.ts` (card scanning), `payout.ts`,
+  resolution), `og/` (share-image rendering), `anthropic.ts` (Claude vision client for card
+  scanning), `transcribe.ts` (voice → text), `scan.ts` (card scanning), `payout.ts`,
   `invoice.ts`, `connection.ts`, `systemMessage.ts`.
 - **`src/validation/*`** — pure validators / guards per domain (`seller`, `group`, `listing`,
   `usageCap`, `referenceCode`, …). `group.ts` holds the listing/bid **visibility filters**
@@ -75,8 +75,7 @@ Everything runs under `src/`. Entry points live in `lambdas/`.
   `referenceCodeGenerator.ts`, `paginatePrisma.ts`, `generateIncludes.ts`, `eventBridge.ts`.
 - **`src/webhooks/*`** — the handler bodies for the Stripe and Shippo webhook Lambdas
   (dispatched from `lambdas/stripeWebhookHandler.ts` / `lambdas/shippoWebhookHandler.ts`).
-- **`src/constants/*`** — `usageCaps.ts` (freemium limits), `taxRates.ts`, and
-  `storefrontAssets/` (per-brand asset manifests for the AI builder).
+- **`src/constants/*`** — `usageCaps.ts` (freemium limits) and `taxRates.ts`.
 - **`src/generated/json`** — Prisma JSON-schema output (`prisma-json-schema-generator`).
 - **`packages/types`** — the `@oakplatforms/types` DTO package generated from the Prisma schema;
   the single source of truth for shared domain types across API, mobile, and web.
@@ -148,16 +147,11 @@ Everything runs under `src/`. Entry points live in `lambdas/`.
   `SystemMessageType` — the notification backbone.
 - **Comment** — self-referential threads, polymorphic over `CommentableType`.
 
-**AI builder**
-- **Project** (`ProjectType`, default STOREFRONT) holds a JSON `tree` page + free-text
-  `context`; **ProjectEdit** logs each AI edit (prompt, before/after tree, token counts).
-  Currently **disabled** — the `projectRouter` is intentionally not mounted in `all_routes.ts`.
-
 Reference codes: still minted as 5 digits + a type letter (`referenceCodeGenerator.ts`), but the
 code is now an **opaque token** — routing never decodes the letter. Public share links are
 root-level type-scoped (`nanza.app/<slug>/<code>`): the slug picks the table (`listing`=Listing,
 `bid`=Bid, `collection`=List, `product`=Product→Entity, `bulk`=BulkListing, `group`=Group,
-`profile`=Profile, `post`=Post, `tag`=SupportedTagValue; Project sharing disabled, no slug). The
+`profile`=Profile, `post`=Post, `tag`=SupportedTagValue). The
 slug taxonomy's source of truth is `src/constants/shareTaxonomy.ts`.
 
 ---
@@ -211,7 +205,8 @@ webhook Lambdas hold `events:PutEvents` permission and dispatch via `utils/event
 (e.g. after a Stripe seller-account update completes onboarding).
 
 > Push notifications (FCM) were prototyped and **removed** — there is no `services/fcm.ts` and
-> no push Lambda. See the "Infra & push" plans in [[nanza-api/INDEX]].
+> no push Lambda today. A `push` Lambda (EventBridge `notification.*` → `firebase-admin`) is planned —
+> see [[solution-designs/push-notifications|Push notifications]]; [[solution-designs/infra-push|Infra & push]] is the removed 2026-06 prototype.
 
 ---
 
@@ -231,8 +226,7 @@ webhook Lambdas hold `events:PutEvents` permission and dispatch via `utils/event
   Presigned uploads via `utils/generatePresignedUrl.ts`.
 - **Amazon Rekognition** (`DetectText`) + **Amazon Transcribe** — power card scanning
   (`services/scan.ts`) and voice input (`services/transcribe.ts`).
-- **Anthropic (Claude)** — `services/anthropic.ts` drives the (currently disabled) storefront
-  builder, generating a `Project.tree` from prompts.
+- **Anthropic (Claude)** — `services/anthropic.ts` identifies cards from scan images.
 - **Google Places** — address validation (`utils/addressValidation.ts`).
 
 ### OG / share-preview subsystem

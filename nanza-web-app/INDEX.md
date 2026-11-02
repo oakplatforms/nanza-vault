@@ -20,8 +20,7 @@ Top-level dirs under `src/`:
   (`QueryClientProvider → SessionProvider → CartProvider → AppLayout`); `app/AppLayout.tsx` holds all
   `react-router-dom` routes; `app/SmartRouter.tsx` disambiguates `/:a/:b` between profile-reference
   and entity-slug routes. Live screens: `ShareDetail/` (the reference-code landing pages). Dormant
-  (commented-out) screens: `Auth/` (SignIn/SignUp/ForgotPassword), `Cart/`, `Build/` (storefront
-  builder), `UserProfile/`, `UserListings/`, `UserBids/`, `UserLists/`, `UserSaved/`,
+  (commented-out) screens: `Auth/` (SignIn/SignUp/ForgotPassword), `Cart/`, `UserProfile/`, `UserListings/`, `UserBids/`, `UserLists/`, `UserSaved/`,
   `EntityDetail/`, `ListingDetail/`, `UniversalDetail/`.
 - **`landing/`, `pages/`, `sections/`, `scene/`** — the public marketing site (rebuilt 2026-08, see
   [[solution-designs/landing-replacement|Landing Replacement]]). `landing/index.tsx` is the
@@ -33,7 +32,7 @@ Top-level dirs under `src/`:
   `Sidebar/`, `Toolbar/`), `Tailwind/` primitives, and per-domain folders (`entity`, `listing`,
   `bid`, `list`, `cart`).
 - **`services/api/`** — one file per resource (`Listing`, `Bid`, `Entity`, `List`, `Order`, `User`,
-  `Storefront`, `Universal`, …), all funneling through `services/api/index.ts`'s `fetchData`.
+  `Universal`, …), all funneling through `services/api/index.ts`'s `fetchData`.
   `services/auth/cognito.ts` is the auth wrapper (currently no-op stubs).
 - **`contexts/`** — `SessionProvider` (current user via Cognito session → `userService`),
   `CartProvider`, `ProfileProvider`.

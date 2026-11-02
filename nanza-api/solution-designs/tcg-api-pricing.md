@@ -211,6 +211,9 @@ The outcome decides the column shape below and which price endpoint the refresh 
 
 ### Phase 2 — Scheduled price refresh (nanza-api, operator-run)
 
+> **2026-10-27:** this is now a **daily** loop with the flag at **30 %** (was 50 %); the runbook,
+> CSV contracts and the agent / Lambda next steps are in [[tcg-api-daily-price-refresh]].
+
 Two steps with a human gate, so a bad fetch can't turn a $1.40 card into $75.40 overnight
 (Skylar, 2026-10-24):
 

@@ -122,11 +122,32 @@ through the old screens is unaffected. `GET /trades` itself is only in the uncom
 2026-10-23 build (nothing in the store calls it), so its two behaviour changes (own items in,
 lots out) break no shipped client. The 410 `/trade/*` stubs are untouched.
 
+**Ordered by price, highest first (Skylar, 2026-10-26, voice).** The feed is not recency: bids
+and listings merge on `price` descending (a $77 bid, a $72 listing, a $71 listing, a $68 bid),
+recency breaking ties, via the builder's `order: 'price'` (on for every `/trades` scope; a lot
+would order on `totalPrice`, nulls last). Each kind's heads are fetched already price-sorted up
+to the page window, so the merged window is exact and stable across pages, same as the recency
+merge. An owner spread (every seller's newest before anyone's second, the shelves' rule) was
+built first that day and taken out again the same session — the spread helper it extracted
+stays as `utils/spreadByOwner.ts`, used by the query-list resolver only. `/sell-feed` and
+`/trade-feed` stay on recency.
+
 No schema change. No types bump (the response reuses the client-typed `TradeFeedItem`).
 Optional later: `@@index([entityId, status, createdAt])` on `Listing` and `Bid` if the
 per-card scan shows up on dev data; Skylar runs migrations.
 
 ## Mobile design
+
+**Delete lands on the page before the detail (Skylar, 2026-10-26).** Editing from a trade's
+own detail screen (ListingDetail / BidDetail → Edit circle → CreateTrade) and deleting used to
+close back onto the detail of a trade that no longer existed. The panes hand the host the trade
+they are deleting (`TradePaneBar.setDeleted`, set around the form's async `deleteNow`, cleared
+after so a failed delete leaves later closes alone); the host's `goBackOnce` checks the route
+beneath and, when it is that trade's detail (matched on `listingId` / `bidId` or
+`referenceCode`), pops two instead of one. Any other neighbour (entity Trades tab, feed, Trade
+tab) is the plain goBack. **The form bar's 700 ms post-save hold is gone** (`useFormBar`
+closes immediately — Skylar: no timer logic in the app); that hold was what first broke this,
+since the pane had cleared the flag by the time the delayed pop ran.
 
 ### 1. Entity Trades tab
 
@@ -447,3 +468,9 @@ Trade tab, then lots back under WTS.
   anything yet", a step below the capsule; the Trade screen footer (My Trades · Trade) floats
   over the grid with no fade behind it.
 
+
+- 2026-10-26 (voice, Android QA) — **My Trades rows took 3–5 taps on Android.** Cause, confirmed in RNGH's Android source (`NativeViewGestureHandler.onHandle`, ACTION_UP): the row button `waitFor`s the tag line's GH ScrollView so drags scroll, but on Android the native scroll handler ACTIVATES on the release of a plain tap too, cancelling the waiting button — any tap landing on the tag line never pressed (the thumb, a nested button with no waitFor, always worked). Fix: on Android `EntityMetaLine` wraps the line in an RNGH TouchableOpacity INSIDE the scroller carrying the row's onPress (`EntityLockupRow` passes it), the standard touchable-in-scroll-view case. iOS untouched.
+- 2026-10-26 (voice, Android QA) — **Trade search list could not scroll past ~a dozen rows on Android; the page lifted instead.** `CardPickerLayer` lifts its pill by the measured keyboard height for the composer's frozen Modal window; as a plain screen under adjustResize the window shrank AND the pill padded. `TradeSearchScreen` now calls `useAndroidSoftInputMode('nothing')` so the measured pad is the one lift, as in the composer.
+- 2026-10-26 (typed, Android QA, second pass) — the window freeze fixed the double lift but the Trade › search list still would not scroll past the first dozen rows. Remaining cause: both picker lists dismissed the keyboard `on-drag`, which dropped the measured pad mid-gesture — the footer fell and the list grew DURING the scroll, and Android's scroll view lost the drag. `CardPickerLayer` now follows CollectionSearchOverlay (the 2026-10-20 fix): no on-drag dismissal; while the keyboard is up a transparent catcher over the results consumes the first tap to dismiss it, the next tap reaches a row. Applies to the composer's picker too.
+- 2026-10-26 (typed, Android QA, third pass) — still no scroll once results filled the screen. The actual blocker: `CardPickerLayer` listed rows in a CORE RN FlatList while each row's tag line is an RNGH horizontal ScrollView; on Android a gesture-handler view that has begun a touch keeps the native parent from intercepting, so a vertical drag starting on a tag line (most of every row) never reached the list. The picker's lists are now RNGH's `FlatList` — the ui-fixes "dense content" rule (PageLayout, carousels, detail screens). The window freeze and the tap catcher from the earlier passes stay.
+- 2026-10-26 (voice) — **CreateTrade card lockup: built and pulled the same session.** The trade rows' `EntityLockupRow` was put at the top of every CreateTrade mode (tap → Entity, the forms' text title off via a `showTitle` prop) and the My Trades thumb was pointed at the form instead of the entity. Skylar, on device: "didn't come out right — remove it for now, go back to what it was, address it later." Everything reverted: forms keep their `DetailTitleBlock`, the thumb opens the entity, the row opens the form. **Open for a later release:** the form leading with the card (image + name + details) and the thumb → form routing.

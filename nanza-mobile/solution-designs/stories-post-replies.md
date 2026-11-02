@@ -136,3 +136,11 @@ and share (when `useCanSharePost` allows, PostDetail's rule). Pages slide under 
 - **`getPagerChromeHeight(theme, topInset, withProgress)`** is the one number both pagers pad
   their post pages with, so the post always starts just under the buttons.
 
+
+## Phase 6: the pager IS the detail (Skylar, voice, 2026-10-26; built same day)
+
+QA on the Android build: tapping a feed post opened the pager, but each page showed the feed's card-trimmed copy (first text run + primary attachment) and the root card pushed `PostDetail` on tap, so a reader needed a second tap to see the whole post and the owner's pencil. "It should have used the existing post details and wrapped that in a slider."
+
+- **Whole post per page.** `StoryPostPage` reads `usePostDetail(post.id, post)` — PostDetail's by-id read and key, the trimmed copy as placeholder — and renders the full tree. The root card drops `enableDetailNav`: no second screen. Avatar / username still open the profile.
+- **Owner's pencil on the chrome.** `PostPager` reads the active page's full post (same key, no extra request), and `PagerChrome` gets `onEdit` when the viewer owns it and the full post is in hand (the composer seeds once at mount). The edit composer is PostDetail's Modal verbatim (snap open / slide closed, own gesture root + AlertProvider, delete inside beside Save); deleting drops the page out of the feed and the pager stays on its neighbours.
+- **`usePostHomeBrand(postableType, postableId)`** (`components/posts/`) is the home's brand + group title for the composer, extracted from PostDetail and shared by both.

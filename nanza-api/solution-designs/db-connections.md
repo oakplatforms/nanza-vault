@@ -174,6 +174,9 @@ below is the escalation path — adopt it then, not preemptively.
   Postgres table are kept through the cutover release as the rollback lever; drop
   `model WebSocket` + the relation and delete the table only once we're officially
   running on the new system.
+  - **Built 2026-10-30:** `model WebSocket` + `Account.webSockets` removed; migration
+    `20261030130000_drop_websocket` drops the table (only stale August rows remained).
+    Pending migration run + types 0.1.135 publish.
 - **Phase 4 (optional, later):** pre-token-generation `accountId` claim → delete
   `resolveRequesterAccountId` from `$connect` entirely.
 
