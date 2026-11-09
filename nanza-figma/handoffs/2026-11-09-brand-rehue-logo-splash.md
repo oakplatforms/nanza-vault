@@ -31,7 +31,8 @@ device iteration. The values below are that build, so treat it as the reference 
    theres a white background and a black circle w pink logo inside it or black background with
    white circle and pink logo".
 3. Iteration on device: "a darker pink for our actions … like #de247b for links in posts and the
-   plus button", then "try the 500 color for the text links"; circle rings "the same action pink
+   plus button", then "try the 500 color for the text links", then "try dropping the link font one
+   shade … 500 to 400" (kept), and "drop the action color one to 500"; circle rings "the same action pink
    as the plus button" → "nooo, lets try the 300 shade" → "try 400"; "bottom nav active state …
    a bright white instead of pink".
 4. Splash: remove the logo's stroke ("theres a stroke on the logo thats causing problems on the
@@ -44,8 +45,8 @@ device iteration. The values below are that build, so treat it as the reference 
 |---|---|---|
 | 1 | `primary` scale → persian-rose (dark + light) | device-tested |
 | 2 | Logo SVGs: new fill + gradient (from the stash), **stroke removed** | device-tested |
-| 3 | `action` → `primary.600` (+ button, send, step dots, request dot…) | device-tested |
-| 4 | New `link` token → `primary.500` (post #tags / mentions, Show more, composer tag runs) | device-tested |
+| 3 | `action` → `primary.500` (+ button, send, step dots, request dot…) | 600 device-tested, **500 now on trial** |
+| 4 | New `link` token → `primary.400` (post #tags / mentions, Show more, composer tag runs) | **decided: 400** (500 tried first) |
 | 5 | Bottom nav active tab → `textSecondary` (bright white) | device-tested |
 | 6 | Circle-thumb brand ring + play badge → `primary.400` | **trial, decision pending** (see Open questions) |
 | 7 | Android `notification_accent` → `#ED3594` | built, needs an Android push to verify |
@@ -72,8 +73,8 @@ device iteration. The values below are that build, so treat it as the reference 
 | Token (`theme` section) | Old | New | Used by |
 |---|---|---|---|
 | `highlight` | `primary.300` | unchanged | "Buy" intent tags |
-| `action` | `primary.400` | **`primary.600`** `#DE247B` | `floatingNavFab` / `floatingNavPlus` (+ button), `sendIconButtonActive`, `audienceMenuRowTextSelected`, `stepIndicatorDotCompleted`, `requestedUnreadDot` |
-| **`link`** (new) | — | **`primary.500`** `#ED3594` | `tagMention` (+ pressed at 0.7), `showMoreText`, composer `inlineTagRun`; each falls back to `action` |
+| `action` | `primary.400` | **`primary.500`** `#ED3594` (600 `#DE247B` tried first) | `floatingNavFab` / `floatingNavPlus` (+ button), `sendIconButtonActive`, `audienceMenuRowTextSelected`, `stepIndicatorDotCompleted`, `requestedUnreadDot` |
+| **`link`** (new) | — | **`primary.400`** `#F670B9` (500 `#ED3594` tried first) | `tagMention` (+ pressed at 0.7), `showMoreText`, composer `inlineTagRun`; each falls back to `action` |
 
 - `src/styles/utils/types.ts`: add `link?: string` beside `action?`. The resolver
   (`resolveThemeColors`) maps every `theme` key generically, so nothing else is needed.
@@ -135,7 +136,7 @@ The old comment claiming the image's zoom "leaves the hole untouched" is correct
 - `android/app/src/main/res/values/colors.xml`, `styles.xml`.
 
 ## QA
-- **Palette:** + button and send icon `#DE247B`; post #tags, mentions and "Show more" `#ED3594`;
+- **Palette:** + button and send icon `#ED3594`; post #tags, mentions and "Show more" `#F670B9`;
   "Buy" tags `#FAA7D6`; no old magenta anywhere (check rings, badges, step dots, request dot,
   audience menu).
 - **Nav:** active tab label + icon bright white; inactive unchanged.
@@ -150,6 +151,7 @@ The old comment claiming the image's zoom "leaves the hole untouched" is correct
 
 ## Open questions
 1. **Circle ring shade:** keep `primary.400`? If yes, add the semantic token (see §6).
+2. **Action shade:** keep `action` on `primary.500` (the current trial), or back to 600?
 
 ## Outside the codebase (not in this handoff's code)
 Raster and store assets still carry the old magenta; they need re-exporting from the new
@@ -162,7 +164,7 @@ Implement the handoff nanza-vault/nanza-figma/handoffs/2026-11-09-brand-rehue-lo
 (read it in full, including Status and Open questions).
 
 1. PALETTE: replace colors.primary 50–950 in dark.json AND light.json with the persian-rose
-   values in §1; theme.action -> primary.600; add theme.link = primary.500 and `link?: string`
+   values in §1; theme.action -> primary.500; add theme.link = primary.400 and `link?: string`
    to ThemeTokens (types.ts, approved).
 2. LINKS: tagMention / tagMentionPressed / showMoreText (posts.ts) and inlineTagRun
    (postComposer.ts) read theme.colors.link (fallback action).
@@ -179,3 +181,5 @@ before finishing, then set this handoff to built and add a Log line.
 
 ## Log
 - 2026-11-09: handoff written. Palette, logos, action / link tokens and the nav are device-tested on `throwaway-logo-update`; the ring shade is a trial; the Android notification tint, the Android 12 splash and the splash edge fix are built and awaiting device checks
+- 2026-11-09: `link` moved 500 → 400 on trial (device check pending)
+- 2026-11-09: `link` kept on 400; `action` moved 600 → 500 on trial
