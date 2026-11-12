@@ -1,0 +1,22 @@
+diff --git a/src/styles/components/posts.ts b/src/styles/components/posts.ts
+index cc74b40f..ff518be9 100644
+--- a/src/styles/components/posts.ts
++++ b/src/styles/components/posts.ts
+@@ -720,12 +720,12 @@ export const getPostStyles = memoizeByTheme((theme: ThemeTokens): CommentStyles
+     tagMentionPressed: {
+       color: hexToRgba(theme.colors.action || theme.colors.text, 0.7),
+     },
+-    // "Show more" under a card's content (Skylar, 2026-10-11): the same pink
+-    // link register as the inline #hashtags — same run, `action` colour — so
+-    // the two read as one kind of thing, "tap me, there's more post".
++    // "Show more" / "Show less" under a card's content (Skylar, 2026-10-11):
++    // the inline #hashtags' link colour, so the two read as one kind of
++    // thing, "tap me, there's more post".
+     showMoreText: {
+-      // postBody, the text it follows (user, 2026-10-12; was a point under).
+-      ...typography.postBody,
++      // meta, Balto 15 (2026-11-12; was postBody 16, the text it follows).
++      ...typography.meta,
+       color: theme.colors.action,
+     },
+     // Sits on its own line under the content, left-aligned, with the same
