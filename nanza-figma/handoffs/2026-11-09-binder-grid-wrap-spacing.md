@@ -12,7 +12,7 @@ builds-on: 2026-11-09-tag-page-fixed-hero
 A bug fix plus a spacing pass on the collection / binder detail grid (`CollectionDetailScreen`),
 built and tested on device on a throwaway branch (`throwaway-binder-items-wrapping`). No Figma
 frame: the designer worked from device screenshots. **Builds on
-[[2026-11-09-tag-page-fixed-hero]]**, which turned `collectionDetailGrid`'s row gap from a margin
+[[pre-dev/2026-11-12-tag-page-fixed-hero]]**, which turned `collectionDetailGrid`'s row gap from a margin
 into opaque padding (the rows scroll over the pinned banner). That still holds; only the values
 change here.
 

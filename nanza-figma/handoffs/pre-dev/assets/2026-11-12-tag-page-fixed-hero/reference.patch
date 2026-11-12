@@ -1,0 +1,1252 @@
+diff --git a/src/components/detail/FixedBanner/index.tsx b/src/components/detail/FixedBanner/index.tsx
+new file mode 100644
+index 00000000..01a6ce8f
+--- /dev/null
++++ b/src/components/detail/FixedBanner/index.tsx
+@@ -0,0 +1,59 @@
++import React from 'react'
++import { View, Image, ImageStyle } from 'react-native'
++import LinearGradient from 'react-native-linear-gradient'
++import { useTheme } from '../../../styles/utils/ThemeProvider'
++import { getCardStyles } from '../../../styles/components/cards'
++import { getGradientProps } from '../../../styles/components/gradients'
++import { getImage, IMG_WIDTH } from '../../../utils/getImage'
++
++// The detail pages' fixed hero (Figma 3393:168141 — the listing/bid
++// treatment) in two halves, because they live in two layers:
++//
++// - FixedBannerImage: the image + top scrim, PINNED behind the scroll (pass it
++//   as PageLayout's fixedBackground, or an absolute layer behind a FlatList).
++//   The scrim stays with the floating back/share circles it keeps legible.
++// - FixedBannerFade: the transparent slot that holds the banner's place at the
++//   top of the scroll content, carrying the full-height fadeHeroFixed: clear
++//   for the top 15%, then an eased S-curve that lands on solid page background
++//   with no slope change, so there's no seam where the opaque sheet begins. It
++//   scrolls up over the pinned image with the content, fading the image out as
++//   you scroll; whatever follows it must sit on an opaque fill (cards.ts
++//   detailBannerSheet). Its own token, not fadeHeroCollapsed: that curve is
++//   the entity screen's short bottom cap.
++//
++// size: 'tag' is the tag / set pages' 290-on-402; 'standard' the 230 the
++// group / collection heroes keep.
++type BannerSize = 'tag' | 'standard'
++
++export const FixedBannerImage: React.FC<{ uri: string; size?: BannerSize }> = ({ uri, size = 'standard' }) => {
++  const { theme } = useTheme()
++  const cardStyles = getCardStyles(theme)
++  const bannerScrim = getGradientProps(theme, 'scrimTop')
++  return (
++    <View style={size === 'tag' ? cardStyles.tagDetailBanner : cardStyles.collectionDetailBanner}>
++      <Image
++        source={{ uri: getImage(uri, { width: IMG_WIDTH.BANNER }) }}
++        style={cardStyles.collectionDetailBannerImage as ImageStyle}
++      />
++      <LinearGradient
++        {...bannerScrim}
++        style={cardStyles.collectionDetailBannerScrim}
++        pointerEvents="none"
++      />
++    </View>
++  )
++}
++
++export const FixedBannerFade: React.FC<{ size?: BannerSize }> = ({ size = 'standard' }) => {
++  const { theme } = useTheme()
++  const cardStyles = getCardStyles(theme)
++  const bannerFade = getGradientProps(theme, 'fadeHeroFixed')
++  return (
++    <View
++      style={size === 'tag' ? cardStyles.tagDetailBannerSpacer : cardStyles.collectionDetailBannerSpacer}
++      pointerEvents="none"
++    >
++      <LinearGradient {...bannerFade} style={cardStyles.detailBannerFade} />
++    </View>
++  )
++}
+diff --git a/src/components/profile/ProfileHero/index.tsx b/src/components/profile/ProfileHero/index.tsx
+index 985b7906..93f15fc0 100644
+--- a/src/components/profile/ProfileHero/index.tsx
++++ b/src/components/profile/ProfileHero/index.tsx
+@@ -1,23 +1,21 @@
+ import React from 'react'
+-import { View, Text, Image, ImageStyle, TouchableOpacity, useWindowDimensions } from 'react-native'
+-import LinearGradient from 'react-native-linear-gradient'
++import { View, Text, TouchableOpacity, useWindowDimensions } from 'react-native'
+ import { useTheme } from '../../../styles/utils/ThemeProvider'
+-import { getGradientProps } from '../../../styles/components/gradients'
+ import { getProfileStyles } from '../../../styles/components/profile'
+-import { getCardStyles } from '../../../styles/components/cards'
+ import { getDetailStyles } from '../../../styles/components/detail'
+ import SocialLinksRow from '../SocialLinksRow'
+ import EmojiText from '../../global/EmojiText'
+ import Icon from '../../global/Icon'
+ import CircleThumb from '../../cards/CircleThumb'
++import { FixedBannerFade } from '../../detail/FixedBanner'
+ import { useProfileShortState } from './useProfileShortState'
+ import { SocialLinkDto } from '../../../types'
+ import { getImage, IMG_WIDTH } from '../../../utils/getImage'
+ 
+ // The profile hero (Skylar, 2026-08-15) — the listing/bid/collection detail
+ // template on a person: edge-to-edge banner under the floating header circles
+-// (dark scrim keeps them legible, bottom fade blends the image into the
+-// page), then avatar, the username in the jumbo title slot the collection
++// (dark scrim keeps them legible, a full-height fade scrolls up over the
++// pinned image — the fixed hero, see FixedBanner), then avatar, the username in the jumbo title slot the collection
+ // name occupies, the social row, and the bio. Profiles without a banner skip
+ // straight to the identity block, padded down past the floating controls.
+ // Shared by ProfileScreen and UserProfileScreen so the two can't drift.
+@@ -69,12 +67,6 @@ const ProfileHero: React.FC<ProfileHeroProps> = ({
+ }) => {
+   const { theme } = useTheme()
+   const profileStyles = getProfileStyles(theme)
+-  const cardStyles = getCardStyles(theme)
+-  // The banner blend now runs the SAME curve as the entity screen's hero cap
+-  // (effects.gradients fadeHeroCollapsed) — one definition across all five
+-  // banners, replacing five copies of a shorter 3-stop fade.
+-  const bannerFade = getGradientProps(theme, 'fadeHeroCollapsed')
+-  const bannerScrim = getGradientProps(theme, 'scrimTop')
+   const detailStyles = getDetailStyles(theme)
+   const { width: windowWidth } = useWindowDimensions()
+   const avatarSize = (windowWidth - theme.spacing.base * 2) * AVATAR_FRACTION
+@@ -83,24 +75,11 @@ const ProfileHero: React.FC<ProfileHeroProps> = ({
+ 
+   return (
+     <>
+-      {banner ? (
+-        <View style={cardStyles.collectionDetailBanner}>
+-          <Image
+-            source={{ uri: getImage(banner, { width: IMG_WIDTH.BANNER }) }}
+-            style={cardStyles.collectionDetailBannerImage as ImageStyle}
+-          />
+-          <LinearGradient
+-            {...bannerScrim}
+-            style={cardStyles.collectionDetailBannerScrim}
+-            pointerEvents="none"
+-          />
+-          <LinearGradient
+-            {...bannerFade}
+-            style={cardStyles.collectionDetailBannerFade}
+-            pointerEvents="none"
+-          />
+-        </View>
+-      ) : null}
++      {/* Fixed hero (FixedBanner): the screen pins the image + scrim behind
++          its scroll (PageLayout fixedBackground — ProfileScreen /
++          UserProfileScreen); this slot holds their place and carries the
++          full-height fade, which scrolls up over the image. */}
++      {banner ? <FixedBannerFade /> : null}
+ 
+       <View style={banner ? profileStyles.profileHeroBlock : profileStyles.profileHeroBlockNoBanner}>
+         {/* With a banner the row rides up 84 over the image's bottom fade.
+diff --git a/src/screens/collections/CollectionDetailScreen/index.tsx b/src/screens/collections/CollectionDetailScreen/index.tsx
+index 1c571d63..7926bc60 100644
+--- a/src/screens/collections/CollectionDetailScreen/index.tsx
++++ b/src/screens/collections/CollectionDetailScreen/index.tsx
+@@ -1,12 +1,12 @@
+ import React, { useCallback, useEffect, useMemo, useState } from 'react'
+-import { View, Text, Image, ImageStyle, FlatList, ActivityIndicator, BackHandler, StyleSheet, useWindowDimensions, Platform, PixelRatio } from 'react-native'
++import { View, Text, FlatList, ActivityIndicator, BackHandler, StyleSheet, useWindowDimensions, Platform, PixelRatio } from 'react-native'
+ import { writeFile, CachesDirectoryPath } from 'react-native-fs'
+ import { useSafeAreaInsets } from 'react-native-safe-area-context'
+ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native'
+ import { StackNavigationProp } from '@react-navigation/stack'
+-import LinearGradient from 'react-native-linear-gradient'
+ import { useQuery, useQueryClient } from '@tanstack/react-query'
+ import Header from '../../../components/global/Header'
++import { FixedBannerImage, FixedBannerFade } from '../../../components/detail/FixedBanner'
+ import LoadingIndicator from '../../../components/global/LoadingIndicator'
+ import EmptyState from '../../../components/global/EmptyState'
+ import CollectionGridCard from '../../../components/collections/CollectionGridCard'
+@@ -19,7 +19,7 @@ import FabraryDeckSheet from './FabraryDeckSheet'
+ import { listService } from '../../../services/api/List'
+ import { useSession } from '../../../contexts/SessionContext'
+ import { useTheme } from '../../../styles/utils/ThemeProvider'
+-import { getGradientProps } from '../../../styles/components/gradients'
++import { getLayoutStyles } from '../../../styles/components/layout'
+ import { getScanItemsStyles } from '../../../styles/components/scanItems'
+ import { getCardStyles } from '../../../styles/components/cards'
+ import { getCollectionSearchStyles } from '../../../styles/components/collectionSearch'
+@@ -29,7 +29,6 @@ import { getListByIdQueryConfig } from '../../profile/data/fetchLists'
+ import { useCollectionEntities, CollectionItem } from './data/fetchCollectionEntities'
+ import { usePersistCollectionQuantity } from './data/usePersistCollectionQuantity'
+ import { patchNanzaSearchQuantity } from './data/fetchNanzaSearch'
+-import { getImage, IMG_WIDTH } from '../../../utils/getImage'
+ import { guardedShare } from '../../../utils/shareContent'
+ import { buildShareUrl } from '../../../utils/shareUrl'
+ import { useCanShare } from '../../../hooks/useCanShare'
+@@ -54,11 +53,7 @@ const CollectionDetailScreen: React.FC = () => {
+   const { theme } = useTheme()
+   const styles = getScanItemsStyles(theme)
+   const cardStyles = getCardStyles(theme)
+-  // The banner blend now runs the SAME curve as the entity screen's hero cap
+-  // (effects.gradients fadeHeroCollapsed) — one definition across all five
+-  // banners, replacing five copies of a shorter 3-stop fade.
+-  const bannerFade = getGradientProps(theme, 'fadeHeroCollapsed')
+-  const bannerScrim = getGradientProps(theme, 'scrimTop')
++  const layoutStyles = getLayoutStyles(theme)
+   const searchStyles = getCollectionSearchStyles(theme)
+   const insets = useSafeAreaInsets()
+   const { width: windowWidth } = useWindowDimensions()
+@@ -285,42 +280,36 @@ const CollectionDetailScreen: React.FC = () => {
+ 
+   const listHeader = (
+     <View>
+-      {/* Banner only renders when the collection HAS an image. Edge-to-edge,
+-          running to the very top under the floating buttons (group-detail
+-          treatment). Two gradients: a dark scrim at the top so the buttons stay
+-          legible, and a fade-to-background at the bottom that blends the image
+-          into the page (entity-modal style). When there's NO banner the whole
+-          container is dropped — content sits directly under the buttons, and the
+-          header block's larger top padding clears them. */}
+-      {banner ? (
+-        <View style={cardStyles.collectionDetailBanner}>
+-          <Image
+-            source={{ uri: getImage(banner, { width: IMG_WIDTH.BANNER }) }}
+-            style={cardStyles.collectionDetailBannerImage as ImageStyle}
+-          />
+-          <LinearGradient
+-            {...bannerScrim}
+-            style={cardStyles.collectionDetailBannerScrim}
+-            pointerEvents="none"
+-          />
+-          <LinearGradient
+-            {...bannerFade}
+-            style={cardStyles.collectionDetailBannerFade}
+-            pointerEvents="none"
+-          />
+-        </View>
+-      ) : null}
++      {/* Banner only renders when the collection HAS an image. Fixed hero
++          (FixedBanner, the listing/bid treatment): the image + scrim are
++          pinned behind the list (below, in the screen's backdrop layer); this
++          slot holds their place and carries the full-height fade, which
++          scrolls up over the image with the grid. When there's NO banner the
++          slot is dropped — content sits directly under the buttons, and the
++          header block's larger top padding clears them. The block sits on the
++          opaque sheet fill, and the grid rows carry their own
++          (collectionDetailGrid), so nothing below the hero is see-through. */}
++      {banner ? <FixedBannerFade /> : null}
+       {/* No banner: the block clears the floating buttons itself, so it takes
+           the status-bar inset here plus the stylesheet's row + gap. */}
+-      <View style={banner ? cardStyles.collectionDetailHeaderBlock : [cardStyles.collectionDetailHeaderBlockNoBanner, { paddingTop: insets.top + Number(cardStyles.collectionDetailHeaderBlockNoBanner.paddingTop ?? 0) }]}>
+-        <Text style={cardStyles.collectionDetailTitle}>{title}</Text>
+-        <Text style={cardStyles.collectionDetailCount}>{total} {total === 1 ? 'item' : 'items'}</Text>
++      <View style={cardStyles.detailBannerSheet}>
++        <View style={banner ? cardStyles.collectionDetailHeaderBlock : [cardStyles.collectionDetailHeaderBlockNoBanner, { paddingTop: insets.top + Number(cardStyles.collectionDetailHeaderBlockNoBanner.paddingTop ?? 0) }]}>
++          <Text style={cardStyles.collectionDetailTitle}>{title}</Text>
++          <Text style={cardStyles.collectionDetailCount}>{total} {total === 1 ? 'item' : 'items'}</Text>
++        </View>
+       </View>
+     </View>
+   )
+ 
+   return (
+     <View style={styles.screenContainer}>
++      {/* The pinned hero, behind the list (and under the floating Header's
++          zIndex). Only while the grid is up — the loading state stays plain. */}
++      {banner && !(isLoading && items.length === 0) ? (
++        <View style={layoutStyles.pageFixedBackgroundContainer} pointerEvents="none">
++          <FixedBannerImage uri={banner} />
++        </View>
++      ) : null}
+       {/* Hide the screen's floating Header while the search overlay is up: the
+           overlay draws its own back arrow at the same top-left spot, and this
+           Header's back arrow calls navigation.goBack() — a tap landing on it
+diff --git a/src/screens/groups/GroupDetailScreen/index.tsx b/src/screens/groups/GroupDetailScreen/index.tsx
+index 64952738..1a1371e6 100644
+--- a/src/screens/groups/GroupDetailScreen/index.tsx
++++ b/src/screens/groups/GroupDetailScreen/index.tsx
+@@ -1,6 +1,5 @@
+ import React, { useCallback, useMemo, useState } from 'react'
+ import { View, Text, Image, ImageStyle, TouchableOpacity } from 'react-native'
+-import LinearGradient from 'react-native-linear-gradient'
+ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native'
+ import { useMutation, useQueryClient } from '@tanstack/react-query'
+ import PageLayout from '../../../components/global/PageLayout'
+@@ -10,6 +9,7 @@ import ShelfHeading from '../../../components/shelf/ShelfHeading'
+ import ActionPill from '../../../components/shelf/ActionPill'
+ import TradeFeedThumb, { tradeFeedItemKey } from '../../../components/trade/TradeFeedThumb'
+ import DetailChatSection from '../../../components/detail/DetailChatSection'
++import { FixedBannerImage, FixedBannerFade } from '../../../components/detail/FixedBanner'
+ import JoinChatFooter from '../../../components/posts/composer/JoinChatFooter'
+ import GroupAddItemsSheet from '../../../components/groups/GroupAddItemsSheet'
+ import ConfirmSheetContent from '../../../components/global/ConfirmSheetContent'
+@@ -19,7 +19,6 @@ import { HeaderRightIcon } from '../../../components/global/Header'
+ import { useSession } from '../../../contexts/SessionContext'
+ import { useModalStack } from '../../../contexts/ModalStackContext'
+ import { useTheme } from '../../../styles/utils/ThemeProvider'
+-import { getGradientProps } from '../../../styles/components/gradients'
+ import { getTypographyStyles } from '../../../styles/components/typography'
+ import { getCardStyles } from '../../../styles/components/cards'
+ import { getDetailStyles } from '../../../styles/components/detail'
+@@ -48,11 +47,6 @@ const GroupDetailScreen = () => {
+   const { theme } = useTheme()
+   const typographyStyles = getTypographyStyles(theme)
+   const cardStyles = getCardStyles(theme)
+-  // The banner blend now runs the SAME curve as the entity screen's hero cap
+-  // (effects.gradients fadeHeroCollapsed) — one definition across all five
+-  // banners, replacing five copies of a shorter 3-stop fade.
+-  const bannerFade = getGradientProps(theme, 'fadeHeroCollapsed')
+-  const bannerScrim = getGradientProps(theme, 'scrimTop')
+   const detailStyles = getDetailStyles(theme)
+   const { currentUser, isRegistered, isSignedIn } = useSession()
+   const { isVisible: authVisible, showAuthModal, hideAuthModal } = useAuthModal()
+@@ -260,188 +254,177 @@ const GroupDetailScreen = () => {
+   // only read as the buttons flickering while you scroll.
+   return (
+     <View style={detailStyles.chatPinnedScreen}>
+-      <PageLayout headerProps={headerProps} contentExtendsUnderHeader staticHeader>
+-        {/* Collection-detail hero treatment: edge-to-edge banner with a dark
+-          scrim up top so the floating buttons stay legible, and a
+-          fade-to-background at the bottom so the image blends into the page
+-          instead of ending on a hard edge. The title sits below the image. */}
+-        {group.banner ? (
+-          <View style={cardStyles.collectionDetailBanner}>
+-            <Image
+-              source={{ uri: getImage(group.banner, { width: IMG_WIDTH.BANNER }) }}
+-              style={cardStyles.collectionDetailBannerImage as ImageStyle}
+-            />
+-            <LinearGradient
+-              {...bannerScrim}
+-              style={cardStyles.collectionDetailBannerScrim}
+-              pointerEvents="none"
+-            />
+-            <LinearGradient
+-              {...bannerFade}
+-              style={cardStyles.collectionDetailBannerFade}
+-              pointerEvents="none"
+-            />
+-          </View>
+-        ) : null}
+-        <View
+-          style={
+-            group.banner
+-              ? cardStyles.groupDetailHeaderBlock
+-              : cardStyles.groupDetailHeaderBlockNoBanner
+-          }
+-        >
+-          {/* Same jumbo lockup as the listing/bid detail hero, so the name is
++      <PageLayout
++        headerProps={headerProps}
++        contentExtendsUnderHeader
++        staticHeader
++        fixedBackground={group.banner ? <FixedBannerImage uri={group.banner} /> : undefined}
++      >
++        {/* Fixed hero (FixedBanner, the listing/bid treatment): the image +
++          scrim are pinned behind the scroll; the full-height fade and the
++          content scroll up over them. The title sits below the image. */}
++        {group.banner ? <FixedBannerFade /> : null}
++        <View style={cardStyles.detailBannerSheet}>
++          <View
++            style={
++              group.banner
++                ? cardStyles.groupDetailHeaderBlock
++                : cardStyles.groupDetailHeaderBlockNoBanner
++            }
++          >
++            {/* Same jumbo lockup as the listing/bid detail hero, so the name is
+             unmistakably the first read. */}
+-          <Text style={detailStyles.detailTitleHero} numberOfLines={2}>{group.displayName}</Text>
+-          {/* The moderator's social links, ABOVE the description (Skylar,
++            <Text style={detailStyles.detailTitleHero} numberOfLines={2}>{group.displayName}</Text>
++            {/* The moderator's social links, ABOVE the description (Skylar,
+               2026-08-17 — matching the profile hero) — renders nothing when
+               the group has none. */}
+-          <SocialLinksRow links={group.socialLinks} />
+-          {group.description ? (
+-            <ExpandableText
+-              text={group.description}
+-              textStyle={typographyStyles.groupDetailDescription}
+-              collapsible
+-            />
+-          ) : null}
+-        </View>
+-        {/* Member row: avatar facepile (up to five) + count on the left, both
++            <SocialLinksRow links={group.socialLinks} />
++            {group.description ? (
++              <ExpandableText
++                text={group.description}
++                textStyle={typographyStyles.groupDetailDescription}
++                collapsible
++              />
++            ) : null}
++          </View>
++          {/* Member row: avatar facepile (up to five) + count on the left, both
+           opening the read-only people list. The right slot is Join/Request
+           for non-members and empty for members — "Add new" lives on the
+           Trades heading again (Skylar, 2026-09-15: it adds a trade, so it
+           sits beside Trades, the profile's section-heading recipe). */}
+-        <View style={cardStyles.groupDetailActionRow}>
+-          {/* Members-only door (Skylar, 2026-08-18): outsiders and pending
++          <View style={cardStyles.groupDetailActionRow}>
++            {/* Members-only door (Skylar, 2026-08-18): outsiders and pending
+               requesters see the facepile/count but can't open the people
+               list — the roster is part of being in the group. */}
+-          <TouchableOpacity
+-            style={cardStyles.groupDetailActionLeft}
+-            onPress={handleOpenPeople}
+-            activeOpacity={0.7}
+-            disabled={!isActiveMember}
+-          >
+-            {facepileMembers.length > 0 && (
+-              <View style={cardStyles.groupDetailAvatarStack}>
+-                {facepileMembers.map((member, index) => {
+-                  const avatar = member.account?.profile?.avatar
+-                  const overlap = index > 0 ? cardStyles.groupDetailAvatarOverlap : null
+-                  return avatar ? (
+-                    <Image
+-                      key={member.accountId ?? index}
+-                      source={{ uri: getImage(avatar, { width: IMG_WIDTH.THUMB }) }}
+-                      style={[cardStyles.groupDetailAvatar, overlap as ImageStyle]}
+-                    />
+-                  ) : (
+-                    <View
+-                      key={member.accountId ?? index}
+-                      style={[cardStyles.groupDetailAvatarPlaceholder, overlap]}
+-                    />
+-                  )
+-                })}
+-              </View>
+-            )}
+-            <Text style={typographyStyles.groupDetailMemberCount}>
+-              {(group.memberCount ?? 0)} {group.memberCount === 1 ? 'member' : 'members'}
+-            </Text>
+-          </TouchableOpacity>
+-          {(() => {
+-            const isPrivateGroup = group.privacy === 'PRIVATE'
+-            const isPendingMember = isPrivateGroup && !isActiveMember && (myMembership?.status === 'PENDING' || localRequested)
++            <TouchableOpacity
++              style={cardStyles.groupDetailActionLeft}
++              onPress={handleOpenPeople}
++              activeOpacity={0.7}
++              disabled={!isActiveMember}
++            >
++              {facepileMembers.length > 0 && (
++                <View style={cardStyles.groupDetailAvatarStack}>
++                  {facepileMembers.map((member, index) => {
++                    const avatar = member.account?.profile?.avatar
++                    const overlap = index > 0 ? cardStyles.groupDetailAvatarOverlap : null
++                    return avatar ? (
++                      <Image
++                        key={member.accountId ?? index}
++                        source={{ uri: getImage(avatar, { width: IMG_WIDTH.THUMB }) }}
++                        style={[cardStyles.groupDetailAvatar, overlap as ImageStyle]}
++                      />
++                    ) : (
++                      <View
++                        key={member.accountId ?? index}
++                        style={[cardStyles.groupDetailAvatarPlaceholder, overlap]}
++                      />
++                    )
++                  })}
++                </View>
++              )}
++              <Text style={typographyStyles.groupDetailMemberCount}>
++                {(group.memberCount ?? 0)} {group.memberCount === 1 ? 'member' : 'members'}
++              </Text>
++            </TouchableOpacity>
++            {(() => {
++              const isPrivateGroup = group.privacy === 'PRIVATE'
++              const isPendingMember = isPrivateGroup && !isActiveMember && (myMembership?.status === 'PENDING' || localRequested)
+ 
+-            // Members get no pill here — their "Add new" is on the Trades
+-            // heading below.
+-            if (isActiveMember) return null
++              // Members get no pill here — their "Add new" is on the Trades
++              // heading below.
++              if (isActiveMember) return null
+ 
+-            // Join wears the same emphasis pill as "Add new" (Skylar,
+-            // 2026-08-17 — the group-button dress retired from this slot);
+-            // Request sent is the pill's resting disabled form so the swap
+-            // after a join tap doesn't jump geometry.
+-            if (isPendingMember) {
+-              return <ActionPill label="Request sent" onPress={() => undefined} disabled />
+-            }
++              // Join wears the same emphasis pill as "Add new" (Skylar,
++              // 2026-08-17 — the group-button dress retired from this slot);
++              // Request sent is the pill's resting disabled form so the swap
++              // after a join tap doesn't jump geometry.
++              if (isPendingMember) {
++                return <ActionPill label="Request sent" onPress={() => undefined} disabled />
++              }
+ 
+-            // Guests get Join too (2026-10-23, reversing 2026-09-11's "no
+-            // pill"): it opens the auth prompt, same as the Groups list.
+-            if (isSettledGuest) {
+-              return <ActionPill label="Join" onPress={showAuthModal} emphasis />
+-            }
+-            if (!isRegistered) return null
++              // Guests get Join too (2026-10-23, reversing 2026-09-11's "no
++              // pill"): it opens the auth prompt, same as the Groups list.
++              if (isSettledGuest) {
++                return <ActionPill label="Join" onPress={showAuthModal} emphasis />
++              }
++              if (!isRegistered) return null
+ 
+-            return (
+-              <ActionPill
+-                label="Join"
+-                onPress={handleJoin}
+-                emphasis
+-                loading={requestMutation.isPending}
+-              />
+-            )
+-          })()}
+-        </View>
+-        {(() => {
+-          const isPrivateGroup = group.privacy === 'PRIVATE'
++              return (
++                <ActionPill
++                  label="Join"
++                  onPress={handleJoin}
++                  emphasis
++                  loading={requestMutation.isPending}
++                />
++              )
++            })()}
++          </View>
++          {(() => {
++            const isPrivateGroup = group.privacy === 'PRIVATE'
+ 
+-          if (isPrivateGroup && !isActiveMember) {
+-            return (
+-              <View style={cardStyles.groupDetailNoAccessContainer}>
+-                <Text style={typographyStyles.textMuted}>
++            if (isPrivateGroup && !isActiveMember) {
++              return (
++                <View style={cardStyles.groupDetailNoAccessContainer}>
++                  <Text style={typographyStyles.textMuted}>
+                 You currently don&apos;t have access to this group.
+-                </Text>
+-              </View>
+-            )
+-          }
++                  </Text>
++                </View>
++              )
++            }
+ 
+-          // The group's items as the homepage shelf experience: one horizontal
+-          // rail mixing listing/lot/bid thumbs. Members get the white emphasis
+-          // "Add new" pill on the heading (Skylar, 2026-09-15 — the profile's
+-          // section-heading recipe), opening the shop picker over the group.
+-          const addNewLabel = isActiveMember ? 'Add new' : undefined
+-          return (
+-            <>
+-              <View style={cardStyles.groupDetailItemsContainer}>
+-                {groupItems.length > 0 ? (
+-                  <CardCarousel
+-                    title="Trades"
+-                    data={groupItems}
+-                    renderItem={renderGroupItem}
+-                    keyExtractor={groupItemKey}
+-                    onSeeAllPress={showSeeAllItems ? handleSeeAllItems : undefined}
+-                    emphasisActionLabel={addNewLabel}
+-                    onEmphasisActionPress={handleAddBidOrListing}
+-                  />
+-                ) : isActiveMember ? (
+-                  <>
+-                    <ShelfHeading
++            // The group's items as the homepage shelf experience: one horizontal
++            // rail mixing listing/lot/bid thumbs. Members get the white emphasis
++            // "Add new" pill on the heading (Skylar, 2026-09-15 — the profile's
++            // section-heading recipe), opening the shop picker over the group.
++            const addNewLabel = isActiveMember ? 'Add new' : undefined
++            return (
++              <>
++                <View style={cardStyles.groupDetailItemsContainer}>
++                  {groupItems.length > 0 ? (
++                    <CardCarousel
+                       title="Trades"
+-                      style={cardStyles.carouselHeadingPad}
++                      data={groupItems}
++                      renderItem={renderGroupItem}
++                      keyExtractor={groupItemKey}
++                      onSeeAllPress={showSeeAllItems ? handleSeeAllItems : undefined}
+                       emphasisActionLabel={addNewLabel}
+                       onEmphasisActionPress={handleAddBidOrListing}
+                     />
+-                    <View style={cardStyles.groupDetailNoAccessContainer}>
+-                      <Text style={typographyStyles.textMuted}>
++                  ) : isActiveMember ? (
++                    <>
++                      <ShelfHeading
++                        title="Trades"
++                        style={cardStyles.carouselHeadingPad}
++                        emphasisActionLabel={addNewLabel}
++                        onEmphasisActionPress={handleAddBidOrListing}
++                      />
++                      <View style={cardStyles.groupDetailNoAccessContainer}>
++                        <Text style={typographyStyles.textMuted}>
+                     Nothing here yet — add the first item.
+-                      </Text>
+-                    </View>
+-                  </>
+-                ) : null}
+-              </View>
+-              {/* Group chat — members-only end to end: the API 403s outsiders,
++                        </Text>
++                      </View>
++                    </>
++                  ) : null}
++                </View>
++                {/* Group chat — members-only end to end: the API 403s outsiders,
+                 so the section only renders for active members rather than
+                 showing a pill that can only fail. Non-members see the rail and
+                 the Join affordance above; the chat is part of what joining
+                 buys. */}
+-              {isActiveMember && (
+-                <DetailChatSection
+-                  postableType="GROUP"
+-                  postableId={groupId}
+-                  brandId={group.brandId}
+-                  headerTitle={group.displayName || group.name}
+-                  containerStyle={[detailStyles.chatSection, cardStyles.groupDetailChatSection]}
+-                  composerPlacement="pinned"
+-                />
+-              )}
+-            </>
+-          )
+-        })()}
++                {isActiveMember && (
++                  <DetailChatSection
++                    postableType="GROUP"
++                    postableId={groupId}
++                    brandId={group.brandId}
++                    headerTitle={group.displayName || group.name}
++                    containerStyle={[detailStyles.chatSection, cardStyles.groupDetailChatSection]}
++                    composerPlacement="pinned"
++                  />
++                )}
++              </>
++            )
++          })()}
++        </View>
+         <GroupAddItemsSheet
+           visible={showAddItems}
+           groupId={groupId}
+diff --git a/src/screens/profile/ProfileScreen/index.tsx b/src/screens/profile/ProfileScreen/index.tsx
+index ca6025ad..f5983b5c 100644
+--- a/src/screens/profile/ProfileScreen/index.tsx
++++ b/src/screens/profile/ProfileScreen/index.tsx
+@@ -9,6 +9,7 @@ import { getLayoutStyles } from '../../../styles/components/layout'
+ import { getProfileStyles } from '../../../styles/components/profile'
+ import { RootStackParamList } from '../../../types/navigation'
+ import ProfileHero from '../../../components/profile/ProfileHero'
++import { FixedBannerImage } from '../../../components/detail/FixedBanner'
+ import ProfileFriendsRow from '../../../components/profile/ProfileFriendsRow'
+ import ProfileTabs, { useProfileTabs } from '../../../components/profile/ProfileTabs'
+ import { useFetchProfileSocialLinks } from '../../../hooks/useFetchProfileSocialLinks'
+@@ -104,6 +105,9 @@ const ProfileScreen = () => {
+         contentExtendsUnderHeader
+         staticHeader
+         onEndReached={profileTabs.onEndReached}
++        // Fixed hero: the banner is pinned; the hero's fade and the page
++        // scroll up over it (FixedBanner).
++        fixedBackground={profile?.banner ? <FixedBannerImage uri={profile.banner} /> : undefined}
+         headerProps={{
+           // Floating ink circles over the banner hero — the listing/bid
+           // detail template (revised same-day from the unfloated inline
+@@ -139,21 +143,23 @@ const ProfileScreen = () => {
+           onEditProfile={handleEditProfile}
+           onOpenSettings={handleOpenSettings}
+         />
+-        {/* The friends row (Skylar, 2026-08-17; restyled 2026-11-02): up to
++        <View style={profileStyles.profileSheet}>
++          {/* The friends row (Skylar, 2026-08-17; restyled 2026-11-02): up to
+             four AVATARED connections + the full count, tap → Friends. */}
+-        <ProfileFriendsRow friends={friendProfiles} onPress={handleOpenFriends} />
+-        {/* The tabs (Skylar, 2026-11-01): Posts · Binders · Trades · Refs,
++          <ProfileFriendsRow friends={friendProfiles} onPress={handleOpenFriends} />
++          {/* The tabs (Skylar, 2026-11-01): Posts · Binders · Trades · Refs,
+             each the full paged list, with the owner's create entry on each.
+             Trades needs seller OR customer access. */}
+-        <View style={[layoutStyles.profileTabContent, profileStyles.profileHeroTabsGap]}>
+-          <ProfileTabs
+-            state={profileTabs}
+-            accountId={accountId}
+-            isOwnProfile
+-            onAddCollection={handleCreateCollection}
+-            onAddTrade={showTrades ? handleCreateTrade : undefined}
+-            postBrandId={selectedBrandId ?? undefined}
+-          />
++          <View style={[layoutStyles.profileTabContent, profileStyles.profileHeroTabsGap]}>
++            <ProfileTabs
++              state={profileTabs}
++              accountId={accountId}
++              isOwnProfile
++              onAddCollection={handleCreateCollection}
++              onAddTrade={showTrades ? handleCreateTrade : undefined}
++              postBrandId={selectedBrandId ?? undefined}
++            />
++          </View>
+         </View>
+       </PageLayout>
+     </View>
+diff --git a/src/screens/profile/UserProfileScreen/index.tsx b/src/screens/profile/UserProfileScreen/index.tsx
+index 33a2b9c7..5c3a68e5 100644
+--- a/src/screens/profile/UserProfileScreen/index.tsx
++++ b/src/screens/profile/UserProfileScreen/index.tsx
+@@ -11,6 +11,7 @@ import { RootStackParamList } from '../../../types/navigation'
+ import LoadingIndicator from '../../../components/global/LoadingIndicator'
+ import AvatarViewer from '../../../components/global/AvatarViewer'
+ import ProfileHero from '../../../components/profile/ProfileHero'
++import { FixedBannerImage } from '../../../components/detail/FixedBanner'
+ import ProfileTabs, { useProfileTabs } from '../../../components/profile/ProfileTabs'
+ import { getImage, IMG_WIDTH } from '../../../utils/getImage'
+ import { useUserProfile } from './data/fetchUserProfile'
+@@ -122,25 +123,29 @@ const UserProfileScreen = () => {
+       contentExtendsUnderHeader
+       staticHeader
+       onEndReached={profileTabs.onEndReached}
++      // Fixed hero: the banner is pinned; the hero's fade and the page
++      // scroll up over it (FixedBanner).
++      fixedBackground={profile.banner ? <FixedBannerImage uri={profile.banner} /> : undefined}
+     >
++      {/* The profile hero — fixed banner under the floating circles, avatar,
++          jumbo name + @username, bio, social row. Stats (Deals/Collected/
++          Portfolio) are gone (Skylar, 2026-08-15). No Edit profile / gear
++          here (owner-only), and no friends row (Skylar, 2026-11-02): the
++          API's connections list is scoped to the caller's own account, so
++          another person's friends can't be read yet. */}
++      <ProfileHero
++        profileId={profile.id}
++        banner={profile.banner}
++        avatar={profile.avatar}
++        title={getProfileName(profile, 'Unknown')}
++        handle={profile.username}
++        description={profile.description}
++        socialLinks={profile.socialLinks}
++        onAvatarPress={() => setAvatarViewerVisible(true)}
++      />
++      {/* Root paints the page background, so it sits AFTER the hero: the
++          hero's fade slot must stay see-through over the pinned banner. */}
+       <View style={profileStyles.root}>
+-        {/* The profile hero — banner under the floating circles, avatar,
+-            jumbo name + @username, bio, social row. Stats (Deals/Collected/
+-            Portfolio) are gone (Skylar, 2026-08-15). No Edit profile / gear
+-            here (owner-only), and no friends row (Skylar, 2026-11-02): the
+-            API's connections list is scoped to the caller's own account, so
+-            another person's friends can't be read yet. */}
+-        <ProfileHero
+-          profileId={profile.id}
+-          banner={profile.banner}
+-          avatar={profile.avatar}
+-          title={getProfileName(profile, 'Unknown')}
+-          handle={profile.username}
+-          description={profile.description}
+-          socialLinks={profile.socialLinks}
+-          onAvatarPress={() => setAvatarViewerVisible(true)}
+-        />
+-
+         {/* The tabs (Skylar, 2026-11-01): the own profile's Posts · Binders ·
+             Trades · Refs without its create entries — no add tile, no post
+             pill, no Trade button. */}
+diff --git a/src/screens/sets/SetScreen/index.tsx b/src/screens/sets/SetScreen/index.tsx
+index 1ffcf19d..ba924bf5 100644
+--- a/src/screens/sets/SetScreen/index.tsx
++++ b/src/screens/sets/SetScreen/index.tsx
+@@ -1,19 +1,18 @@
+ import React, { useCallback, useMemo } from 'react'
+-import { View, Text, Image, ImageStyle, Platform } from 'react-native'
+-import LinearGradient from 'react-native-linear-gradient'
++import { View, Text, Platform } from 'react-native'
+ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native'
+ import { StackNavigationProp } from '@react-navigation/stack'
+ import { useQuery } from '@tanstack/react-query'
+ import PageLayout from '../../../components/global/PageLayout'
+ import LoadingIndicator from '../../../components/global/LoadingIndicator'
+ import DetailChatSection from '../../../components/detail/DetailChatSection'
++import { FixedBannerImage, FixedBannerFade } from '../../../components/detail/FixedBanner'
+ import JoinChatFooter from '../../../components/posts/composer/JoinChatFooter'
+ import { usePosts } from '../../../components/posts/usePosts'
+ import ExpandableText from '../../../components/global/ExpandableText'
+ import CardCarousel from '../../../components/shelf/CardCarousel'
+ import EntityThumb from '../../../components/cards/EntityThumb'
+ import { useTheme } from '../../../styles/utils/ThemeProvider'
+-import { getGradientProps } from '../../../styles/components/gradients'
+ import { getTypographyStyles } from '../../../styles/components/typography'
+ import { getCardStyles } from '../../../styles/components/cards'
+ import { getDetailStyles } from '../../../styles/components/detail'
+@@ -21,7 +20,6 @@ import { setService } from '../../../services/api/Set'
+ import { entityService } from '../../../services/api/Entity'
+ import { EntityDto, SetDto } from '../../../types'
+ import { RootStackParamList } from '../../../types/navigation'
+-import { getImage, IMG_WIDTH } from '../../../utils/getImage'
+ import { compactLabel } from '../../../utils/tagLabels'
+ import { useCanShare } from '../../../hooks/useCanShare'
+ import { buildShareUrl } from '../../../utils/shareUrl'
+@@ -55,8 +53,6 @@ const SetScreen: React.FC = () => {
+   const { theme } = useTheme()
+   const typographyStyles = getTypographyStyles(theme)
+   const cardStyles = getCardStyles(theme)
+-  const bannerFade = getGradientProps(theme, 'fadeHeroCollapsed')
+-  const bannerScrim = getGradientProps(theme, 'scrimTop')
+   const detailStyles = getDetailStyles(theme)
+ 
+   // include=brand: the composer's tags line only renders with a brandId, and
+@@ -147,77 +143,69 @@ const SetScreen: React.FC = () => {
+   // post.
+   return (
+     <View style={detailStyles.chatPinnedScreen}>
+-      <PageLayout headerProps={headerProps} contentExtendsUnderHeader staticHeader disableBottomPadding>
++      <PageLayout
++        headerProps={headerProps}
++        contentExtendsUnderHeader
++        staticHeader
++        disableBottomPadding
++        fixedBackground={set.banner ? <FixedBannerImage uri={set.banner} size="tag" /> : undefined}
++      >
+         {/* The tag page's hero at its taller 290-on-402 proportion (cards.ts
+-          tagDetailBanner), not the 230 the collection / group heroes keep:
+-          scrim up top for the floating buttons, fade-to-background below so
+-          the image blends into the page. */}
+-        {set.banner ? (
+-          <View style={cardStyles.tagDetailBanner}>
+-            <Image
+-              source={{ uri: getImage(set.banner, { width: IMG_WIDTH.BANNER }) }}
+-              style={cardStyles.collectionDetailBannerImage as ImageStyle}
+-            />
+-            <LinearGradient
+-              {...bannerScrim}
+-              style={cardStyles.collectionDetailBannerScrim}
+-              pointerEvents="none"
+-            />
+-            <LinearGradient
+-              {...bannerFade}
+-              style={cardStyles.collectionDetailBannerFade}
+-              pointerEvents="none"
+-            />
+-          </View>
+-        ) : null}
+-
+-        <View
+-          style={
+-            set.banner
+-              ? cardStyles.tagDetailHeaderBlock
+-              : cardStyles.tagDetailHeaderBlockNoBanner
+-          }
+-        >
+-          {/* The hero is the ONE place the full displayName shows — every
++          tagDetailBanner), not the 230 the collection / group heroes keep, and
++          its fixed treatment (FixedBanner): the image + scrim are pinned
++          behind the scroll; the full-height fade and the content scroll up
++          over them. */}
++        {set.banner ? <FixedBannerFade size="tag" /> : null}
++
++        <View style={cardStyles.detailBannerSheet}>
++          <View
++            style={
++              set.banner
++                ? cardStyles.tagDetailHeaderBlock
++                : cardStyles.tagDetailHeaderBlockNoBanner
++            }
++          >
++            {/* The hero is the ONE place the full displayName shows — every
+             compact surface reads shortName. */}
+-          <Text style={detailStyles.detailTitleHero} numberOfLines={3}>
+-            {fullName}
+-          </Text>
+-          {set.description ? (
+-            <ExpandableText
+-              text={set.description}
+-              textStyle={typographyStyles.tagDetailDescription}
+-            />
+-          ) : null}
+-        </View>
++            <Text style={detailStyles.detailTitleHero} numberOfLines={3}>
++              {fullName}
++            </Text>
++            {set.description ? (
++              <ExpandableText
++                text={set.description}
++                textStyle={typographyStyles.tagDetailDescription}
++              />
++            ) : null}
++          </View>
+ 
+-        {/* Between the blurb and the chat, where the tag page runs its
+-          children rail — `divider` draws the same rule and 24pt seam. */}
+-        <CardCarousel
+-          title="What's inside"
+-          data={insideEntities}
+-          renderItem={renderInsideItem}
+-          keyExtractor={insideKey}
+-          onSeeAllPress={() => navigation.push('FeedGrid', {
+-            title: fullName,
+-            source: { kind: 'set', setId },
+-          })}
+-          divider
+-        />
+-
+-        {/* The shared chat surface, framed as on the tag page: 'base' puts the
++          {/* Between the blurb and the chat, where the tag page runs its
++            children rail — `divider` draws the same rule and 24pt seam. */}
++          <CardCarousel
++            title="What's inside"
++            data={insideEntities}
++            renderItem={renderInsideItem}
++            keyExtractor={insideKey}
++            onSeeAllPress={() => navigation.push('FeedGrid', {
++              title: fullName,
++              source: { kind: 'set', setId },
++            })}
++            divider
++          />
++
++          {/* The shared chat surface, framed as on the tag page: 'base' puts the
+           Chat heading and rows on the 20pt page gutter with the title block
+           above; `divider` draws the rule straight under the blurb. */}
+-        <DetailChatSection
+-          postableType="SET"
+-          postableId={setId}
+-          brandId={composerBrandId}
+-          lockedTags={lockedTags}
+-          containerStyle={cardStyles.tagDetailPostsSection}
+-          composerPlacement="pinned"
+-          inset="base"
+-          divider
+-        />
++          <DetailChatSection
++            postableType="SET"
++            postableId={setId}
++            brandId={composerBrandId}
++            lockedTags={lockedTags}
++            containerStyle={cardStyles.tagDetailPostsSection}
++            composerPlacement="pinned"
++            inset="base"
++            divider
++          />
++        </View>
+       </PageLayout>
+       {/* The pinned entry — stays in view while the thread scrolls. 'base':
+         its sides sit on the page's 20pt inset like everything above it. */}
+diff --git a/src/screens/tags/SupportedTagValueScreen/index.tsx b/src/screens/tags/SupportedTagValueScreen/index.tsx
+index 502ef73f..c2fbe57f 100644
+--- a/src/screens/tags/SupportedTagValueScreen/index.tsx
++++ b/src/screens/tags/SupportedTagValueScreen/index.tsx
+@@ -1,24 +1,22 @@
+ import React, { useCallback, useEffect, useMemo } from 'react'
+-import { View, Text, Image, ImageStyle, Platform } from 'react-native'
+-import LinearGradient from 'react-native-linear-gradient'
++import { View, Text, Platform } from 'react-native'
+ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native'
+ import { useQuery } from '@tanstack/react-query'
+ import { track, EVENTS } from '../../../services/analytics'
+ import PageLayout from '../../../components/global/PageLayout'
+ import LoadingIndicator from '../../../components/global/LoadingIndicator'
+ import DetailChatSection from '../../../components/detail/DetailChatSection'
++import { FixedBannerImage, FixedBannerFade } from '../../../components/detail/FixedBanner'
+ import JoinChatFooter from '../../../components/posts/composer/JoinChatFooter'
+ import { usePosts } from '../../../components/posts/usePosts'
+ import TagCarousel from '../../../components/tags/TagCarousel'
+ import ExpandableText from '../../../components/global/ExpandableText'
+ import { useTheme } from '../../../styles/utils/ThemeProvider'
+-import { getGradientProps } from '../../../styles/components/gradients'
+ import { getTypographyStyles } from '../../../styles/components/typography'
+ import { getCardStyles } from '../../../styles/components/cards'
+ import { getDetailStyles } from '../../../styles/components/detail'
+ import { supportedTagValueService } from '../../../services/api/SupportedTagValue'
+ import { SupportedTagValueDto } from '../../../types'
+-import { getImage, IMG_WIDTH } from '../../../utils/getImage'
+ import { compactLabel } from '../../../utils/tagLabels'
+ import { useCanShare } from '../../../hooks/useCanShare'
+ import { buildShareUrl } from '../../../utils/shareUrl'
+@@ -53,11 +51,6 @@ const SupportedTagValueScreen: React.FC = () => {
+   const { theme } = useTheme()
+   const typographyStyles = getTypographyStyles(theme)
+   const cardStyles = getCardStyles(theme)
+-  // The banner blend now runs the SAME curve as the entity screen's hero cap
+-  // (effects.gradients fadeHeroCollapsed) — one definition across all five
+-  // banners, replacing five copies of a shorter 3-stop fade.
+-  const bannerFade = getGradientProps(theme, 'fadeHeroCollapsed')
+-  const bannerScrim = getGradientProps(theme, 'scrimTop')
+   const detailStyles = getDetailStyles(theme)
+ 
+   // include=brandTag: the composer's tags line only renders with a brandId,
+@@ -128,6 +121,13 @@ const SupportedTagValueScreen: React.FC = () => {
+   ]
+   const composerBrandId = tagValue.brandTag?.brandId ?? null
+ 
++  // Fixed hero (Figma 3393:168141 — the listing/bid treatment, shared via
++  // FixedBanner): the image + scrim are pinned behind the scroll at the tag
++  // page's 290-on-402, and the fade + content scroll up over them.
++  const fixedBanner = tagValue.banner
++    ? <FixedBannerImage uri={tagValue.banner} size="tag" />
++    : undefined
++
+   // staticHeader: this screen's header is two always-available controls (back +
+   // share) with no title — no band worth reclaiming space from, so the
+   // hide/reveal swing only reads as the circles drifting as you scroll.
+@@ -141,82 +141,67 @@ const SupportedTagValueScreen: React.FC = () => {
+   // (~24) above the pill, which itself owns the safe-area inset.
+   return (
+     <View style={detailStyles.chatPinnedScreen}>
+-      <PageLayout headerProps={headerProps} contentExtendsUnderHeader staticHeader disableBottomPadding>
+-        {/* Collection-detail hero treatment at the tag page's taller proportion
+-          (Figma 2191:209052 — 290 on the 402 frame, vs the 230 the group /
+-          collection / profile heroes keep): edge-to-edge banner with a dark
+-          scrim up top so the floating buttons stay legible, and a
+-          fade-to-background at the bottom so the image blends into the page
+-          instead of ending on a hard edge. The title sits below the image. */}
+-        {tagValue.banner ? (
+-          <View style={cardStyles.tagDetailBanner}>
+-            <Image
+-              source={{ uri: getImage(tagValue.banner, { width: IMG_WIDTH.BANNER }) }}
+-              style={cardStyles.collectionDetailBannerImage as ImageStyle}
+-            />
+-            <LinearGradient
+-              {...bannerScrim}
+-              style={cardStyles.collectionDetailBannerScrim}
+-              pointerEvents="none"
+-            />
+-            <LinearGradient
+-              {...bannerFade}
+-              style={cardStyles.collectionDetailBannerFade}
+-              pointerEvents="none"
+-            />
+-          </View>
+-        ) : null}
++      <PageLayout
++        headerProps={headerProps}
++        contentExtendsUnderHeader
++        staticHeader
++        disableBottomPadding
++        fixedBackground={fixedBanner}
++      >
++        {tagValue.banner ? <FixedBannerFade size="tag" /> : null}
+ 
+-        <View
+-          style={
+-            tagValue.banner
+-              ? cardStyles.tagDetailHeaderBlock
+-              : cardStyles.tagDetailHeaderBlockNoBanner
+-          }
+-        >
+-          {/* Same jumbo lockup as the listing/bid detail hero, so the name is
++        <View style={cardStyles.detailBannerSheet}>
++          <View
++            style={
++              tagValue.banner
++                ? cardStyles.tagDetailHeaderBlock
++                : cardStyles.tagDetailHeaderBlockNoBanner
++            }
++          >
++            {/* Same jumbo lockup as the listing/bid detail hero, so the name is
+             unmistakably the first read. Three lines rather than that hero's
+             two: the Figma master frame sizes the title for three 38pt lines. */}
+-          <Text style={detailStyles.detailTitleHero} numberOfLines={3}>
+-            {tagValue.displayName || tagValue.name}
+-          </Text>
+-          {/* Clamping is off for now: the blurb renders in full. Turn it back on
++            <Text style={detailStyles.detailTitleHero} numberOfLines={3}>
++              {tagValue.displayName || tagValue.name}
++            </Text>
++            {/* Clamping is off for now: the blurb renders in full. Turn it back on
+             by passing `collapsible` (and `collapsedLines` if 4 isn't right). */}
+-          {tagValue.description ? (
+-            <ExpandableText
+-              text={tagValue.description}
+-              textStyle={typographyStyles.tagDetailDescription}
+-            />
+-          ) : null}
+-        </View>
++            {tagValue.description ? (
++              <ExpandableText
++                text={tagValue.description}
++                textStyle={typographyStyles.tagDetailDescription}
++              />
++            ) : null}
++          </View>
+ 
+-        {/* Children (e.g. the heroes of this class). Untitled — the thumbnails
++          {/* Children (e.g. the heroes of this class). Untitled — the thumbnails
+           read for themselves under the hero. Data-driven: only a value that
+           actually has children (so, a parent) renders the rail. `divider`:
+           the rail draws the feed's hairline rule above itself and leaves the
+           24pt seam below (cards.ts shelfDivider), the same lines the home
+           screen runs between its sections — no margin wrapper needed. */}
+-        {(tagValue.children?.length ?? 0) > 0 ? (
+-          <TagCarousel parentId={supportedTagValueId} inset="tag" divider />
+-        ) : null}
++          {(tagValue.children?.length ?? 0) > 0 ? (
++            <TagCarousel parentId={supportedTagValueId} inset="tag" divider />
++          ) : null}
+ 
+-        {/* The shared chat surface — same heading and thread as the listing/bid
++          {/* The shared chat surface — same heading and thread as the listing/bid
+           detail screens, but the entry is PINNED to the screen bottom here
+           (the pill below PageLayout) — no buy bar competes for it. */}
+-        <DetailChatSection
+-          postableType="SUPPORTED_TAG_VALUE"
+-          postableId={supportedTagValueId}
+-          brandId={composerBrandId}
+-          lockedTags={lockedTags}
+-          containerStyle={cardStyles.tagDetailPostsSection}
+-          composerPlacement="pinned"
+-          // 'base': the Chat heading and post rows take the page's 20pt gutter,
+-          // in step with the title block and rail above (Figma 2191:209052).
+-          inset="base"
+-          // The rule above Chat — under the rail, or straight under the blurb
+-          // on a child value — matching the one the rail draws above itself.
+-          divider
+-        />
++          <DetailChatSection
++            postableType="SUPPORTED_TAG_VALUE"
++            postableId={supportedTagValueId}
++            brandId={composerBrandId}
++            lockedTags={lockedTags}
++            containerStyle={cardStyles.tagDetailPostsSection}
++            composerPlacement="pinned"
++            // 'base': the Chat heading and post rows take the page's 20pt gutter,
++            // in step with the title block and rail above (Figma 2191:209052).
++            inset="base"
++            // The rule above Chat — under the rail, or straight under the blurb
++            // on a child value — matching the one the rail draws above itself.
++            divider
++          />
++        </View>
+ 
+       </PageLayout>
+       {/* The pinned entry — stays in view while the thread scrolls. 'base':
+diff --git a/src/styles/components/cards.ts b/src/styles/components/cards.ts
+index cd08b243..2f76552c 100644
+--- a/src/styles/components/cards.ts
++++ b/src/styles/components/cards.ts
+@@ -7,6 +7,11 @@ import { getGlassFill } from './glass'
+ import { LOCKUP_THUMB_WIDTH_ROW, getZoomBackdropStyle, LOCKUP_HERO_CARD_ASPECT } from './entity'
+ import { memoizeByTheme } from '../utils/memoizeByTheme'
+ 
++// The 230 collection / group / profile hero height, shared by the pinned
++// banner and the transparent slot that holds its place in the scroll
++// (fixed-hero recipe, components/detail/FixedBanner).
++const DETAIL_BANNER_HEIGHT = 230
++
+ type CardStyles = {
+   promoCard: ViewStyle
+   orderCard: ViewStyle
+@@ -746,6 +751,10 @@ type CardStyles = {
+   collectionDetailBannerFade: ViewStyle
+   // Tag detail: the same hero recipe at the taller 290-on-402 proportion.
+   tagDetailBanner: ViewStyle
++  tagDetailBannerSpacer: ViewStyle
++  collectionDetailBannerSpacer: ViewStyle
++  detailBannerFade: ViewStyle
++  detailBannerSheet: ViewStyle
+   collectionDetailHeaderBlock: ViewStyle
+   collectionDetailHeaderBlockNoBanner: ViewStyle
+   collectionDetailTitle: TextStyle
+@@ -5440,7 +5449,7 @@ export const getCardStyles = memoizeByTheme((theme: ThemeTokens): CardStyles =>
+     // content starts at y=0 so the image sits under the status bar.
+     collectionDetailBanner: {
+       width: '100%',
+-      height: 230,
++      height: DETAIL_BANNER_HEIGHT,
+       overflow: 'hidden',
+       backgroundColor: theme.colors.surface,
+     },
+@@ -5480,6 +5489,36 @@ export const getCardStyles = memoizeByTheme((theme: ThemeTokens): CardStyles =>
+       overflow: 'hidden',
+       backgroundColor: theme.colors.surface,
+     },
++    // Fixed-hero recipe (Figma 3393:168141, the listing/bid treatment; tag,
++    // set, group, collection and profile pages — components/detail/FixedBanner):
++    // the banner is PINNED behind the scroll, and the scroll content opens with
++    // a transparent slot of the banner's size so the title lands where it always
++    // did. The fade rides the slot — it scrolls up over the pinned image.
++    tagDetailBannerSpacer: {
++      width: '100%',
++      aspectRatio: 402 / 290,
++    },
++    collectionDetailBannerSpacer: {
++      width: '100%',
++      height: DETAIL_BANNER_HEIGHT,
++    },
++    // The fade spans the WHOLE slot, top of the viewport to the banner's bottom
++    // edge (was the bottom 120), so it lands solid exactly where the sheet
++    // below takes over.
++    detailBannerFade: {
++      position: 'absolute',
++      top: 0,
++      left: 0,
++      right: 0,
++      bottom: 0,
++    },
++    // Opaque body under the slot — everything after the hero sits on the page
++    // background so it covers the pinned image as it scrolls up. flexGrow: a
++    // short page still paints solid to the bottom.
++    detailBannerSheet: {
++      flexGrow: 1,
++      backgroundColor: theme.colors.background,
++    },
+     // Title/count block below a banner, sitting just under the image with a
+     // little breathing room off the banner's bottom fade.
+     collectionDetailHeaderBlock: {
+@@ -5520,7 +5559,10 @@ export const getCardStyles = memoizeByTheme((theme: ThemeTokens): CardStyles =>
+     collectionDetailGrid: {
+       flexDirection: 'row',
+       columnGap: theme.spacing.gutter,
+-      marginBottom: theme.spacing.gutter,
++      // Padding + fill, not a margin: the rows scroll over the pinned banner
++      // (fixed-hero recipe), so the gap under each row must be opaque too.
++      paddingBottom: theme.spacing.gutter,
++      backgroundColor: theme.colors.background,
+       alignItems: 'flex-start',
+       paddingHorizontal: theme.spacing.base,
+     },
+diff --git a/src/styles/components/profile.ts b/src/styles/components/profile.ts
+index 9df12d82..593e3283 100644
+--- a/src/styles/components/profile.ts
++++ b/src/styles/components/profile.ts
+@@ -83,6 +83,7 @@ type ProfileStyles = {
+   profileListingsContainer: ViewStyle
+   profilePostList: ViewStyle
+   profileHeroBlock: ViewStyle
++  profileSheet: ViewStyle
+   profileHeroBlockNoBanner: ViewStyle
+   profileHeroAvatarRow: ViewStyle
+   profileHeroAvatarOverlap: ViewStyle
+@@ -446,8 +447,20 @@ export const getProfileStyles = memoizeByTheme((theme: ThemeTokens): ProfileStyl
+     // Edit profile + gear right) → jumbo name + @username → bio → social row,
+     // on the 15pt page edge. No block gap: each step carries its own spec'd
+     // distance below, so a missing bio or social row drops out cleanly.
++    // Opaque (fixed hero): the block scrolls up over the pinned banner, so it
++    // paints the page background. The avatar row still rides up 84 out of it
++    // onto the fade (profileHeroAvatarOverlap). Doesn't grow — profileSheet
++    // below it does.
+     profileHeroBlock: {
+       paddingHorizontal: theme.spacing['15'],
++      backgroundColor: theme.colors.background,
++    },
++    // Own profile: the friends row + tabs under the hero on an opaque fill, so
++    // they cover the pinned banner as they scroll up (UserProfileScreen's
++    // root already paints one). flexGrow: a short page stays solid.
++    profileSheet: {
++      flexGrow: 1,
++      backgroundColor: theme.colors.background,
+     },
+     // No banner: the block pads itself down past the floating header circles
+     // instead (same clearance expression as tagDetailHeaderBlockNoBanner).
+diff --git a/src/styles/tokens/dark.json b/src/styles/tokens/dark.json
+--- a/src/styles/tokens/dark.json
++++ b/src/styles/tokens/dark.json
+@@ -323,6 +323,7 @@
+       "shadeBottomDeep": { "stops": [{ "color": "transparent", "at": 0 }, { "color": ["overlayDeep", "overlay"], "at": 0.6 }, { "color": ["overlayDeep", "overlay"], "at": 1 }], "start": { "x": 0, "y": 0 }, "end": { "x": 0, "y": 1 } },
+       "fadeHero": { "stops": [{ "color": "background", "alpha": 0, "at": 0 }, { "color": "background", "alpha": 0.7, "at": 0.5 }, { "color": "background", "at": 0.7 }, { "color": "background", "at": 1 }] },
+       "fadeHeroCollapsed": { "stops": [{ "color": "background", "alpha": 0, "at": 0 }, { "color": "background", "alpha": 0.11, "at": 0.341 }, { "color": "background", "alpha": 0.61, "at": 0.7 }, { "color": "background", "at": 1 }] },
++      "fadeHeroFixed": { "stops": [{ "color": "background", "alpha": 0, "at": 0 }, { "color": "background", "alpha": 0, "at": 0.15 }, { "color": "background", "alpha": 0.08, "at": 0.3 }, { "color": "background", "alpha": 0.28, "at": 0.45 }, { "color": "background", "alpha": 0.55, "at": 0.6 }, { "color": "background", "alpha": 0.8, "at": 0.75 }, { "color": "background", "alpha": 0.97, "at": 0.9 }, { "color": "background", "at": 1 }] },
+       "fadeHeroExpanded": { "stops": [{ "color": "background", "alpha": 0, "at": 0 }, { "color": "background", "alpha": 0.05, "at": 0.341 }, { "color": "background", "alpha": 0.4, "at": 0.82 }, { "color": "background", "at": 1 }] },
+       "fadeDown": { "stops": [{ "color": "background", "alpha": 0 }, { "color": "background" }] },
+       "fadeRight": { "stops": [{ "color": "background", "alpha": 0 }, { "color": "background" }], "start": { "x": 0, "y": 0 }, "end": { "x": 1, "y": 0 } },
+diff --git a/src/styles/tokens/light.json b/src/styles/tokens/light.json
+--- a/src/styles/tokens/light.json
++++ b/src/styles/tokens/light.json
+@@ -323,6 +323,7 @@
+       "shadeBottomDeep": { "stops": [{ "color": "transparent", "at": 0 }, { "color": ["overlayDeep", "overlay"], "at": 0.6 }, { "color": ["overlayDeep", "overlay"], "at": 1 }], "start": { "x": 0, "y": 0 }, "end": { "x": 0, "y": 1 } },
+       "fadeHero": { "stops": [{ "color": "background", "alpha": 0, "at": 0 }, { "color": "background", "alpha": 0.7, "at": 0.5 }, { "color": "background", "at": 0.7 }, { "color": "background", "at": 1 }] },
+       "fadeHeroCollapsed": { "stops": [{ "color": "background", "alpha": 0, "at": 0 }, { "color": "background", "alpha": 0.11, "at": 0.341 }, { "color": "background", "alpha": 0.61, "at": 0.7 }, { "color": "background", "at": 1 }] },
++      "fadeHeroFixed": { "stops": [{ "color": "background", "alpha": 0, "at": 0 }, { "color": "background", "alpha": 0, "at": 0.15 }, { "color": "background", "alpha": 0.08, "at": 0.3 }, { "color": "background", "alpha": 0.28, "at": 0.45 }, { "color": "background", "alpha": 0.55, "at": 0.6 }, { "color": "background", "alpha": 0.8, "at": 0.75 }, { "color": "background", "alpha": 0.97, "at": 0.9 }, { "color": "background", "at": 1 }] },
+       "fadeHeroExpanded": { "stops": [{ "color": "background", "alpha": 0, "at": 0 }, { "color": "background", "alpha": 0.05, "at": 0.341 }, { "color": "background", "alpha": 0.4, "at": 0.82 }, { "color": "background", "at": 1 }] },
+       "fadeDown": { "stops": [{ "color": "background", "alpha": 0 }, { "color": "background" }] },
+       "fadeRight": { "stops": [{ "color": "background", "alpha": 0 }, { "color": "background" }], "start": { "x": 0, "y": 0 }, "end": { "x": 1, "y": 0 } },
