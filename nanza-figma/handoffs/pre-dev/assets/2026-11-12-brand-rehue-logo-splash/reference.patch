@@ -1,0 +1,431 @@
+diff --git a/android/app/src/main/res/values/colors.xml b/android/app/src/main/res/values/colors.xml
+index 541b5431..a6c1c450 100644
+--- a/android/app/src/main/res/values/colors.xml
++++ b/android/app/src/main/res/values/colors.xml
+@@ -9,6 +9,6 @@
+     <!-- Mirrors theme.colors.primary 500 in src/styles/tokens/dark.json. Tints
+          the push notification icon and app name (firebase.json
+          messaging_android_notification_color). Keep in step with that token. -->
+-    <color name="notification_accent">#FF4BFF</color>
++    <color name="notification_accent">#ED3594</color>
+ 
+ </resources>
+diff --git a/android/app/src/main/res/values/styles.xml b/android/app/src/main/res/values/styles.xml
+index 51469b25..c23ef065 100755
+--- a/android/app/src/main/res/values/styles.xml
++++ b/android/app/src/main/res/values/styles.xml
+@@ -1,4 +1,4 @@
+-<resources>
++<resources xmlns:tools="http://schemas.android.com/tools">
+ 
+     <!-- Base application theme. -->
+     <style name="AppTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
+@@ -13,6 +13,11 @@
+              it to the app's own background makes those frames invisible
+              instead of merely rare. -->
+         <item name="android:windowBackground">@color/app_window_background</item>
++        <!-- Android 12+ draws its own launch splash (icon in a disc on a system
++             background) before this theme applies. Pin both to the app background
++             so it never shows a white screen or a black disc. Ignored below API 31. -->
++        <item name="android:windowSplashScreenBackground" tools:targetApi="31">@color/app_window_background</item>
++        <item name="android:windowSplashScreenIconBackgroundColor" tools:targetApi="31">@color/app_window_background</item>
+     </style>
+ 
+ </resources>
+diff --git a/assets/images/logo-simple.svg b/assets/images/logo-simple.svg
+index ef0fcea1..86a1455d 100644
+--- a/assets/images/logo-simple.svg
++++ b/assets/images/logo-simple.svg
+@@ -1,11 +1,10 @@
+ <svg width="108" height="108" viewBox="0 0 108 108" fill="none" xmlns="http://www.w3.org/2000/svg">
+-<path d="M34.2,9.7c-.6-1.7.9-3.4,2.7-3.1,0,0,25.5,6.3,25.5,6.3,6.9,1.7,6.8,2.5,10.1,9,0,0,17.3,39.6,17.3,39.6.7,1.7-.9,3.5-2.7,3.1l-25-5.3c-2.1,0-2.9,2.6-2.1,4.3,0,0,13.8,34.7,13.8,34.7.7,1.3,0,3.5-1.5,3.5,0,0-24.2-4.5-24.2-4.5-6.3-1-8.5-2.9-11.5-9.3,0,0-18.4-43.1-18.4-43.1-.6-1.8,1-2.9,2.7-2.6,7.8,2.1,30.1,2.7,34.3,11-.3-4.3-17-34.3-21-43.8h0Z" fill="#FF4BFF"/>
++<path d="M34.2,9.7c-.6-1.7.9-3.4,2.7-3.1,0,0,25.5,6.3,25.5,6.3,6.9,1.7,6.8,2.5,10.1,9,0,0,17.3,39.6,17.3,39.6.7,1.7-.9,3.5-2.7,3.1l-25-5.3c-2.1,0-2.9,2.6-2.1,4.3,0,0,13.8,34.7,13.8,34.7.7,1.3,0,3.5-1.5,3.5,0,0-24.2-4.5-24.2-4.5-6.3-1-8.5-2.9-11.5-9.3,0,0-18.4-43.1-18.4-43.1-.6-1.8,1-2.9,2.7-2.6,7.8,2.1,30.1,2.7,34.3,11-.3-4.3-17-34.3-21-43.8h0Z" fill="#ED3594"/>
+ <path d="M34.2,9.7c-.6-1.7.9-3.4,2.7-3.1,0,0,25.5,6.3,25.5,6.3,6.9,1.7,6.8,2.5,10.1,9,0,0,17.3,39.6,17.3,39.6.7,1.7-.9,3.5-2.7,3.1l-25-5.3c-2.1,0-2.9,2.6-2.1,4.3,0,0,13.8,34.7,13.8,34.7.7,1.3,0,3.5-1.5,3.5,0,0-24.2-4.5-24.2-4.5-6.3-1-8.5-2.9-11.5-9.3,0,0-18.4-43.1-18.4-43.1-.6-1.8,1-2.9,2.7-2.6,7.8,2.1,30.1,2.7,34.3,11-.3-4.3-17-34.3-21-43.8h0Z" fill="url(#nanzaSimpleGradient)" fill-opacity="0.6"/>
+-<path d="M34.2,9.7c-.6-1.7.9-3.4,2.7-3.1,0,0,25.5,6.3,25.5,6.3,6.9,1.7,6.8,2.5,10.1,9,0,0,17.3,39.6,17.3,39.6.7,1.7-.9,3.5-2.7,3.1l-25-5.3c-2.1,0-2.9,2.6-2.1,4.3,0,0,13.8,34.7,13.8,34.7.7,1.3,0,3.5-1.5,3.5,0,0-24.2-4.5-24.2-4.5-6.3-1-8.5-2.9-11.5-9.3,0,0-18.4-43.1-18.4-43.1-.6-1.8,1-2.9,2.7-2.6,7.8,2.1,30.1,2.7,34.3,11-.3-4.3-17-34.3-21-43.8h0Z" stroke="#FF6DFA" stroke-width="0.8" stroke-linejoin="round"/>
+ <defs>
+ <linearGradient id="nanzaSimpleGradient" x1="58" y1="4.9" x2="49.4" y2="100.8" gradientUnits="userSpaceOnUse">
+-<stop stop-color="#FF6DFA"/>
+-<stop offset="1" stop-color="#E415DE"/>
++<stop stop-color="#FF89C6"/>
++<stop offset="1" stop-color="#ED3594"/>
+ </linearGradient>
+ </defs>
+ </svg>
+diff --git a/assets/images/logo.svg b/assets/images/logo.svg
+index 9558c4e9..46120969 100644
+--- a/assets/images/logo.svg
++++ b/assets/images/logo.svg
+@@ -1,11 +1,10 @@
+ <svg width="97" height="128" viewBox="0 0 97 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+-<path d="M22.04 4.55273C21.2168 2.33418 23.2177 0.0377481 25.582 0.486328L59.6963 8.86816V8.86914C64.0692 9.96358 66.2801 10.7276 67.9834 12.2871C69.7057 13.864 70.9422 16.2784 73.2334 20.8389L96.3486 73.7373H96.3496C97.2556 75.9825 95.1982 78.357 92.792 77.8457L59.374 70.7422C59.3483 70.7367 59.3222 70.7331 59.2959 70.7324C58.005 70.699 57.0133 71.5904 56.5098 72.7197C56.0074 73.8466 55.944 75.2926 56.541 76.5713V76.5723L74.9443 122.907C74.9478 122.916 74.952 122.925 74.9561 122.934C75.4499 123.973 75.3997 125.165 74.9873 126.087C74.5771 127.004 73.8552 127.572 73.0371 127.568L40.6973 121.615L40.6885 121.614L39.9941 121.497C36.5799 120.903 34.0445 120.143 31.8555 118.515C29.6648 116.885 27.7789 114.353 25.7422 110.128L25.332 109.261L0.623047 51.666C0.204629 50.549 0.503784 49.6155 1.16797 49.0029C1.84996 48.3741 2.95756 48.0504 4.18359 48.2969L4.19238 48.2988L36.9395 54.1914V54.1924C42.5789 55.3632 47.1804 59.5623 50.0449 63.0498C50.1843 63.2195 50.4286 63.257 50.6123 63.1367C50.796 63.0165 50.8595 62.7776 50.7598 62.582C50.1428 61.3731 42.9617 46.863 35.9316 32.6494C32.4174 25.5443 28.9418 18.5149 26.3447 13.2617C25.0463 10.6353 23.9672 8.45264 23.2129 6.92676C22.8358 6.16381 22.5396 5.56429 22.3379 5.15625C22.2371 4.95237 22.1595 4.79571 22.1074 4.69043C22.0815 4.63801 22.062 4.59795 22.0488 4.57129C22.0453 4.56423 22.0426 4.55794 22.04 4.55273Z" fill="#FF4BFF"/>
++<path d="M22.04 4.55273C21.2168 2.33418 23.2177 0.0377481 25.582 0.486328L59.6963 8.86816V8.86914C64.0692 9.96358 66.2801 10.7276 67.9834 12.2871C69.7057 13.864 70.9422 16.2784 73.2334 20.8389L96.3486 73.7373H96.3496C97.2556 75.9825 95.1982 78.357 92.792 77.8457L59.374 70.7422C59.3483 70.7367 59.3222 70.7331 59.2959 70.7324C58.005 70.699 57.0133 71.5904 56.5098 72.7197C56.0074 73.8466 55.944 75.2926 56.541 76.5713V76.5723L74.9443 122.907C74.9478 122.916 74.952 122.925 74.9561 122.934C75.4499 123.973 75.3997 125.165 74.9873 126.087C74.5771 127.004 73.8552 127.572 73.0371 127.568L40.6973 121.615L40.6885 121.614L39.9941 121.497C36.5799 120.903 34.0445 120.143 31.8555 118.515C29.6648 116.885 27.7789 114.353 25.7422 110.128L25.332 109.261L0.623047 51.666C0.204629 50.549 0.503784 49.6155 1.16797 49.0029C1.84996 48.3741 2.95756 48.0504 4.18359 48.2969L4.19238 48.2988L36.9395 54.1914V54.1924C42.5789 55.3632 47.1804 59.5623 50.0449 63.0498C50.1843 63.2195 50.4286 63.257 50.6123 63.1367C50.796 63.0165 50.8595 62.7776 50.7598 62.582C50.1428 61.3731 42.9617 46.863 35.9316 32.6494C32.4174 25.5443 28.9418 18.5149 26.3447 13.2617C25.0463 10.6353 23.9672 8.45264 23.2129 6.92676C22.8358 6.16381 22.5396 5.56429 22.3379 5.15625C22.2371 4.95237 22.1595 4.79571 22.1074 4.69043C22.0815 4.63801 22.062 4.59795 22.0488 4.57129C22.0453 4.56423 22.0426 4.55794 22.04 4.55273Z" fill="#ED3594"/>
+ <path d="M22.04 4.55273C21.2168 2.33418 23.2177 0.0377481 25.582 0.486328L59.6963 8.86816V8.86914C64.0692 9.96358 66.2801 10.7276 67.9834 12.2871C69.7057 13.864 70.9422 16.2784 73.2334 20.8389L96.3486 73.7373H96.3496C97.2556 75.9825 95.1982 78.357 92.792 77.8457L59.374 70.7422C59.3483 70.7367 59.3222 70.7331 59.2959 70.7324C58.005 70.699 57.0133 71.5904 56.5098 72.7197C56.0074 73.8466 55.944 75.2926 56.541 76.5713V76.5723L74.9443 122.907C74.9478 122.916 74.952 122.925 74.9561 122.934C75.4499 123.973 75.3997 125.165 74.9873 126.087C74.5771 127.004 73.8552 127.572 73.0371 127.568L40.6973 121.615L40.6885 121.614L39.9941 121.497C36.5799 120.903 34.0445 120.143 31.8555 118.515C29.6648 116.885 27.7789 114.353 25.7422 110.128L25.332 109.261L0.623047 51.666C0.204629 50.549 0.503784 49.6155 1.16797 49.0029C1.84996 48.3741 2.95756 48.0504 4.18359 48.2969L4.19238 48.2988L36.9395 54.1914V54.1924C42.5789 55.3632 47.1804 59.5623 50.0449 63.0498C50.1843 63.2195 50.4286 63.257 50.6123 63.1367C50.796 63.0165 50.8595 62.7776 50.7598 62.582C50.1428 61.3731 42.9617 46.863 35.9316 32.6494C32.4174 25.5443 28.9418 18.5149 26.3447 13.2617C25.0463 10.6353 23.9672 8.45264 23.2129 6.92676C22.8358 6.16381 22.5396 5.56429 22.3379 5.15625C22.2371 4.95237 22.1595 4.79571 22.1074 4.69043C22.0815 4.63801 22.062 4.59795 22.0488 4.57129C22.0453 4.56423 22.0426 4.55794 22.04 4.55273Z" fill="url(#paint0_linear_17374_41053)" fill-opacity="0.6"/>
+-<path d="M22.04 4.55273C21.2168 2.33418 23.2177 0.0377481 25.582 0.486328L59.6963 8.86816V8.86914C64.0692 9.96358 66.2801 10.7276 67.9834 12.2871C69.7057 13.864 70.9422 16.2784 73.2334 20.8389L96.3486 73.7373H96.3496C97.2556 75.9825 95.1982 78.357 92.792 77.8457L59.374 70.7422C59.3483 70.7367 59.3222 70.7331 59.2959 70.7324C58.005 70.699 57.0133 71.5904 56.5098 72.7197C56.0074 73.8466 55.944 75.2926 56.541 76.5713V76.5723L74.9443 122.907C74.9478 122.916 74.952 122.925 74.9561 122.934C75.4499 123.973 75.3997 125.165 74.9873 126.087C74.5771 127.004 73.8552 127.572 73.0371 127.568L40.6973 121.615L40.6885 121.614L39.9941 121.497C36.5799 120.903 34.0445 120.143 31.8555 118.515C29.6648 116.885 27.7789 114.353 25.7422 110.128L25.332 109.261L0.623047 51.666C0.204629 50.549 0.503784 49.6155 1.16797 49.0029C1.84996 48.3741 2.95756 48.0504 4.18359 48.2969L4.19238 48.2988L36.9395 54.1914V54.1924C42.5789 55.3632 47.1804 59.5623 50.0449 63.0498C50.1843 63.2195 50.4286 63.257 50.6123 63.1367C50.796 63.0165 50.8595 62.7776 50.7598 62.582C50.1428 61.3731 42.9617 46.863 35.9316 32.6494C32.4174 25.5443 28.9418 18.5149 26.3447 13.2617C25.0463 10.6353 23.9672 8.45264 23.2129 6.92676C22.8358 6.16381 22.5396 5.56429 22.3379 5.15625C22.2371 4.95237 22.1595 4.79571 22.1074 4.69043C22.0815 4.63801 22.062 4.59795 22.0488 4.57129C22.0453 4.56423 22.0426 4.55794 22.04 4.55273Z" stroke="#FF6DFA" stroke-width="0.86" stroke-linejoin="round"/>
+ <defs>
+ <linearGradient id="paint0_linear_17374_41053" x1="53.7493" y1="-1.8882" x2="42.3965" y2="126.306" gradientUnits="userSpaceOnUse">
+-<stop stop-color="#FF6DFA"/>
+-<stop offset="1" stop-color="#E415DE"/>
++<stop stop-color="#FF89C6"/>
++<stop offset="1" stop-color="#ED3594"/>
+ </linearGradient>
+ </defs>
+ </svg>
+diff --git a/assets/images/logo_full.svg b/assets/images/logo_full.svg
+index a9c697b6..0d4bab89 100644
+--- a/assets/images/logo_full.svg
++++ b/assets/images/logo_full.svg
+@@ -1,21 +1,15 @@
+-<svg width="704" height="200" viewBox="0 0 704 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+-<g clip-path="url(#clip0_21003_1244)">
+-<path d="M196.561 50.291H218.008C218.859 50.291 219.551 50.9825 219.551 51.8337V65.851C225.135 54.8792 236.504 48.6951 250.864 48.6951C273.601 48.6951 288.36 65.0531 288.36 88.5927V149.29C288.36 150.141 287.668 150.833 286.817 150.833H265.37C264.519 150.833 263.828 150.141 263.828 149.29V93.7794C263.828 80.0147 255.451 70.4393 242.886 70.4393C229.124 70.4393 219.551 81.2116 219.551 95.9737V149.29C219.551 150.141 218.859 150.833 218.008 150.833H196.561C195.71 150.833 195.019 150.141 195.019 149.29V51.8337C195.019 50.9825 195.71 50.291 196.561 50.291Z" fill="white"/>
+-<path d="M392.072 86.1988V149.29C392.072 150.141 391.381 150.833 390.53 150.833H369.481C368.63 150.833 367.939 150.141 367.939 149.29V135.871C363.751 145.846 352.183 152.429 337.822 152.429C317.878 152.429 304.315 139.662 304.315 122.306C304.315 102.756 319.473 90.5875 342.011 90.5875H360.559C365.546 90.5875 367.939 87.7947 367.939 83.805C367.939 74.03 360.36 67.048 347.396 67.048C334.432 67.048 327.451 74.4224 326.374 82.8474C326.275 83.6188 325.63 84.2039 324.845 84.2039H305.997C305.08 84.2039 304.362 83.406 304.462 82.4883C306.503 63.3707 323.223 48.6951 348.599 48.6951C373.975 48.6951 392.079 63.4572 392.079 86.1988H392.072ZM367.939 108.342V106.746H345.401C335.03 106.746 328.05 112.531 328.05 121.309C328.05 129.089 334.432 134.275 343.606 134.275C358.964 134.275 367.939 123.503 367.939 108.342Z" fill="white"/>
+-<path d="M412.156 50.291H433.604C434.455 50.291 435.146 50.9825 435.146 51.8337V65.851C440.73 54.8792 452.099 48.6951 466.459 48.6951C489.196 48.6951 503.955 65.0531 503.955 88.5927V149.29C503.955 150.141 503.264 150.833 502.413 150.833H480.965C480.115 150.833 479.423 150.141 479.423 149.29V93.7794C479.423 80.0147 471.046 70.4393 458.481 70.4393C444.719 70.4393 435.146 81.2116 435.146 95.9737V149.29C435.146 150.141 434.455 150.833 433.604 150.833H412.156C411.305 150.833 410.614 150.141 410.614 149.29V51.8337C410.614 50.9825 411.305 50.291 412.156 50.291Z" fill="white"/>
+-<path d="M519.931 129.641L574.958 70.8383H524.445C523.594 70.8383 522.902 70.1467 522.902 69.2956V51.8337C522.902 50.9826 523.594 50.291 524.445 50.291H601.338C602.189 50.291 602.88 50.9826 602.88 51.8337V70.2332C602.88 70.6188 602.734 70.9979 602.468 71.2838L548.033 130.086H604.33C605.181 130.086 605.872 130.778 605.872 131.629V149.29C605.872 150.141 605.181 150.833 604.33 150.833H521.054C520.203 150.833 519.512 150.141 519.512 149.29V130.698C519.512 130.306 519.658 129.927 519.931 129.641Z" fill="white"/>
+-<path d="M704 86.1988V149.29C704 150.141 703.308 150.833 702.457 150.833H681.409C680.558 150.833 679.867 150.141 679.867 149.29V135.871C675.678 145.846 664.11 152.429 649.75 152.429C629.806 152.429 616.243 139.662 616.243 122.306C616.243 102.756 631.401 90.5875 653.939 90.5875H672.487C677.473 90.5875 679.867 87.7947 679.867 83.805C679.867 74.03 672.288 67.048 659.324 67.048C646.36 67.048 639.379 74.4224 638.302 82.8474C638.202 83.6188 637.557 84.2039 636.773 84.2039H617.925C617.008 84.2039 616.29 83.406 616.389 82.4883C618.43 63.3707 635.151 48.6951 660.527 48.6951C685.903 48.6951 704.006 63.4572 704.006 86.1988H704ZM679.867 108.342V106.746H657.329C646.958 106.746 639.977 112.531 639.977 121.309C639.977 129.089 646.36 134.275 655.534 134.275C670.892 134.275 679.867 123.503 679.867 108.342Z" fill="white"/>
+-<path d="M34.451 7.13492C33.148 3.63058 36.3125 -0.000101686 40.0488 0.711406L93.4673 13.8111C100.308 15.5201 103.785 16.717 106.465 19.164C109.17 21.6377 111.112 25.4213 114.695 32.543L150.881 115.198C152.317 118.742 149.06 122.492 145.25 121.688L92.9354 110.589C92.8955 110.583 92.8623 110.576 92.8224 110.576C90.8279 110.523 89.2922 111.899 88.5077 113.648C87.7232 115.404 87.6235 117.651 88.5609 119.639L117.368 192.027C117.368 192.027 117.381 192.054 117.381 192.067C118.159 193.703 118.079 195.585 117.427 197.034C116.783 198.477 115.632 199.388 114.329 199.382L63.6899 190.079H63.6766L63.1248 189.986C57.507 189.041 53.3719 187.858 49.8217 185.225C46.1519 182.505 43.0339 178.176 39.5967 170.755L0.924046 80.7526C0.259223 78.9838 0.731247 77.5076 1.78831 76.5301C2.87197 75.5327 4.62046 75.0273 6.55509 75.413C6.55509 75.413 6.56174 75.413 6.56839 75.413L57.8395 84.6227C66.6816 86.458 73.8949 93.0278 78.3825 98.4805C78.5819 98.7265 78.9409 98.7797 79.2002 98.6068C79.4661 98.4339 79.5592 98.0881 79.4129 97.8022C78.4489 95.9137 67.2068 73.2386 56.1973 51.0289C50.6926 39.9241 45.2544 28.9456 41.1857 20.7334C39.1513 16.6305 37.4627 13.2193 36.2859 10.8321C35.6942 9.64182 35.2289 8.70422 34.9164 8.06586C34.7568 7.74668 34.6372 7.50065 34.5574 7.34106C34.5175 7.26126 34.4843 7.19477 34.4643 7.15487C34.4643 7.14157 34.451 7.13492 34.451 7.12162V7.13492Z" fill="#FF4BFF"/>
+-<path d="M34.451 7.13492C33.148 3.63058 36.3125 -0.000101686 40.0488 0.711406L93.4673 13.8111C100.308 15.5201 103.785 16.717 106.465 19.164C109.17 21.6377 111.112 25.4213 114.695 32.543L150.881 115.198C152.317 118.742 149.06 122.492 145.25 121.688L92.9354 110.589C92.8955 110.583 92.8623 110.576 92.8224 110.576C90.8279 110.523 89.2922 111.899 88.5077 113.648C87.7232 115.404 87.6235 117.651 88.5609 119.639L117.368 192.027C117.368 192.027 117.381 192.054 117.381 192.067C118.159 193.703 118.079 195.585 117.427 197.034C116.783 198.477 115.632 199.388 114.329 199.382L63.6899 190.079H63.6766L63.1248 189.986C57.507 189.041 53.3719 187.858 49.8217 185.225C46.1519 182.505 43.0339 178.176 39.5967 170.755L0.924046 80.7526C0.259223 78.9838 0.731247 77.5076 1.78831 76.5301C2.87197 75.5327 4.62046 75.0273 6.55509 75.413C6.55509 75.413 6.56174 75.413 6.56839 75.413L57.8395 84.6227C66.6816 86.458 73.8949 93.0278 78.3825 98.4805C78.5819 98.7265 78.9409 98.7797 79.2002 98.6068C79.4661 98.4339 79.5592 98.0881 79.4129 97.8022C78.4489 95.9137 67.2068 73.2386 56.1973 51.0289C50.6926 39.9241 45.2544 28.9456 41.1857 20.7334C39.1513 16.6305 37.4627 13.2193 36.2859 10.8321C35.6942 9.64182 35.2289 8.70422 34.9164 8.06586C34.7568 7.74668 34.6372 7.50065 34.5574 7.34106C34.5175 7.26126 34.4843 7.19477 34.4643 7.15487C34.4643 7.14157 34.451 7.13492 34.451 7.12162V7.13492Z" fill="url(#paint0_linear_21003_1244)" fill-opacity="0.6"/>
+-<path d="M114.349 200C114.31 200 114.263 200 114.223 199.987L63.5836 190.684L63.0318 190.591C57.6002 189.68 53.2124 188.503 49.4628 185.717C45.6666 182.897 42.4489 178.362 39.045 171.008L0.352368 80.9987C-0.358991 79.1036 0.013309 77.3215 1.36955 76.078C2.6726 74.8811 4.66042 74.409 6.68147 74.808L57.9525 84.0177C67.7387 86.0458 75.2579 93.7061 78.8679 98.0949C78.0701 96.5322 70.2584 80.7926 55.6523 51.3149C50.1475 40.2101 44.7093 29.2316 40.6406 21.0194L33.9126 7.44088C33.9126 7.44088 33.8793 7.37438 33.8727 7.35443C33.1946 5.53244 33.5536 3.53091 34.83 2.0148C36.1597 0.438849 38.1475 -0.272658 40.1686 0.106369L93.6203 13.2127C100.521 14.935 104.071 16.1386 106.883 18.7119C109.616 21.2055 111.524 24.8695 115.247 32.2572C115.247 32.2572 115.247 32.2638 115.247 32.2705L151.446 114.958C152.204 116.827 151.865 118.862 150.562 120.418C149.226 122.007 147.145 122.732 145.124 122.306L92.8092 111.208C91.2402 111.161 89.8574 112.179 89.0795 113.914C88.3083 115.637 88.3283 117.685 89.1261 119.387L117.946 191.814C118.757 193.517 118.777 195.571 117.999 197.307C117.235 199.009 115.872 200.02 114.343 200.02L114.349 200Z" fill="#FF6DFA"/>
+-</g>
++<svg width="180" height="54" viewBox="0 0 180 54" fill="none" xmlns="http://www.w3.org/2000/svg">
++<path d="M52.1,39.2h-7.4V14.8h6.4c.2,1.2.3,2.3.3,3.2,1.4-2.4,3.8-3.8,7.2-3.8,6.3,0,9.8,4.2,9.8,10.4v14.7h-7.4v-13.5c0-3.1-1.5-5-4.5-5s-4.5,1.8-4.5,5v13.4Z" fill="white"/>
++<path d="M71.7,31.8c0-4.7,3.9-8.4,9.7-8.4s6.5,1.7,6.5,1.7v-.7c0-2.6-1.6-3.9-5.5-3.9s-5.1.5-8.4,1.7l-.5-6.1c3.8-1.4,6.9-1.9,9.9-1.9,8.3,0,12,3.8,12,11v14.1h-6.4c-.2-1-.3-1.9-.3-2.7-1.5,1.9-3.9,3.4-7.3,3.4-5.8,0-9.7-3.5-9.7-8.2h0ZM88.2,31.4v-.2c0-1.7-1.7-3.1-4.5-3.1s-4.5,1.4-4.5,3.1v.2c0,1.7,1.7,3.1,4.5,3.1s4.5-1.4,4.5-3.1Z" fill="white"/>
++<path d="M107.1,39.2h-7.4V14.8h6.4c.2,1.2.3,2.3.3,3.2,1.4-2.4,3.8-3.8,7.2-3.8,6.3,0,9.8,4.2,9.8,10.4v14.7h-7.4v-13.5c0-3.1-1.5-5-4.5-5s-4.5,1.8-4.5,5h0v13.4Z" fill="white"/>
++<path d="M127.8,39.2v-5.3l11.1-12.8h-10.7v-6.3h20.3v5.3l-11.2,12.8h11.4v6.3h-20.9Z" fill="white"/>
++<path d="M151.6,31.8h0c0-4.7,3.8-8.4,9.7-8.4s6.5,1.7,6.5,1.7v-.7c0-2.6-1.6-3.9-5.5-3.9s-5.1.5-8.4,1.7l-.5-6.1c3.8-1.4,6.9-1.9,9.9-1.9,8.3,0,12,3.8,12,11v14.1h-6.4c-.2-1-.3-1.9-.3-2.7-1.5,1.9-3.9,3.4-7.3,3.4-5.8,0-9.7-3.5-9.7-8.2h0ZM168,31.4v-.2c0-1.7-1.7-3.1-4.5-3.1s-4.5,1.4-4.5,3.1v.2c0,1.7,1.7,3.1,4.5,3.1s4.5-1.4,4.5-3.1Z" fill="white"/>
++<path d="M12.5,7.1c-.3-.8.4-1.5,1.2-1.4l11.4,2.8c1.5.4,2.2.6,2.8,1.1.6.5,1,1.3,1.8,2.9l7.7,17.8c.3.8-.4,1.6-1.2,1.4l-11.2-2.4h0c-.4,0-.8.3-.9.7-.2.4-.2.9,0,1.3l6.2,15.6c.2.4.2.8,0,1.1-.1.3-.4.5-.7.5l-10.8-2h-.1c-1.2-.2-2.1-.5-2.8-1-.8-.6-1.5-1.5-2.2-3.1L5.3,23c-.1-.4,0-.7.2-.9.2-.2.6-.3,1-.2l11,2c1.9.4,3.4,1.8,4.4,3,0,0,.1,0,.2,0,0,0,0-.1,0-.2-.2-.4-9.6-19.5-9.6-19.5Z" fill="#ED3594"/>
++<path d="M12.5,7.1c-.3-.8.4-1.5,1.2-1.4l11.4,2.8c1.5.4,2.2.6,2.8,1.1.6.5,1,1.3,1.8,2.9l7.7,17.8c.3.8-.4,1.6-1.2,1.4l-11.2-2.4h0c-.4,0-.8.3-.9.7-.2.4-.2.9,0,1.3l6.2,15.6c.2.4.2.8,0,1.1-.1.3-.4.5-.7.5l-10.8-2h-.1c-1.2-.2-2.1-.5-2.8-1-.8-.6-1.5-1.5-2.2-3.1L5.3,23c-.1-.4,0-.7.2-.9.2-.2.6-.3,1-.2l11,2c1.9.4,3.4,1.8,4.4,3,0,0,.1,0,.2,0,0,0,0-.1,0-.2-.2-.4-9.6-19.5-9.6-19.5Z" fill="url(#nanzaFullGradient)" fill-opacity="0.6"/>
+ <defs>
+-<linearGradient id="paint0_linear_21003_1244" x1="84.8445" y1="-2.89268" x2="67.1397" y2="197.419" gradientUnits="userSpaceOnUse">
+-<stop stop-color="#FF6DFA"/>
+-<stop offset="1" stop-color="#E415DE"/>
++<linearGradient id="nanzaFullGradient" x1="0.554" y1="-0.015" x2="0.437" y2="0.985">
++<stop stop-color="#FF89C6"/>
++<stop offset="1" stop-color="#ED3594"/>
+ </linearGradient>
+-<clipPath id="clip0_21003_1244">
+-<rect width="704" height="200" fill="white"/>
+-</clipPath>
+ </defs>
+ </svg>
+diff --git a/src/components/global/FloatingTabBar/index.tsx b/src/components/global/FloatingTabBar/index.tsx
+index 629baa18..f513a942 100644
+--- a/src/components/global/FloatingTabBar/index.tsx
++++ b/src/components/global/FloatingTabBar/index.tsx
+@@ -191,7 +191,8 @@ const FloatingTabBar: React.FC<FloatingTabBarProps> = ({ state, descriptors, nav
+     }
+   }, [navigation])
+ 
+-  const activeColor = theme.colors.action || theme.colors.textAccent || theme.colors.text
++  // Bright white for the active tab's icon, in step with floatingNavLabelActive.
++  const activeColor = theme.colors.textSecondary || theme.colors.text
+   const inactiveColor = theme.colors.secondaryText || theme.colors.textMuted || theme.colors.border
+ 
+   const renderTabIcon = (routeName: string, color: string) => {
+diff --git a/src/components/global/SplashAnimation/LogoBurst.tsx b/src/components/global/SplashAnimation/LogoBurst.tsx
+index 562083dc..8f7eabb1 100644
+--- a/src/components/global/SplashAnimation/LogoBurst.tsx
++++ b/src/components/global/SplashAnimation/LogoBurst.tsx
+@@ -213,16 +213,26 @@ const LogoBurst = ({ scale, logoOpacity, artOpacity, progress, artZoom }: LogoBu
+   // The clip that carries the hole across the artwork. It is a second copy of
+   // the same matrix rather than a shared one, because a useAnimatedProps result
+   // binds to the single component it is attached to.
++  //
++  // DIVIDED by the art's push-in (2026-11-09 fix). A clipPath in
++  // userSpaceOnUse is resolved in the REFERENCING element's user space —
++  // which includes the image's own `matrix` (artProps, the 1 → 1.12 drift).
++  // So the image's zoom was scaling the hole too: the cut-out ran up to 12%
++  // bigger than the border and the underlay's hole, and the dark underlay
++  // showed as a black band outside the grey edge (at rest as a dark ring
++  // round the mark; on the burst as a widening band). Both matrices pivot on
++  // PIVOT, so k / z here composes with the image's z back to exactly k.
+   const clipProps = useAnimatedProps<AnimatedPathProps>(() => {
+-    const k = scale.value
++    const k = scale.value / artZoom.value
+     return { matrix: [k, 0, 0, k, PIVOT * (1 - k), PIVOT * (1 - k)] }
+   })
+ 
+   // The push-in rides on the image's OWN matrix, not on the enclosing view.
+   // Scaling the layer would scale the hole with it while the mark stayed put,
+   // and the two would come out of register — a ring of app visible around a
+-  // logo that is supposed to be covering it exactly. Scaling the image alone
+-  // leaves the hole, the border and the mark untouched.
++  // logo that is supposed to be covering it exactly. NOTE the image's matrix
++  // DOES reach its clip (userSpaceOnUse resolves in the image's own space), so
++  // clipProps divides the zoom back out — see there.
+   //
+   // It pivots on PIVOT for the same reason the burst does: that point is both
+   // the mark's centre and the screen's centre in this user space. Because the
+diff --git a/src/components/posts/composer/JoinChatFooter.tsx b/src/components/posts/composer/JoinChatFooter.tsx
+index 62382a75..b75c50f5 100644
+--- a/src/components/posts/composer/JoinChatFooter.tsx
++++ b/src/components/posts/composer/JoinChatFooter.tsx
+@@ -1,6 +1,7 @@
+ import React, { useState, useEffect } from 'react'
+ import { View, Text, TouchableOpacity, Pressable, Modal } from 'react-native'
+ import { GestureHandlerRootView } from 'react-native-gesture-handler'
++import LinearGradient from 'react-native-linear-gradient'
+ import { useSafeAreaInsets } from 'react-native-safe-area-context'
+ import { useTheme } from '../../../styles/utils/ThemeProvider'
+ import { getPostComposerStyles } from '../../../styles/components/postComposer'
+@@ -16,6 +17,7 @@ import GlassRim from '../../global/GlassRim'
+ import { HydratedPostDto, PostableType } from '../../../types'
+ import { getControlHitSlop, getBottomBarInset } from '../../../styles/components/glass'
+ import EdgeFade from '../../global/EdgeFade'
++import { hexToRgba } from '../../../utils/hexToRgba'
+ 
+ type JoinChatFooterProps = ComposerTagContext & {
+   postableType: PostableType
+@@ -98,6 +100,20 @@ const JoinChatFooter: React.FC<JoinChatFooterProps> = ({
+   const searchFooterStyles = getSearchFooterStyles(theme)
+   const headerStyles = getHeaderStyles(theme)
+   const layoutStyles = getLayoutStyles(theme)
++  // The plus discs (navPlus, fab) wear the logo's soft gradient, kept subtle:
++  // primary 400 at 75% over the disc's flat `action` fill, fading out by 85%
++  // down — a clear lift at the top, the pure pink at the very bottom. Drawn
++  // under the glyph.
++  const plusGradient = (
++    <LinearGradient
++      colors={[hexToRgba(theme.colors.primary['400'], 0.75), hexToRgba(theme.colors.primary['400'], 0)]}
++      locations={[0, 0.85]}
++      start={{ x: 0.5, y: 0 }}
++      end={{ x: 0.5, y: 1 }}
++      style={layoutStyles.floatingNavPlusGradient}
++      pointerEvents="none"
++    />
++  )
+   const insets = useSafeAreaInsets()
+   const { isSignedIn } = useSession()
+   const [composerOpen, setComposerOpen] = useState(false)
+@@ -168,10 +184,16 @@ const JoinChatFooter: React.FC<JoinChatFooterProps> = ({
+               Skylar, 2026-08-14: the disc holds its size on tap (the press
+               scale was tried and walked back). Icon ink follows the send
+               button's active pair (text on the pink fill). */}
+-          <GlassRim />
+-          <View style={layoutStyles.floatingNavPlus}>
+-            <Icon name="plus" size={Number(theme.icons.md)} color={theme.colors.text} strokeWidth={0} />
+-          </View>
++          {({ pressed }) => (
++            <>
++              <GlassRim />
++              <View style={layoutStyles.floatingNavPlus}>
++                {/* Pressed: the gradient drops, leaving the flat `action` fill. */}
++                {pressed ? null : plusGradient}
++                <Icon name="plus" size={Number(theme.icons.md)} color={theme.colors.text} strokeWidth={0} />
++              </View>
++            </>
++          )}
+         </Pressable>
+       ) : placement === 'fab' ? (
+         // The Home FAB (2026-08-15): the bare pink disc, no glass wrap — it
+@@ -183,7 +205,13 @@ const JoinChatFooter: React.FC<JoinChatFooterProps> = ({
+           accessibilityRole="button"
+           accessibilityLabel="New post"
+         >
+-          <Icon name="plus" size={Number(theme.icons.md)} color={theme.colors.text} strokeWidth={0} />
++          {({ pressed }) => (
++            <>
++              {/* Pressed: the gradient drops, leaving the flat `action` fill. */}
++              {pressed ? null : plusGradient}
++              <Icon name="plus" size={Number(theme.icons.md)} color={theme.colors.text} strokeWidth={0} />
++            </>
++          )}
+         </Pressable>
+       ) : placement === 'fixed' ? (
+         <View style={styles.footerFloat} pointerEvents="box-none">
+diff --git a/src/styles/components/layout.ts b/src/styles/components/layout.ts
+index 05141fc1..30802842 100644
+--- a/src/styles/components/layout.ts
++++ b/src/styles/components/layout.ts
+@@ -340,6 +340,7 @@ type LayoutStyles = {
+   floatingNavFabSlot: ViewStyle
+   floatingNavFab: ViewStyle
+   floatingNavPlus: ViewStyle
++  floatingNavPlusGradient: ViewStyle
+   floatingNavIconLayer: ViewStyle
+   floatingNavLabelWrap: ViewStyle
+   floatingNavLabelOverlay: TextStyle
+@@ -2028,7 +2029,7 @@ export const getLayoutStyles = memoizeByTheme((theme: ThemeTokens): LayoutStyles
+     },
+     floatingNavLabelActive: {
+       ...typography.micro,
+-      color: theme.colors.action || theme.colors.textAccent || theme.colors.text,
++      color: theme.colors.textSecondary || theme.colors.text,
+     },
+     // Glass circle, matching the pill beside it — fill here, <GlassRim /> child.
+     floatingNavYou: {
+@@ -2055,6 +2056,18 @@ export const getLayoutStyles = memoizeByTheme((theme: ThemeTokens): LayoutStyles
+       alignItems: 'center',
+       justifyContent: 'center',
+     },
++    // The logo's soft top-to-bottom gradient (primary 400 → action) laid over
++    // the plus discs — floatingNavPlus and floatingNavFab — under the glyph
++    // (2026-11-12 re-hue). Fills the disc and takes its circle; the disc's own
++    // flat `action` fill stays beneath as the fallback.
++    floatingNavPlusGradient: {
++      position: 'absolute',
++      top: 0,
++      left: 0,
++      right: 0,
++      bottom: 0,
++      borderRadius: theme.radius.max,
++    },
+     // Cross-fade layers for a tab's icon. Both colour variants are rendered and
+     // their opacity animated, rather than interpolating the glyph's `fill`:
+     // opacity runs on the native driver, an animated colour cannot, and these
+diff --git a/src/styles/components/postComposer.ts b/src/styles/components/postComposer.ts
+index 10befb6a..90945cc6 100644
+--- a/src/styles/components/postComposer.ts
++++ b/src/styles/components/postComposer.ts
+@@ -712,7 +712,7 @@ export const getPostComposerStyles = memoizeByTheme((theme: ThemeTokens): PostCo
+     // editor: the editor's own face and size, only the colour changes — the
+     // same `action` pink the posted card's tagMention run wears.
+     inlineTagRun: {
+-      color: theme.colors.action,
++      color: theme.colors.link || theme.colors.action,
+     },
+     // The `#` list's frame (inline hashtags, 2026-11-01). Its HEIGHT is set
+     // by the composer from measurements — the body frame minus keyboard
+diff --git a/src/styles/components/posts.ts b/src/styles/components/posts.ts
+index cc74b40f..671fad04 100644
+--- a/src/styles/components/posts.ts
++++ b/src/styles/components/posts.ts
+@@ -707,26 +707,28 @@ export const getPostStyles = memoizeByTheme((theme: ThemeTokens): CommentStyles
+     // class that predates the chicklet row. A `highlight` (primary.300) pass
+     // was tried and walked back the same day (user, 2026-09-05): the lighter
+     // tint read as washed out against postBody rather than as a link.
++    // Now the `link` token (2026-11-12 re-hue): a cool neutral (neutral.300),
++    // not pink — distinct from the warm body text but easy on the eyes.
+     // Colour only (Skylar, 2026-11-02): the run is always nested in its host
+     // <Text> and inherits that size, so a tag always reads at the size of the
+     // words around it (it used to pin postBody, smaller than the detail root).
+     tagMention: {
+-      color: theme.colors.action,
++      color: theme.colors.link || theme.colors.action,
+     },
+-    // The run under a finger (PostHashtags): the same pink at 0.7 alpha — the
++    // The run under a finger (PostHashtags): the same link colour at 0.7 alpha — the
+     // card's TouchableOpacity dim (0.85 over the whole card) scaled for a thin
+     // run, so the tag darkens toward the background like the text does, rather
+     // than lightening (Skylar, 2026-10-26, second pass).
+     tagMentionPressed: {
+-      color: hexToRgba(theme.colors.action || theme.colors.text, 0.7),
++      color: hexToRgba(theme.colors.link || theme.colors.action || theme.colors.text, 0.7),
+     },
+-    // "Show more" under a card's content (Skylar, 2026-10-11): the same pink
+-    // link register as the inline #hashtags — same run, `action` colour — so
++    // "Show more" under a card's content (Skylar, 2026-10-11): the same
++    // link register as the inline #hashtags — same run, `link` colour — so
+     // the two read as one kind of thing, "tap me, there's more post".
+     showMoreText: {
+       // postBody, the text it follows (user, 2026-10-12; was a point under).
+       ...typography.postBody,
+-      color: theme.colors.action,
++      color: theme.colors.link || theme.colors.action,
+     },
+     // Sits on its own line under the content, left-aligned, with the same
+     // 8 the content block keeps above itself. alignSelf keeps the tap target
+diff --git a/src/styles/tokens/dark.json b/src/styles/tokens/dark.json
+index 7adbe227..db89954c 100644
+--- a/src/styles/tokens/dark.json
++++ b/src/styles/tokens/dark.json
+@@ -1,17 +1,17 @@
+ {
+   "colors": {
+     "primary": {
+-      "50": "#FFF3FE",
+-      "100": "#FEE6FF",
+-      "200": "#FFCCFF",
+-      "300": "#FFA3FD",
+-      "400": "#FF6DFA",
+-      "500": "#FF4BFF",
+-      "600": "#E316DE",
+-      "700": "#BD0EB6",
+-      "800": "#9A0E93",
+-      "900": "#7E1176",
+-      "950": "#55004F"
++      "50": "#FDF2F8",
++      "100": "#FCE7F3",
++      "200": "#FCCEE9",
++      "300": "#FAA7D6",
++      "400": "#F670B9",
++      "500": "#ED3594",
++      "600": "#DE247B",
++      "700": "#C11560",
++      "800": "#9F1550",
++      "900": "#851645",
++      "950": "#510625"
+     },
+     "secondary": {
+       "50": "#FFFFFF",
+@@ -118,8 +118,9 @@
+     "secondaryText": "neutral.200",
+     "metaText": "neutral.300",
+     "inactive": "neutral.700",
+-    "highlight": "primary.300",
+-    "action": "primary.400",
++    "highlight": "primary.400",
++    "action": "primary.500",
++    "link": "neutral.300",
+     "inputBackground": "secondary.950",
+     "inputBorder": "neutral.800",
+     "inputBorderFocused": "neutral.300",
+diff --git a/src/styles/tokens/light.json b/src/styles/tokens/light.json
+index 9db74d40..04794fad 100644
+--- a/src/styles/tokens/light.json
++++ b/src/styles/tokens/light.json
+@@ -1,17 +1,17 @@
+ {
+   "colors": {
+     "primary": {
+-      "50": "#FFF3FE",
+-      "100": "#FEE6FF",
+-      "200": "#FFCCFF",
+-      "300": "#FFA3FD",
+-      "400": "#FF6DFA",
+-      "500": "#FF4BFF",
+-      "600": "#E316DE",
+-      "700": "#BD0EB6",
+-      "800": "#9A0E93",
+-      "900": "#7E1176",
+-      "950": "#55004F"
++      "50": "#FDF2F8",
++      "100": "#FCE7F3",
++      "200": "#FCCEE9",
++      "300": "#FAA7D6",
++      "400": "#F670B9",
++      "500": "#ED3594",
++      "600": "#DE247B",
++      "700": "#C11560",
++      "800": "#9F1550",
++      "900": "#851645",
++      "950": "#510625"
+     },
+     "secondary": {
+       "50": "#FFFFFF",
+@@ -118,8 +118,9 @@
+     "secondaryText": "secondary.700",
+     "metaText": "secondary.600",
+     "inactive": "secondary.500",
+-    "highlight": "primary.300",
+-    "action": "primary.400",
++    "highlight": "primary.400",
++    "action": "primary.500",
++    "link": "neutral.600",
+     "inputBackground": "secondary.50",
+     "inputBorder": "neutral.200",
+     "inputBorderFocused": "secondary.500",
+diff --git a/src/styles/utils/types.ts b/src/styles/utils/types.ts
+index 31a075fc..1a076065 100644
+--- a/src/styles/utils/types.ts
++++ b/src/styles/utils/types.ts
+@@ -75,6 +75,10 @@ export interface ThemeTokens {
+     inactive?: string
+     highlight?: string
+     action?: string
++    // Text links (post #tags / mentions, the composer's tag runs, "Show more"):
++    // a cool neutral (dark: neutral 300), distinct from the warm body text
++    // without the brand pink's weight.
++    link?: string
+     primary: {
+       [key: string]: string
+     }
