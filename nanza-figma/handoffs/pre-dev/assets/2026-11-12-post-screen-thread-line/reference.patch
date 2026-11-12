@@ -1,0 +1,177 @@
+diff --git a/src/components/posts/PostItem.tsx b/src/components/posts/PostItem.tsx
+index a7860a18..88bb1627 100644
+--- a/src/components/posts/PostItem.tsx
++++ b/src/components/posts/PostItem.tsx
+@@ -46,10 +46,13 @@ const SHOW_MORE_HIT_SLOP = { top: 10, bottom: 6, left: 16, right: 16 }
+ //   'shelf'  (8)  home shelves — the default
+ //   'page'   (15) tag / listing / bid chat sections
+ //   'detail' (20) PostDetail
++//   'flush'  (0)  a host that already pads the page itself — the post pager
++//                 (StoryPostPage's 8): the reply's avatar and divider both
++//                 sit on that edge, in line with the root avatar
+ //
+ // Adding a surface? Add the case here and the style in posts.ts — never by
+ // padding the host container, which double-indents and shortens the rule.
+-export type PostInset = 'shelf' | 'page' | 'detail'
++export type PostInset = 'shelf' | 'page' | 'detail' | 'flush'
+ 
+ // A post's mention row as postInclude sends it (2026-11-09) — narrowed here
+ // so the card reads it before the types package carries PostMention.
+@@ -348,7 +351,9 @@ const PostItem: React.FC<CommentItemProps> = ({
+       ? styles.commentCardInsetPage
+       : inset === 'detail'
+         ? styles.commentCardInsetDetail
+-        : null
++        : inset === 'flush'
++          ? styles.commentCardInsetFlush
++          : null
+   const cardStyle = [
+     isDetailRoot ? styles.detailRoot : depth > 0 ? styles.commentItemReply : styles.commentCard,
+     insetStyle,
+@@ -646,7 +651,7 @@ const PostItem: React.FC<CommentItemProps> = ({
+           list skips it (hideTopBorder). Absolute on this wrapper, so it serves
+           both branches above and never dims with the card's press. */}
+       {showDivider && (
+-        <View style={styles.commentCardDivider} pointerEvents="none" />
++        <View style={[styles.commentCardDivider, inset === 'flush' && styles.commentCardDividerFlush]} pointerEvents="none" />
+       )}
+       {/* Sign-up window for guests who tap the heart or reply. */}
+       <AuthModal visible={authVisible} onClose={hideAuthModal} />
+diff --git a/src/screens/posts/AffiliateStoriesScreen/StoryPostPage.tsx b/src/screens/posts/AffiliateStoriesScreen/StoryPostPage.tsx
+index 88fc7e31..4d0ecdab 100644
+--- a/src/screens/posts/AffiliateStoriesScreen/StoryPostPage.tsx
++++ b/src/screens/posts/AffiliateStoriesScreen/StoryPostPage.tsx
+@@ -142,11 +142,15 @@ const StoryPostPage: React.FC<StoryPostPageProps> = ({
+           onDelete={() => undefined}
+         />
+ 
+-        {/* The replies block, as PostDetail lays it: base above the first
+-              row, md between rows. The rows carry the detail inset
+-              themselves, so the list's own bleed is cancelled here (the page
+-              runs at the chrome's sm gutter, not the detail screen's base). */}
+-        <View style={[postStyles.commentListDetail, { marginTop: Number(theme.spacing.base), marginHorizontal: 0 }]}>
++        {/* The thread line from the post down to its replies (posts.ts
++              postThreadLine) — only once there are replies to lead to. */}
++        {replies.length > 0 || isLoadingReplies ? <View style={postStyles.postThreadLine} /> : null}
++
++        {/* The replies block: md between rows, starting straight under the
++              thread line. Rows go FLUSH on the page's own 8 (inset 'flush'),
++              so they line up with the root post above (Figma Get-Nanza
++              203:8068); the list doesn't bleed. */}
++        <View style={[postStyles.commentListDetail, postStyles.commentListAfterThreadLine, postStyles.commentListFlush]}>
+           {isLoadingReplies && replies.length === 0 ? (
+             <ActivityIndicator size="small" color={theme.colors.textMuted || theme.colors.secondary?.['500']} />
+           ) : null}
+@@ -155,7 +159,7 @@ const StoryPostPage: React.FC<StoryPostPageProps> = ({
+               key={reply.id}
+               post={reply}
+               hideTopBorder={index === 0}
+-              inset="detail"
++              inset="flush"
+               postableType={postableType}
+               postableId={postableId}
+               currentAccountId={viewerAccountId || undefined}
+diff --git a/src/screens/posts/PostDetailScreen/index.tsx b/src/screens/posts/PostDetailScreen/index.tsx
+index a5cb687a..2e3767ba 100644
+--- a/src/screens/posts/PostDetailScreen/index.tsx
++++ b/src/screens/posts/PostDetailScreen/index.tsx
+@@ -228,9 +228,11 @@ const PostDetailScreen: React.FC = () => {
+             still targets the post being viewed, and thread reply taps route
+             through replyTo, which snaps the modal open. */}
+ 
+-          {/* base (20) between the root and its replies — the removed "Reply"
+-            heading block used to carry this gap. */}
+-          <View style={[styles.commentListDetail, { marginTop: Number(theme.spacing.base) }]}>
++          {/* The thread line from the post down to its replies (posts.ts
++            postThreadLine) — only once there are replies to lead to. The
++            replies start straight under it. */}
++          {replies.length > 0 || isLoadingReplies ? <View style={styles.postThreadLine} /> : null}
++          <View style={[styles.commentListDetail, styles.commentListAfterThreadLine]}>
+             {/* The thread's first page in flight (Skylar, 2026-10-19): the card
+               said "3 replies" but a cold Lambda can hold the /posts read for
+               seconds, and an empty space under the root read as no replies at
+diff --git a/src/styles/components/posts.ts b/src/styles/components/posts.ts
+index cc74b40f..d273a56e 100644
+--- a/src/styles/components/posts.ts
++++ b/src/styles/components/posts.ts
+@@ -11,6 +11,9 @@ type CommentStyles = {
+   threadContainer: ViewStyle
+   threadContainerDetail: ViewStyle
+   commentListDetail: ViewStyle
++  commentListAfterThreadLine: ViewStyle
++  commentListFlush: ViewStyle
++  postThreadLine: ViewStyle
+   threadBottomAnchor: ViewStyle
+   threadHeader: ViewStyle
+   threadHeaderText: TextStyle
+@@ -25,8 +28,10 @@ type CommentStyles = {
+   commentItem: ViewStyle
+   commentCard: ViewStyle
+   commentCardDivider: ViewStyle
++  commentCardDividerFlush: ViewStyle
+   commentCardInsetPage: ViewStyle
+   commentCardInsetDetail: ViewStyle
++  commentCardInsetFlush: ViewStyle
+   commentCardFlush: ViewStyle
+   detailRoot: ViewStyle
+   bodyDetail: TextStyle
+@@ -252,6 +257,30 @@ export const getPostStyles = memoizeByTheme((theme: ThemeTokens): CommentStyles
+       paddingBottom: Number(theme.spacing.xs),
+       marginHorizontal: -theme.spacing.base,
+     },
++    // The thread line (Figma Get-Nanza 203:8068): a short vertical rule
++    // hanging from the root post toward its first reply — 1.5 x 72, surface
++    // (the post divider's colour), 60 in from the root avatar's left edge, 7
++    // under the post. The post screens (StoryPostPage, PostDetailScreen)
++    // render it only while there are replies (or they're loading), so it
++    // never dangles. No spacing token for 1.5 — min − 0.5.
++    postThreadLine: {
++      width: Number(theme.spacing.min) - 0.5,
++      height: Number(theme.spacing.xl) + Number(theme.spacing['32']),
++      marginLeft: Number(theme.spacing.xl) + Number(theme.spacing.base),
++      marginTop: Number(theme.spacing.xs) + 1,
++      backgroundColor: theme.colors.surface,
++    },
++    // Under the thread line the replies start straight away: the line's 72
++    // replaces the list's old 20 + 20 lead-in, and the first reply's flush
++    // 8 (commentCardFlush) lands on the frame's 7.
++    commentListAfterThreadLine: {
++      paddingTop: theme.spacing.none,
++    },
++    // The pager's reply list doesn't bleed: its rows go flush on the page's
++    // own 8 rather than cancelling a 20 they never had.
++    commentListFlush: {
++      marginHorizontal: theme.spacing.none,
++    },
+     // Full-bleed host that still wants the detail screens' 8pt vertical rhythm
+     // (WhatsNew): no horizontal inset, because each post row carries the page
+     // gutter itself. threadContainerDetail keeps its inset for the hosts that
+@@ -357,6 +386,13 @@ export const getPostStyles = memoizeByTheme((theme: ThemeTokens): CommentStyles
+       height: 1,
+       backgroundColor: theme.colors.surface,
+     },
++    // On a 'flush' row (the post pager's replies) the rule runs edge to edge
++    // of the row — the page's own 8 gutter is its inset — so it starts in
++    // line with the root avatar, as does the reply's own avatar.
++    commentCardDividerFlush: {
++      left: theme.spacing.none,
++      right: theme.spacing.none,
++    },
+     // --- Host gutters (PostItem `inset`) -------------------------------------
+     // A post row is full-bleed, so its horizontal padding IS the page gutter.
+     // Different hosts inset their headings differently, and the post copy has
+@@ -378,6 +414,14 @@ export const getPostStyles = memoizeByTheme((theme: ThemeTokens): CommentStyles
+     commentCardInsetDetail: {
+       paddingHorizontal: Number(theme.spacing.base),
+     },
++    // 'flush': the post pager's replies (StoryPostPage, Figma Get-Nanza
++    // 203:8068). The page already pads 8 (stories.ts postPage) and the root
++    // post sits on it. The reply takes no inset of its own, so its avatar and
++    // its divider (commentCardDividerFlush) both line up with the root
++    // avatar. ('detail' had put replies 20 further in than the root.)
++    commentCardInsetFlush: {
++      paddingHorizontal: theme.spacing.none,
++    },
+     // First row in a list. The divider separates one post FROM another, so on
+     // the first there is nothing above to separate from — it would read as a
+     // divider under the heading/composer instead (PostItem skips rendering

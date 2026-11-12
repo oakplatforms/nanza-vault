@@ -44,6 +44,7 @@ frontmatter to match the folder.
 |------|---------|-------|--------|
 | 2026-11-12 | [[handoffs/pre-dev/2026-11-12-brand-rehue-logo-splash\|Brand re-hue — persian-rose palette, logos, grey links, plus-button gradient, splash fixes]] | tokens (primary, action, highlight, new link + type), logos, FloatingTabBar, JoinChatFooter plus discs, LogoBurst, Android splash / notification tint, iOS launch logo | open — ready for dev |
 | 2026-11-12 | [[handoffs/pre-dev/2026-11-12-tag-page-fixed-hero\|Detail-page fixed heroes — pinned banner, full-height fadeHeroFixed gradient (tag, set, group, collection, profile)]] | new FixedBanner; SupportedTagValueScreen, SetScreen, GroupDetailScreen, CollectionDetailScreen, ProfileHero (ProfileScreen, UserProfileScreen); cards.ts, profile.ts, gradient token | open — ready for dev |
+| 2026-11-12 | [[handoffs/pre-dev/2026-11-12-post-screen-thread-line\|Single post page — replies line up with the post, vertical thread line]] | PostItem (new `'flush'` inset), StoryPostPage (pager), PostDetailScreen; posts.ts | open — ready for dev |
 
 ### Post-dev (design QA)
 
@@ -65,7 +66,7 @@ These predate the buckets. Each one moves into a bucket once it has been re-veri
 | 2026-11-02 | [[handoffs/2026-11-02-profile-restyle\|Profile — restyle (all tabs) + app-wide posts, trade tiles, tab counter]] | ProfileScreen / UserProfileScreen + PostItem, ItemThumb, SegmentedTabs | open |
 | 2026-11-03 | [[handoffs/2026-11-03-messaging-restyle\|Messaging — inbox, thread, reply/emoji/block sheets + app-wide tab counter, sheets]] | MessagesScreen / ConversationThread + SegmentedTabs, BottomSheet, ConfirmSheetContent | open |
 | 2026-11-03 | [[handoffs/2026-11-03-design-qa-posts-cards\|Design QA: play badge, inline entity cards, post footer share, tile rims, multi-entity spacing]] | CircleThumb, EntityLockupRow (posts + search/trade), PostItem, TagThumb / GroupBannerThumb | open |
-| 2026-11-09 | [[handoffs/2026-11-09-post-entity-rows-identity-gap\|Posts — entity rows without the card box (ruled list), identity → text gap, post-screen reply alignment + thread line]] | PostContentItems / EntityLockupRow (plain chrome), PostItem (cards, replies, detail root), StoryPostPage + PostDetailScreen — builds on 2026-11-03 design QA | open |
+| 2026-11-09 | [[handoffs/2026-11-09-post-entity-rows-identity-gap\|Posts — entity rows without the card box (ruled list), identity → text gap, post-screen reply alignment + thread line]] | PostContentItems / EntityLockupRow (plain chrome), PostItem (cards, replies, detail root), builds on 2026-11-03 design QA. Change 4 (post-screen alignment + thread line) moved to [[handoffs/pre-dev/2026-11-12-post-screen-thread-line\|pre-dev]] | open |
 | 2026-11-09 | [[handoffs/2026-11-09-composer-emoji-caption-editor\|Composer — emoji clipping, caption editor restyle, Aa in the header]] | PostComposer (text fields), PhotoTextEditor (+ SizeSlider) | open |
 | 2026-11-09 | [[handoffs/2026-11-09-binder-grid-wrap-spacing\|Binder grid — third card wrap fix + spacing aligned with the title]] | CollectionDetailScreen (collectionDetailGrid, cardWidth) — builds on 2026-11-09 fixed hero | open |
 | 2026-11-09 | [[handoffs/2026-11-09-affiliate-circle-labels\|Home affiliate rail — circle caption type + spacing]] | CircleThumb (lg) / AffiliateCircleCarousel | open |

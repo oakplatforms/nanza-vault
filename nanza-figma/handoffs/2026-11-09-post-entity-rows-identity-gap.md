@@ -136,6 +136,11 @@ Side effects to QA:
   with text; flag it if one doesn't look right.
 
 ## 4. Post screen: replies line up with the post + a thread line
+
+> [!warning] Moved out (2026-11-12)
+> This change is now its own pre-dev handoff, rebuilt on dev:
+> [[pre-dev/2026-11-12-post-screen-thread-line]]. Build it from there, not from this section.
+> The reply indent there is 0, not 6. The pager clearance below is already on dev.
 Frame Get-Nanza 203:8068 is in the **other Figma file** and is partly older (a 35 avatar,
 18pt name). Take only the reply alignment and the thread line from it.
 
@@ -273,3 +278,4 @@ Log line.
 - 2026-11-09: pager replies re-indented on device: divider flush on the page's 8 (under the root avatar), reply 6 inside it (was flush 0 with the divider 8 in, so avatars poked left of the rule)
 - 2026-11-09: thread line width set to 1.5 on device (was 2.21)
 - 2026-11-09: pager bottom clearance 75 → 111 so the last reply's footer clears the reply pill by ~59
+- 2026-11-12: change 4 (post-screen reply alignment + thread line) moved to `pre-dev/2026-11-12-post-screen-thread-line`; the indent changed there from 6 to 0. Changes 1–3 and 5 stay here, still not on dev.
