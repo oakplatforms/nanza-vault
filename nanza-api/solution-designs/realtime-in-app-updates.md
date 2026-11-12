@@ -242,6 +242,18 @@ If that ever matters, move the emit to after each caller's `$transaction` commit
 **Needs redeploy** to take effect. Still TODO: prod deploy + prod `WS_BASE_URL`; typing-indicator/presence
 (separate larger feature — user requested for later).
 
+## Fix (2026-11-07) — first reply from a new friend never arrived live
+
+Symptom: the initiator of a friend request saw nothing when the recipient first replied, until
+an app reload; every message after that arrived live. Cause: the recipient's first message goes
+through `POST /connection/:id/reply` (accept + first USER message in one transaction), which saved
+the row and returned without an `emitRealtimeEvent` or a push — only `POST /conversation/:id/messages`
+emitted. Fix: the reply endpoint now emits `message.created` to the initiator with
+`['messages', 'conversations', 'messageFeed', 'inboxCount', 'connections']` and queues the same
+`message.created` push (collapse `conversation:<id>`). Mobile hardening in the same pass:
+`realtimeSocket.open()` used to return silently when the Cognito session read failed, leaving the
+socket closed until the next background → foreground; it now backs off and retries like a dropped socket.
+
 ## Durable-doc follow-up (when it lands)
 Fold the lasting design into a vault solution design — likely a **new `solution-designs/realtime.md`**
 (distinct from `infra-push.md`, which stays the record of the removed closed-app push) + an `INDEX.md`

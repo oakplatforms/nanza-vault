@@ -1,6 +1,6 @@
 ---
 tags: [nanza-figma, handoff, nanza-mobile, profile, posts, trades, tabs]
-status: open
+status: built
 date: 2026-11-02
 figma: https://www.figma.com/design/7c3Zz4nDUOutQG1BsnRRAw/Nanza?node-id=3082-121992&m=dev
 fileKey: 7c3Zz4nDUOutQG1BsnRRAw
@@ -239,3 +239,6 @@ add a Log line.
 - 2026-11-02 — handoff written (styles only; app-wide A/B/C flagged for the dev team)
 - 2026-11-02 — designer answered Q1–9: binder tile from this frame, WTB pink / WTS green (no swap), social row below the bio (re-measured from the updated frame), tab gap 24, nothing hidden, friends count from data
 - 2026-11-02 — avatar play badge answered: reuse the carousel's CircleThumb ring + playBadge; the dev team wires the data
+- 2026-11-02 — built in nanza-mobile (uncommitted, pending device QA): hero on both profiles (132 avatar, affiliate-only play badge from the cached rail, Edit/Settings in hero, share-only header, @username, social row below bio), SegmentedTabs counter + track app-wide (15 inset; entity + create-trade capsules keep their pages' 20), PostItem rows app-wide (40 indent, bottom hairline, postBody back to 16/19), ItemThumb app-wide (card number, WTB highlight, price pill, 180/187), binder filled value pill + empty look, Refs card. Friends row on viewed profiles blocked: GET /connections is own-account only. tsc/eslint clean; /ui-review not run
+- 2026-11-02 — device pass: bio 14.5 → 15.5 (profileBio slot, new size['15.5'] token), friends count thumbLabel 12 → labelLg 14, facepile 24 → 36 (overlap 8), @username tileLabel 13 → itemTitle 15, Edit profile pill 13 → bold 14, hero avatar 132 → 120 with a thinner, tighter ring (3.5 ring, 2 gap, 121/132 image; grey for everyone, pink/grey Short state for rail affiliates) and a grey placeholder disc when there is no photo. Handoff type reads ~1pt small; guideline added to nanza-figma INDEX
+- 2026-11-02 — device pass: hero avatar ring line removed for now; the 121/132 photo sits on a black (`background`) backing disc; play badge unchanged

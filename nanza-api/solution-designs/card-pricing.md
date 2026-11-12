@@ -10,6 +10,19 @@ runtime.
 
 ## How it works
 
+- **TCG API first pass (2026-11-06, Flesh and Blood)** — before any web search, the orchestrator
+  runs the whole input through [[tcg-api-pricing|TCG API]] with
+  `generate_tcgapi_prices_sql.py price <csv> <run>/tcgapi`. That's the same matcher and set-level
+  fetch as the daily refresh ([[tcg-api-daily-price-refresh]]): ~112 requests for any number of
+  cards. A fresh market price becomes market × 0.90 (`high`). A stale one (> 14 days) is used
+  as-is (`low`), the same as the daily run's market fallback. Unmatched rows, and rows with no
+  market figure, go to `<name>-unpriced.csv`, and **only those** are split into ≤ 50-row
+  shards for the web-search `card-pricer` agents. The two results merge back by
+  `raw_card_number` with a `source` column (`tcgapi` / `web`). Why: web search hit its
+  search-session cap on new drops (6 of 711 priced on 2026-09-25). On the 2026-10-13 drop
+  (922 cards), the first pass priced 661 (654 fresh, 7 stale) offline from cached listings,
+  which left 261 rows for search. Most of those were new-set printings TCG lists without a
+  market price yet, plus foil printings it doesn't carry.
 - **Input** — either a single CSV of **≤ 50 cards**, or a `.zip` whose CSVs each hold ≤ 50 cards.
   The 50-card cap per CSV is deliberate: it keeps each pricing agent's context small enough that
   no card gets skipped or hallucinated (the failure mode of oversized batches).

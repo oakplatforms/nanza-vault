@@ -1,6 +1,6 @@
 ---
 tags: [nanza-figma, handoff, nanza-mobile, posts, cards, design-qa]
-status: open
+status: built
 date: 2026-11-03
 figma: https://www.figma.com/design/7c3Zz4nDUOutQG1BsnRRAw/Nanza?node-id=3171-38851&m=dev
 fileKey: 7c3Zz4nDUOutQG1BsnRRAw
@@ -232,3 +232,4 @@ src + tsc clean; run /ui-review before finishing.
 - 2026-11-03 — handoff written (five frames read over Dev Mode MCP curl bridge; GlassRim traced as the tile bottom edge)
 - 2026-11-03 — Q1–Q5 answered: lockup type/gaps app-wide with posts-only outline; metaSm → 13/14 app-wide; play.svg edited in place; new top-only GlassRim style for all full-bleed image cards (tag, group, collection); item 5 = card → card gap only. Prompt updated.
 - 2026-11-03 — answers are design intent only; prompt now requires dev-team confirmation per item before implementation.
+- 2026-11-03 — built in nanza-mobile (uncommitted, pending device QA). 1: play.svg rounded in place, `lg` glyph = outerSize × 8/88 with a glyph/6 centroid pad (hero keeps /3 and its ratio). 2: shared lockup body top-aligned, name→meta 6, number→set 3, price line 12 under; `metaSm` 13/14 app-wide (meta scroll slot follows); FairMarketPill pad 5/6, gap 5, centred, label `pillSm` secondaryText via new `fairMarketPillLabel`; inline chrome radius lg + glassBorder, pad 12, gap 16; inline hero thumb 137.9 on a 306 inner width with a glassBorder top hairline; posts' centred `entityHeroBody` override removed. 3: `footerShare` deleted, share joins the left cluster. 4: GlassRim `edge="top"` (bottom stops zeroed) on TagThumb, GroupBannerThumb, GroupThumb, CollectionThumb (CSS top border dropped). 5: consecutive entity cards grouped into an `entityStack` column at 4; all other block gaps unchanged.

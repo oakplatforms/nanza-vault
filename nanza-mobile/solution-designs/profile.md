@@ -19,7 +19,7 @@ one.
 > (`useProfileTabs` → `PageLayout.onEndReached`); a tab fetches on first open, except Refs,
 > whose first page feeds the tab's count badge (the inbox All-count slot). The stacked
 > preview sections, their See-all chevrons and their "Add new" pills are gone
-> (`ProfileSections` deleted; `ProfileSeeAll` stays registered but nothing opens it).
+> (`ProfileSections` deleted; `ProfileSeeAll` screen + route removed 2026-11-02).
 > Own-profile create entries live in the panes: a trailing gray **Add new binder** tile
 > (→ CreateCollection), an inline **Post a new update** pill (JoinChatFooter, brand feed),
 > and a white **Trade** button (→ TradeSearch → CreateTrade WTS/WTB, the Trade tab's flow).

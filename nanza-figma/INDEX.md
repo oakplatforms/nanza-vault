@@ -17,6 +17,16 @@ stays visible in Obsidian.
 - **The code → Figma direction** (token sync, screen capture) is the `figma-sync` skill and the
   `nanza-figma-sync` repo.
 
+## Guidelines
+
+- **Type in handoffs reads about 1pt too small on device** (Skylar, 2026-11-02, from the
+  profile restyle). Figma's font sizes come through a point under what looks right in the app,
+  e.g. the profile bio specced at 14.5 shipped at 15.5, and the friends count at 12 shipped at 13.
+  When a handoff specifies a text size, treat it as the minimum and step up about 1pt (the next slot or
+  half step), unless the slot is shared app-wide and already tuned on device. Small UI
+  elements next to that text, such as avatars and facepiles, also tend to come in small: the
+  profile friends facepile went from 24 to 32. Check them on device before matching the frame exactly.
+
 ## Lifecycle
 
 `open` → `in-progress` (a session is implementing) → `built` (code written, uncommitted) →

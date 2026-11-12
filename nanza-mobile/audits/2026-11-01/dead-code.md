@@ -141,11 +141,13 @@ end is: keep `react-i18next`, trim `en.json` to the 18 live keys, delete `fr.jso
 
 ## 9. Assets
 
+> **2026-11-07:** rows below marked ✅ were removed in the app-size pass — 30 unused `.ttf` (assets, Android copy, pbxproj, both Info.plists + 4 stale Volte plist entries), `activity.svg` plus 60 unregistered-in-use icon keys/SVGs, `avatar.jpg`, `logo.png`; `splash-backdrop.jpg` (2.9 MB) deleted and the splash now draws `auth-backdrop.jpg` (new 1080×1350 art, 364 KB) — one image for splash + auth.
+
 | Asset | Size | Finding |
 |---|---|---|
-| `assets/fonts/` Figtree ×10, Geist ×9, EuclidCircularB ×10, `Roobert-RegularItalic` | 30 of 35 `.ttf`, ~3.9 MB | no `fontFamily` token references them (`dark.json` names only Roobert Regular/Medium/SemiBold/Bold + BaltoMobile-Book); still linked into both binaries (`Info.plist` UIAppFonts lists all 35; `android/app/src/main/assets/fonts` = 35 files, 4.5 MB). 2026-09-16 Later item, untouched. Removing them needs `npx react-native-asset` (or hand-editing `Info.plist`, the pbxproj and the Android assets copy) + a build on each platform |
-| `assets/icons/activity.svg` | 4 KB | unreferenced |
-| `assets/images/splash-backdrop.jpg` | 2.9 MB | referenced, but still the unoptimized export (2026-09-16 Later item) |
+| ✅ `assets/fonts/` Figtree ×10, Geist ×9, EuclidCircularB ×10, `Roobert-RegularItalic` | 30 of 35 `.ttf`, ~3.9 MB | no `fontFamily` token references them (`dark.json` names only Roobert Regular/Medium/SemiBold/Bold + BaltoMobile-Book); still linked into both binaries (`Info.plist` UIAppFonts lists all 35; `android/app/src/main/assets/fonts` = 35 files, 4.5 MB). 2026-09-16 Later item, untouched. Removing them needs `npx react-native-asset` (or hand-editing `Info.plist`, the pbxproj and the Android assets copy) + a build on each platform |
+| ✅ `assets/icons/activity.svg` | 4 KB | unreferenced |
+| ✅ `assets/images/splash-backdrop.jpg` | 2.9 MB | referenced, but still the unoptimized export (2026-09-16 Later item) |
 | `assets/images/fab-logo@2x/@3x.png` | 81 KB | referenced implicitly via `fab-logo.png` density resolution — keep |
 | `assets/lottie/*.json` ×2 | 7 KB | both referenced |
 | `metro.config.js` comment | — | says "`assets/icons/loading-2.lottie`" exists; it does not (`Button` notes lottie-ios cannot open `.lottie` anyway). The `lottie` assetExt entry is dead config |

@@ -156,7 +156,7 @@ boundary; a body-less post shows "Sent a photo" / "Sent a link" by its primary i
 
 | # | Kind | Fires from | Recipient(s) | Title | Body | Opens | Collapse |
 |---|---|---|---|---|---|---|---|
-| 1 | `message.created` | `POST /message` (`routers/message.ts`) | other participants | `{name}` | `{preview}` | `ConversationThread { conversationId }` | `conversation:<id>` |
+| 1 | `message.created` | `POST /message` (`routers/message.ts`) and, since 2026-11-07, `POST /connection/:id/reply` (the recipient's first message) | other participants | `{name}` | `{preview}` | `ConversationThread { conversationId }` | `conversation:<id>` |
 | 2 | `connection.requested` | `POST /connection` | recipient | New friend request | `{name}` wants to connect | the intro thread `ConversationThread { conversationId }` (the pending request lives there, with Accept / Decline) | `connection:<id>` |
 | 3 | `connection.accepted` | `PUT /connection/:id/accept` | initiator | You're connected | `{name}` accepted your request. Say hi | that 1:1 `ConversationThread` (`findOneToOneConversation`) | `connection:<id>` |
 | 4 | `post.replied` | `POST /post` when `parentId` set and not a draft | parent post's author | `{name}` replied to your post | `{preview}` of the reply | the **parent** post: `PostDetail` after `GET /post/:parentId` | `post:<parentId>:reply` |

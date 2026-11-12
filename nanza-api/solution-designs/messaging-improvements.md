@@ -255,6 +255,16 @@ Roughly two days; typing is the only piece that needs the dev WebSocket redeploy
   instead of waiting for the next 3 s ping (Skylar: "weird to see typing… then click in and see
   not typing").
 
+- 2026-11-08 — Thread UX fixes (mobile, uncommitted, pending device QA). (a) Message input sat
+  higher after sending a multi-line message: clearing the draft programmatically doesn't reliably
+  re-measure the native multiline input, so the box kept its grown height with the placeholder at
+  its top (input fill is secondary.950 on a neutral.950 page, so the box itself is near-invisible
+  and only the placeholder shows the jump). The EMPTY input is now pinned to its one-line height,
+  measured once on first layout (`restingInputHeight`). (b) Long threads: the list now sticks to
+  its end on content-size and layout changes (keyboard open shrinks the viewport) unless the reader
+  has scrolled up more than `spacing.xl`; sending always re-pins. Replaced the `messages.length`
+  effect, which scrolled a frame before the new row laid out. Content gets `base` bottom padding.
+
 ## Open questions
 
 None blocking. Styling (sheet, chips, typing dots, edited marker) comes from the partner's Figma

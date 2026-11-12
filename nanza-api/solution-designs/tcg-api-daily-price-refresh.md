@@ -31,6 +31,26 @@ The key is set once: `TCGAPI_KEY=…` in `nanza-api/migrations/.env` (gitignored
 vault). An exported `TCGAPI_KEY` still wins. `review` / `apply` stay for a run that should be
 gated. Steps 2–4 below describe that gated path.
 
+## Update 2026-11-06 — no daily export (Skylar)
+
+The baseline no longer has to come from DBeaver every day. Each run saves its input as
+`output-sql/<release>/tcgapi-prices/input.csv`. The next run carries that forward with every price
+in that release's `update/*.sql` applied, including hand-added batches like
+`batch_09_flagged_approved.sql`:
+
+```
+python3 orchestration/generate_tcgapi_prices_sql.py run --from 2026-10-31   # release = today
+```
+
+Seeded from the 10-31 export (17,391 products, 14,460 prices from its SQL). Three limits:
+
+- It assumes **all** of the previous release's SQL was run. If a batch was skipped, those prices
+  carry forward anyway.
+- **Export fresh after a card drop.** New products have no id in a carried baseline, so they're
+  missing until the next export.
+- Price edits made in admin between runs aren't seen. The next run measures the move against the
+  carried price instead.
+
 ## The ask (Skylar, voice, 2026-10-27)
 
 - We already read TCG API live for the Market tab. `Product.price` is ours, and it needs a system
