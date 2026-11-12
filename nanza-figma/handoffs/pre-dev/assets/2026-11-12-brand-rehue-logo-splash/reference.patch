@@ -293,8 +293,8 @@ index cc74b40f..671fad04 100644
      // class that predates the chicklet row. A `highlight` (primary.300) pass
      // was tried and walked back the same day (user, 2026-09-05): the lighter
      // tint read as washed out against postBody rather than as a link.
-+    // Now the `link` token (2026-11-12 re-hue): a cool neutral (neutral.300),
-+    // not pink — distinct from the warm body text but easy on the eyes.
++    // Now the `link` token (2026-11-12 re-hue): primary.400, the brand pink
++    // a step lighter than `action` — distinct from the warm body text.
      // Colour only (Skylar, 2026-11-02): the run is always nested in its host
      // <Text> and inherits that size, so a tag always reads at the size of the
      // words around it (it used to pin postBody, smaller than the detail root).
@@ -365,7 +365,7 @@ index 7adbe227..db89954c 100644
 -    "action": "primary.400",
 +    "highlight": "primary.400",
 +    "action": "primary.500",
-+    "link": "neutral.300",
++    "link": "primary.400",
      "inputBackground": "secondary.950",
      "inputBorder": "neutral.800",
      "inputBorderFocused": "neutral.300",
@@ -410,7 +410,7 @@ index 9db74d40..04794fad 100644
 -    "action": "primary.400",
 +    "highlight": "primary.400",
 +    "action": "primary.500",
-+    "link": "neutral.600",
++    "link": "primary.400",
      "inputBackground": "secondary.50",
      "inputBorder": "neutral.200",
      "inputBorderFocused": "secondary.500",
@@ -423,8 +423,8 @@ index 31a075fc..1a076065 100644
      highlight?: string
      action?: string
 +    // Text links (post #tags / mentions, the composer's tag runs, "Show more"):
-+    // a cool neutral (dark: neutral 300), distinct from the warm body text
-+    // without the brand pink's weight.
++    // the brand pink, primary 400 (a step lighter than `action`), distinct from
++    // the warm body text.
 +    link?: string
      primary: {
        [key: string]: string

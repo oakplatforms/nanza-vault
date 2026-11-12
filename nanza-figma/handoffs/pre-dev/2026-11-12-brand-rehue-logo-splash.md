@@ -12,8 +12,8 @@ scope: tokens + shared type + assets (SVG, iOS launch PNGs) + native Android + s
 # Brand re-hue: persian-rose palette, logos, links, plus button, splash fixes
 
 The brand moves from magenta (hue ~300°, `#FF4BFF`) to **persian-rose** (hue ~329°, `#ED3594`).
-Text links move off the brand pink to a cool neutral grey, and the compose plus button picks up
-the logo's soft gradient. **All values are final and device-tested by design.** Nothing here
+Text links get their own `link` token in the lighter brand pink (`primary.400`), and the
+compose plus button picks up the logo's soft gradient. **All values are final and device-tested by design.** Nothing here
 is on trial.
 
 > [!info] Pre-dev: why this one needs planning
@@ -61,7 +61,7 @@ is on trial.
 | 2 | Logo SVGs: new fill + gradient, **stroke path removed** | asset | device-tested |
 | 3 | `action` → `primary.500` | token | device-tested |
 | 4 | `highlight` → `primary.400` (ring, play badge, circle badge, Buy tags) | token | device |
-| 5 | New `link` token → `neutral.300` grey (post #tags / mentions, Show more, composer tag runs) | token + **shared type** | device-tested |
+| 5 | New `link` token → `primary.400` pink (post #tags / mentions, Show more, composer tag runs) | token + **shared type** | device-tested |
 | 6 | Bottom nav active tab → `textSecondary` (bright white) | **component** | device-tested |
 | 7 | Android `notification_accent` → `#ED3594` | **native** | Android push |
 | 8 | Android 12+ system splash → app background, no icon disc | **native** | Android 12+ build, light + dark mode |
@@ -92,7 +92,7 @@ Make the same change in both files.
 |---|---|---|---|
 | `action` | `primary.400` | **`primary.500`** `#ED3594` | `floatingNavFab`, `floatingNavPlus` (+ button), `sendIconButtonActive`, `audienceMenuRowTextSelected`, `stepIndicatorDotCompleted`, `requestedUnreadDot` |
 | `highlight` | `primary.300` | **`primary.400`** `#F670B9` | `circleThumbRingBrand`, `circleThumbPlayBadge`, `circleThumbBadge` (cards.ts); `intentTagBuy`, `intentTagBuyCompact` (badges.ts) |
-| **`link`** (new) | — | dark **`neutral.300`** `#9DADBD`; light `neutral.600` | `tagMention`, `tagMentionPressed` (at 0.7), `showMoreText` (posts.ts); `inlineTagRun` (postComposer.ts) |
+| **`link`** (new) | — | **`primary.400`** `#F670B9` (dark + light) | `tagMention`, `tagMentionPressed` (at 0.7), `showMoreText` (posts.ts); `inlineTagRun` (postComposer.ts) |
 
 - **`highlight` is a token change only.** Its consumers already read it, so `cards.ts` and
   `badges.ts` don't change. The play badge keeps matching the ring.
@@ -101,13 +101,11 @@ Make the same change in both files.
     `theme` keys generically, so no other infra changes.
   - Point the four classes at `theme.colors.link || theme.colors.action`. In
     `tagMentionPressed`, that goes inside the existing `hexToRgba(…, 0.7)`.
-- **Why `link` is grey:**
-  - `neutral.300` is 9.1:1 on the background, so it is easy on the eyes.
-  - It sits about 1.9:1 off the warm body text `#F0EBE6`, close to the old pink link's
-    2.2:1, and its cool hue separates it further.
-  - `neutral.200` (1.4:1) was too close to the body text, and `neutral.400` read as muted.
-  - It shares a value with `metaText`, but tags render at body size inside the text, so they
-    read as links.
+- **Why `link` is pink 400:**
+  - Links stay in the brand pink, a step lighter than `action` (500), so they read as links
+    against the warm body text without the weight of the + button's fill.
+  - A cool grey (`neutral.300`) was tried on device and walked back: links read better pink.
+  - It shares a value with `highlight`. They stay separate tokens so either can move alone.
 
 ### 6. Bottom nav active state
 - `layout.ts` `floatingNavLabelActive.color` and `FloatingTabBar` `activeColor` →
@@ -191,8 +189,7 @@ flashes the old magenta before the JS splash.
 
 ## Code map (dev @ `ac083896`)
 - `src/styles/tokens/dark.json`, `light.json`: `colors.primary`. In `theme`: `action` →
-  `primary.500`, `highlight` → `primary.400`, new `link` (dark `neutral.300`, light
-  `neutral.600`).
+  `primary.500`, `highlight` → `primary.400`, new `link` → `primary.400`.
 - `src/styles/utils/types.ts`: `link?: string` (approved shared-infra edit).
 - `src/styles/components/posts.ts`: `tagMention`, `tagMentionPressed`, `showMoreText` → `link`.
 - `src/styles/components/postComposer.ts`: `inlineTagRun` → `link`.
@@ -214,8 +211,8 @@ flashes the old magenta before the JS splash.
     `#ED3594`.
   - Circle-thumb rings, play badges, circle badges and "Buy" tags are `#F670B9`.
   - No old magenta anywhere.
-- **Links:** post #tags, mentions, "Show more" and composer tag runs are cool grey
-  `#9DADBD`, clearly apart from the off-white body text. Pressed tags dim to 70%.
+- **Links:** post #tags, mentions, "Show more" and composer tag runs are pink `#F670B9`,
+  a step lighter than the + button. Pressed tags dim to 70%.
 - **Nav:** the active tab label and icon are bright white. Inactive tabs are unchanged.
 - **Plus discs (nav + Home FAB):** a soft lighter top easing into `#ED3594`, with the white
   plus icon on top and clean circle edges. Held down, they go flat `#ED3594` at the same size.
@@ -245,7 +242,7 @@ designer's build of exactly this, against dev ac083896 — use it to check your 
 
 1. PALETTE: replace colors.primary 50–950 in dark.json AND light.json with §1.
    theme.action -> primary.500; theme.highlight -> primary.400; add theme.link
-   (dark neutral.300, light neutral.600) and `link?: string` to ThemeTokens (types.ts, approved).
+   (primary.400, both themes) and `link?: string` to ThemeTokens (types.ts, approved).
 2. LINKS: tagMention / tagMentionPressed / showMoreText (posts.ts) and inlineTagRun
    (postComposer.ts) read theme.colors.link (fallback action).
 3. NAV: floatingNavLabelActive + FloatingTabBar activeColor -> textSecondary || text.
@@ -278,3 +275,4 @@ before finishing, then set this handoff to built and add a Log line.
   - `link` moved from pink to `neutral.300` grey.
 - 2026-11-12: **ready for dev.** Rebuilt as `throwaway-hue-change` on dev `ac083896`;
   `reference.patch` exported. TypeScript and ESLint are clean on the touched files.
+- 2026-11-12: `link` set back to pink, `primary.400` `#F670B9` in both themes (was `neutral.300` grey). Token value only; `reference.patch` updated and re-checked against dev.

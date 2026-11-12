@@ -42,7 +42,7 @@ frontmatter to match the folder.
 
 | Date | Handoff | Scope | Status |
 |------|---------|-------|--------|
-| 2026-11-12 | [[handoffs/pre-dev/2026-11-12-brand-rehue-logo-splash\|Brand re-hue — persian-rose palette, logos, grey links, plus-button gradient, splash fixes]] | tokens (primary, action, highlight, new link + type), logos, FloatingTabBar, JoinChatFooter plus discs, LogoBurst, Android splash / notification tint, iOS launch logo | open — ready for dev |
+| 2026-11-12 | [[handoffs/pre-dev/2026-11-12-brand-rehue-logo-splash\|Brand re-hue — persian-rose palette, logos, pink link token, plus-button gradient, splash fixes]] | tokens (primary, action, highlight, new link + type), logos, FloatingTabBar, JoinChatFooter plus discs, LogoBurst, Android splash / notification tint, iOS launch logo | open — ready for dev |
 | 2026-11-12 | [[handoffs/pre-dev/2026-11-12-tag-page-fixed-hero\|Detail-page fixed heroes — pinned banner, full-height fadeHeroFixed gradient (tag, set, group, collection, profile)]] | new FixedBanner; SupportedTagValueScreen, SetScreen, GroupDetailScreen, CollectionDetailScreen, ProfileHero (ProfileScreen, UserProfileScreen); cards.ts, profile.ts, gradient token | open — ready for dev |
 | 2026-11-12 | [[handoffs/pre-dev/2026-11-12-post-screen-thread-line\|Single post page — replies line up with the post, vertical thread line]] | PostItem (new `'flush'` inset), StoryPostPage (pager), PostDetailScreen; posts.ts | open — ready for dev |
 | 2026-11-12 | [[handoffs/pre-dev/2026-11-12-post-show-more-size\|Posts — Show more / Show less at 15 (meta slot)]] | posts.ts showMoreText (PostItem) | open — ready for dev |
